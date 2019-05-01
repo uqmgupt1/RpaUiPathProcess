@@ -1,2 +1,2 @@
-# -RpaUiPathProcess
+# RpaUiPathProcess
 UiPath processes
