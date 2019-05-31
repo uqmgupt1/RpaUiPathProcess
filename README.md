@@ -1,5 +1,5 @@
 # RpaUiPathProcess
-UiPath source code
+UiPath source code for the UiPath processes.
 
 ## Framework
 
