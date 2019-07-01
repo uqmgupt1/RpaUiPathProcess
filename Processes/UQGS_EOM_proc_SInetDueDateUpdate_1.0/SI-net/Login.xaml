@@ -2,6 +2,7 @@
  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
  xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities"
+ xmlns:s="clr-namespace:System;assembly=mscorlib"
  xmlns:sads="http://schemas.microsoft.com/netfx/2010/xaml/activities/debugger"
  xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
@@ -73,62 +74,109 @@
       <AssemblyReference>System.ComponentModel.Composition</AssemblyReference>
       <AssemblyReference>UiPath.Studio.Plugin.Workflow</AssemblyReference>
       <AssemblyReference>Microsoft.VisualStudio.Services.Common</AssemblyReference>
+      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
-  <Sequence DisplayName="Login to mySI-net" sap2010:WorkflowViewState.IdRef="Sequence_2">
-    <Sequence.Variables>
-      <Variable x:TypeArguments="x:String" Default="[in_Config(&quot;Environment&quot;).ToString]" Name="environment" />
-      <Variable x:TypeArguments="x:String" Name="usernameAD" />
-      <Variable x:TypeArguments="ss:SecureString" Name="passwordAD" />
-      <Variable x:TypeArguments="x:String" Default="[in_Config(&quot;ADAssetCredential&quot;).ToString]" Name="credentialAD" />
-      <Variable x:TypeArguments="x:String" Name="usernameSI" />
-      <Variable x:TypeArguments="ss:SecureString" Name="passwordSI" />
-      <Variable x:TypeArguments="x:String" Default="[in_Config(&quot;SI_netAssetCredential&quot;).ToString]" Name="credentialSI" />
-    </Sequence.Variables>
-    <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke GetAppCredentials AD login" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_1" UnSafe="False" WorkflowFileName="Framework\GetAppCredentials.xaml">
-      <ui:InvokeWorkflowFile.Arguments>
-        <OutArgument x:TypeArguments="x:String" x:Key="out_Username">[usernameAD]</OutArgument>
-        <InArgument x:TypeArguments="x:String" x:Key="in_Credential">[credentialAD]</InArgument>
-        <OutArgument x:TypeArguments="ss:SecureString" x:Key="out_Password">[passwordAD]</OutArgument>
-      </ui:InvokeWorkflowFile.Arguments>
-    </ui:InvokeWorkflowFile>
-    <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke GetAppCredentials mySI-net login" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_2" UnSafe="False" WorkflowFileName="Framework\GetAppCredentials.xaml">
-      <ui:InvokeWorkflowFile.Arguments>
-        <OutArgument x:TypeArguments="x:String" x:Key="out_Username">[usernameSI]</OutArgument>
-        <InArgument x:TypeArguments="x:String" x:Key="in_Credential">[credentialSI]</InArgument>
-        <OutArgument x:TypeArguments="ss:SecureString" x:Key="out_Password">[passwordSI]</OutArgument>
-      </ui:InvokeWorkflowFile.Arguments>
-    </ui:InvokeWorkflowFile>
-    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_3" Level="Info" Message="[&quot;Signing in using AD username: '&quot; + usernameAD + &quot;' and SI_net username: '&quot; + usernameSI + &quot;'&quot;]" />
-    <ui:OpenBrowser UiBrowser="{x:Null}" BrowserType="Chrome" DisplayName="Open Browser" Hidden="False" sap2010:WorkflowViewState.IdRef="OpenBrowser_1" NewSession="True" Private="False" Url="[in_Config(&quot;mySI_netURL_&quot; + environment).ToString]">
-      <ui:OpenBrowser.Body>
-        <ActivityAction x:TypeArguments="x:Object">
-          <ActivityAction.Argument>
-            <DelegateInArgument x:TypeArguments="x:Object" Name="ContextTarget" />
-          </ActivityAction.Argument>
-          <Sequence DisplayName="Do" sap2010:WorkflowViewState.IdRef="Sequence_1">
-            <Pick DisplayName="Determine if required to login to UQ first" sap2010:WorkflowViewState.IdRef="Pick_1">
-              <PickBranch DisplayName="Login to UQ" sap2010:WorkflowViewState.IdRef="PickBranch_1">
-                <PickBranch.Trigger>
-                  <ui:UiElementExists Exists="{x:Null}" DisplayName="UQ Login screen found" sap2010:WorkflowViewState.IdRef="UiElementExists_1">
-                    <ui:UiElementExists.Target>
-                      <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Selector="&lt;webctrl aaname='Login with your UQ credentials' /&gt;" TimeoutMS="10000" WaitForReady="COMPLETE" />
-                    </ui:UiElementExists.Target>
-                  </ui:UiElementExists>
-                </PickBranch.Trigger>
-                <Sequence sap2010:WorkflowViewState.IdRef="Sequence_3">
-                  <ui:LogMessage DisplayName="Log Message - Loging into UQ" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[&quot;Logging into UQ with AD login&quot;]" />
-                  <ui:SetValue ContinueOnError="{x:Null}" DelayAfter="{x:Null}" DelayBefore="{x:Null}" DisplayName="Set AD Username" sap2010:WorkflowViewState.IdRef="SetValue_1" Text="[usernameAD]">
+  <Sequence DisplayName="Login to mySI-net" sap2010:WorkflowViewState.IdRef="Sequence_5">
+    <TryCatch DisplayName="Try Catch - Login to mySI-net" sap2010:WorkflowViewState.IdRef="TryCatch_1">
+      <TryCatch.Try>
+        <Sequence DisplayName="Try - Login to mySI-net" sap2010:WorkflowViewState.IdRef="Sequence_2">
+          <Sequence.Variables>
+            <Variable x:TypeArguments="x:String" Default="[in_Config(&quot;Environment&quot;).ToString]" Name="environment" />
+            <Variable x:TypeArguments="x:String" Name="usernameAD" />
+            <Variable x:TypeArguments="ss:SecureString" Name="passwordAD" />
+            <Variable x:TypeArguments="x:String" Default="[in_Config(&quot;ADAssetCredential&quot;).ToString]" Name="credentialAD" />
+            <Variable x:TypeArguments="x:String" Name="usernameSI" />
+            <Variable x:TypeArguments="ss:SecureString" Name="passwordSI" />
+            <Variable x:TypeArguments="x:String" Default="[in_Config(&quot;SI_netAssetCredential&quot;).ToString]" Name="credentialSI" />
+          </Sequence.Variables>
+          <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke GetAppCredentials AD login" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_1" UnSafe="False" WorkflowFileName="Framework\GetAppCredentials.xaml">
+            <ui:InvokeWorkflowFile.Arguments>
+              <OutArgument x:TypeArguments="x:String" x:Key="out_Username">[usernameAD]</OutArgument>
+              <InArgument x:TypeArguments="x:String" x:Key="in_Credential">[credentialAD]</InArgument>
+              <OutArgument x:TypeArguments="ss:SecureString" x:Key="out_Password">[passwordAD]</OutArgument>
+            </ui:InvokeWorkflowFile.Arguments>
+          </ui:InvokeWorkflowFile>
+          <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke GetAppCredentials mySI-net login" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_2" UnSafe="False" WorkflowFileName="Framework\GetAppCredentials.xaml">
+            <ui:InvokeWorkflowFile.Arguments>
+              <OutArgument x:TypeArguments="x:String" x:Key="out_Username">[usernameSI]</OutArgument>
+              <InArgument x:TypeArguments="x:String" x:Key="in_Credential">[credentialSI]</InArgument>
+              <OutArgument x:TypeArguments="ss:SecureString" x:Key="out_Password">[passwordSI]</OutArgument>
+            </ui:InvokeWorkflowFile.Arguments>
+          </ui:InvokeWorkflowFile>
+          <ui:LogMessage DisplayName="Log Message - Logging in" sap2010:WorkflowViewState.IdRef="LogMessage_3" Level="Info" Message="[&quot;Signing in using AD username: '&quot; + usernameAD + &quot;' and SI_net username: '&quot; + usernameSI + &quot;'&quot;]" />
+          <ui:OpenBrowser UiBrowser="{x:Null}" BrowserType="Chrome" DisplayName="Open Browser" Hidden="False" sap2010:WorkflowViewState.IdRef="OpenBrowser_1" NewSession="True" Private="False" Url="[in_Config(&quot;mySI_netURL_&quot; + environment).ToString]">
+            <ui:OpenBrowser.Body>
+              <ActivityAction x:TypeArguments="x:Object">
+                <ActivityAction.Argument>
+                  <DelegateInArgument x:TypeArguments="x:Object" Name="ContextTarget" />
+                </ActivityAction.Argument>
+                <Sequence DisplayName="Do" sap2010:WorkflowViewState.IdRef="Sequence_1">
+                  <Pick DisplayName="Determine if required to login to UQ first" sap2010:WorkflowViewState.IdRef="Pick_1">
+                    <PickBranch DisplayName="Login to UQ" sap2010:WorkflowViewState.IdRef="PickBranch_1">
+                      <PickBranch.Trigger>
+                        <ui:UiElementExists Exists="{x:Null}" DisplayName="UQ Login screen found" sap2010:WorkflowViewState.IdRef="UiElementExists_1">
+                          <ui:UiElementExists.Target>
+                            <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Selector="&lt;webctrl aaname='Login with your UQ credentials' /&gt;" TimeoutMS="10000" WaitForReady="COMPLETE" />
+                          </ui:UiElementExists.Target>
+                        </ui:UiElementExists>
+                      </PickBranch.Trigger>
+                      <Sequence DisplayName="Logging into UQ" sap2010:WorkflowViewState.IdRef="Sequence_3">
+                        <ui:LogMessage DisplayName="Log Message - Logging into UQ" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[&quot;Logging into UQ with AD login&quot;]" />
+                        <ui:SetValue ContinueOnError="{x:Null}" DelayAfter="{x:Null}" DelayBefore="{x:Null}" DisplayName="Set AD Username" sap2010:WorkflowViewState.IdRef="SetValue_1" Text="[usernameAD]">
+                          <ui:SetValue.Target>
+                            <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="&lt;webctrl id='input_1' tag='INPUT' /&gt;" WaitForReady="COMPLETE" />
+                          </ui:SetValue.Target>
+                        </ui:SetValue>
+                        <ui:TypeSecureText DelayBefore="{x:Null}" DelayMS="{x:Null}" Activate="True" ClickBeforeTyping="False" DelayBetweenKeys="150" DisplayName="Type AD Password" EmptyField="True" sap2010:WorkflowViewState.IdRef="TypeSecureText_1" SecureText="[passwordAD]" SendWindowMessages="False" SimulateType="True">
+                          <ui:TypeSecureText.Target>
+                            <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="&lt;webctrl id='input_2' tag='INPUT' /&gt;" WaitForReady="COMPLETE" />
+                          </ui:TypeSecureText.Target>
+                        </ui:TypeSecureText>
+                        <ui:Click DelayBefore="{x:Null}" DelayMS="{x:Null}" ClickType="CLICK_SINGLE" DisplayName="Click Login" sap2010:WorkflowViewState.IdRef="Click_1" KeyModifiers="None" MouseButton="BTN_LEFT" SendWindowMessages="False" SimulateClick="True">
+                          <ui:Click.CursorPosition>
+                            <ui:CursorPosition Position="Center">
+                              <ui:CursorPosition.OffsetX>
+                                <InArgument x:TypeArguments="x:Int32" />
+                              </ui:CursorPosition.OffsetX>
+                              <ui:CursorPosition.OffsetY>
+                                <InArgument x:TypeArguments="x:Int32" />
+                              </ui:CursorPosition.OffsetY>
+                            </ui:CursorPosition>
+                          </ui:Click.CursorPosition>
+                          <ui:Click.Target>
+                            <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="&lt;webctrl tag='INPUT' type='submit' /&gt;" WaitForReady="COMPLETE" />
+                          </ui:Click.Target>
+                        </ui:Click>
+                      </Sequence>
+                    </PickBranch>
+                    <PickBranch DisplayName="UQ Login not required" sap2010:WorkflowViewState.IdRef="PickBranch_2">
+                      <PickBranch.Trigger>
+                        <ui:UiElementExists Exists="{x:Null}" DisplayName="mySI-net Login screen found" sap2010:WorkflowViewState.IdRef="UiElementExists_2">
+                          <ui:UiElementExists.Target>
+                            <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Selector="&lt;webctrl aaname='Sign in to mySI-net' /&gt;" TimeoutMS="8000" WaitForReady="COMPLETE" />
+                          </ui:UiElementExists.Target>
+                        </ui:UiElementExists>
+                      </PickBranch.Trigger>
+                    </PickBranch>
+                  </Pick>
+                  <ui:WaitUiElementAppear FoundElement="{x:Null}" DisplayName="mySI-net Login screen found" sap2010:WorkflowViewState.IdRef="WaitUiElementAppear_1" WaitActive="False" WaitVisible="False">
+                    <ui:WaitUiElementAppear.Target>
+                      <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="&lt;webctrl aaname='Sign in to mySI-net' /&gt;" WaitForReady="COMPLETE" />
+                    </ui:WaitUiElementAppear.Target>
+                  </ui:WaitUiElementAppear>
+                  <ui:LogMessage DisplayName="Log Message - Logging into mySI-net" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;Logging into mySI-net with SI-net login&quot;]" />
+                  <ui:SetValue ContinueOnError="{x:Null}" DelayAfter="{x:Null}" DelayBefore="{x:Null}" DisplayName="Set mySI-net Username" sap2010:WorkflowViewState.IdRef="SetValue_3" Text="[usernameSI]">
                     <ui:SetValue.Target>
-                      <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="&lt;webctrl id='input_1' tag='INPUT' /&gt;" WaitForReady="COMPLETE" />
+                      <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="&lt;webctrl id='userid1' tag='INPUT' /&gt;" WaitForReady="COMPLETE" />
                     </ui:SetValue.Target>
                   </ui:SetValue>
-                  <ui:TypeSecureText DelayBefore="{x:Null}" DelayMS="{x:Null}" Activate="True" ClickBeforeTyping="False" DelayBetweenKeys="150" DisplayName="Type AD Password" EmptyField="True" sap2010:WorkflowViewState.IdRef="TypeSecureText_1" SecureText="[passwordAD]" SendWindowMessages="False" SimulateType="True">
+                  <ui:TypeSecureText DelayBefore="{x:Null}" DelayMS="{x:Null}" Activate="True" ClickBeforeTyping="False" DelayBetweenKeys="150" DisplayName="Type mySI-net Password" EmptyField="True" sap2010:WorkflowViewState.IdRef="TypeSecureText_2" SecureText="[passwordSI]" SendWindowMessages="False" SimulateType="True">
                     <ui:TypeSecureText.Target>
-                      <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="&lt;webctrl id='input_2' tag='INPUT' /&gt;" WaitForReady="COMPLETE" />
+                      <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="&lt;webctrl id='pwd' tag='INPUT' /&gt;" WaitForReady="COMPLETE" />
                     </ui:TypeSecureText.Target>
                   </ui:TypeSecureText>
-                  <ui:Click DelayBefore="{x:Null}" DelayMS="{x:Null}" ClickType="CLICK_SINGLE" DisplayName="Click Login" sap2010:WorkflowViewState.IdRef="Click_1" KeyModifiers="None" MouseButton="BTN_LEFT" SendWindowMessages="False" SimulateClick="True">
+                  <ui:Click DelayBefore="{x:Null}" DelayMS="{x:Null}" ClickType="CLICK_SINGLE" DisplayName="Click Sign In" sap2010:WorkflowViewState.IdRef="Click_2" KeyModifiers="None" MouseButton="BTN_LEFT" SendWindowMessages="False" SimulateClick="True">
                     <ui:Click.CursorPosition>
                       <ui:CursorPosition Position="Center">
                         <ui:CursorPosition.OffsetX>
@@ -140,62 +188,36 @@
                       </ui:CursorPosition>
                     </ui:Click.CursorPosition>
                     <ui:Click.Target>
-                      <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="&lt;webctrl tag='INPUT' type='submit' /&gt;" WaitForReady="COMPLETE" />
+                      <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="&lt;webctrl tag='BUTTON' /&gt;" WaitForReady="COMPLETE" />
                     </ui:Click.Target>
                   </ui:Click>
+                  <ui:WaitUiElementAppear FoundElement="{x:Null}" DisplayName="mySI-net Home page found" sap2010:WorkflowViewState.IdRef="WaitUiElementAppear_2" WaitActive="False" WaitVisible="False">
+                    <ui:WaitUiElementAppear.Target>
+                      <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="&lt;webctrl aaname='mySI-net Staff Homepage' /&gt;" WaitForReady="COMPLETE" />
+                    </ui:WaitUiElementAppear.Target>
+                  </ui:WaitUiElementAppear>
                 </Sequence>
-              </PickBranch>
-              <PickBranch DisplayName="UQ Login not required" sap2010:WorkflowViewState.IdRef="PickBranch_2">
-                <PickBranch.Trigger>
-                  <ui:UiElementExists Exists="{x:Null}" DisplayName="mySI-net Login screen found" sap2010:WorkflowViewState.IdRef="UiElementExists_2">
-                    <ui:UiElementExists.Target>
-                      <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Selector="&lt;webctrl aaname='Sign in to mySI-net' /&gt;" TimeoutMS="8000" WaitForReady="COMPLETE" />
-                    </ui:UiElementExists.Target>
-                  </ui:UiElementExists>
-                </PickBranch.Trigger>
-              </PickBranch>
-            </Pick>
-            <ui:WaitUiElementAppear FoundElement="{x:Null}" DisplayName="mySI-net Login screen found" sap2010:WorkflowViewState.IdRef="WaitUiElementAppear_1" WaitActive="False" WaitVisible="False">
-              <ui:WaitUiElementAppear.Target>
-                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="&lt;webctrl aaname='Sign in to mySI-net' /&gt;" WaitForReady="COMPLETE" />
-              </ui:WaitUiElementAppear.Target>
-            </ui:WaitUiElementAppear>
-            <ui:LogMessage DisplayName="Log Message - Loging into mySI-net" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;Logging into mySI-net with SI-net login&quot;]" />
-            <ui:SetValue ContinueOnError="{x:Null}" DelayAfter="{x:Null}" DelayBefore="{x:Null}" DisplayName="Set mySI-net Username" sap2010:WorkflowViewState.IdRef="SetValue_3" Text="[usernameSI]">
-              <ui:SetValue.Target>
-                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="&lt;webctrl id='userid1' tag='INPUT' /&gt;" WaitForReady="COMPLETE" />
-              </ui:SetValue.Target>
-            </ui:SetValue>
-            <ui:TypeSecureText DelayBefore="{x:Null}" DelayMS="{x:Null}" Activate="True" ClickBeforeTyping="False" DelayBetweenKeys="150" DisplayName="Type mySI-net Password" EmptyField="True" sap2010:WorkflowViewState.IdRef="TypeSecureText_2" SecureText="[passwordSI]" SendWindowMessages="False" SimulateType="True">
-              <ui:TypeSecureText.Target>
-                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="&lt;webctrl id='pwd' tag='INPUT' /&gt;" WaitForReady="COMPLETE" />
-              </ui:TypeSecureText.Target>
-            </ui:TypeSecureText>
-            <ui:Click DelayBefore="{x:Null}" DelayMS="{x:Null}" ClickType="CLICK_SINGLE" DisplayName="Click Sign In" sap2010:WorkflowViewState.IdRef="Click_2" KeyModifiers="None" MouseButton="BTN_LEFT" SendWindowMessages="False" SimulateClick="True">
-              <ui:Click.CursorPosition>
-                <ui:CursorPosition Position="Center">
-                  <ui:CursorPosition.OffsetX>
-                    <InArgument x:TypeArguments="x:Int32" />
-                  </ui:CursorPosition.OffsetX>
-                  <ui:CursorPosition.OffsetY>
-                    <InArgument x:TypeArguments="x:Int32" />
-                  </ui:CursorPosition.OffsetY>
-                </ui:CursorPosition>
-              </ui:Click.CursorPosition>
-              <ui:Click.Target>
-                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="&lt;webctrl tag='BUTTON' /&gt;" WaitForReady="COMPLETE" />
-              </ui:Click.Target>
-            </ui:Click>
-            <ui:WaitUiElementAppear FoundElement="{x:Null}" DisplayName="mySI-net Home page found" sap2010:WorkflowViewState.IdRef="WaitUiElementAppear_2" WaitActive="False" WaitVisible="False">
-              <ui:WaitUiElementAppear.Target>
-                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="&lt;webctrl aaname='mySI-net Staff Homepage' /&gt;" WaitForReady="COMPLETE" />
-              </ui:WaitUiElementAppear.Target>
-            </ui:WaitUiElementAppear>
-          </Sequence>
-        </ActivityAction>
-      </ui:OpenBrowser.Body>
-    </ui:OpenBrowser>
-    <sads:DebugSymbol.Symbol>d2NEOlxDbGllbnRzXFVRXERFVlxScGFVaVBhdGhQcm9jZXNzXFByb2Nlc3Nlc1xVUUdTX0VPTV9wcm9jX1NJbmV0RHVlRGF0ZVVwZGF0ZV8xLjBcU0ktbmV0XExvZ2luLnhhbWw3TgPHAQ4CAQFQNFBjAgEGUzRTaQIBBFY0Vm0CAQJYBV4dAgFBXwVlHQIBOWYFZvUBAgE1ZwXFARYCAQhcTVxZAgFHW0ZbVAIBRVpGWlICAUNYvgFY4AECAUJjTWNZAgE/YkZiVAIBPWFGYVICATtfxAFf5gECATpmcmbyAQIBNme/AWf9AQIBMm0LwgEWAgEJbg2dARQCARueAQ2iASYCARmjAQ2jAcsBAgEXpAENqAEbAgETqQENrQEhAgEOrgENvAEYAgEMvQENwQEmAgEKbw+TARwCASCUAQ+cARwCARygAWegAZcBAgEaowGRAaMByAECARikAbgBpAHGAQIBFKYBZ6YBkwECARarAWerAY8BAgESqQGFAakBigECARGpAYACqQGOAgIBD7oBZ7oBhwECAQ2/AWe/AZsBAgELcRN1KAIBL3cRkgEcAgEhlgETmgEoAgEdc1hzkwECATFzngFzpQECATB4E3jBAQIBLXkTfSECASl+E4IBJwIBJIMBE5EBHgIBIpgBWJgBiAECAR+YAZMBmAGZAQIBHniRAXi+AQIBLnm4AXnGAQIBKntte5kBAgEsgAFtgAGZAQIBKH6LAX6QAQIBJ36AAn6OAgIBJY8BbY8BmgECASM=</sads:DebugSymbol.Symbol>
+              </ActivityAction>
+            </ui:OpenBrowser.Body>
+          </ui:OpenBrowser>
+        </Sequence>
+      </TryCatch.Try>
+      <TryCatch.Catches>
+        <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch`1_1">
+          <ActivityAction x:TypeArguments="s:Exception">
+            <ActivityAction.Argument>
+              <DelegateInArgument x:TypeArguments="s:Exception" Name="exception" />
+            </ActivityAction.Argument>
+            <Sequence DisplayName="Exception" sap2010:WorkflowViewState.IdRef="Sequence_4">
+              <ui:LogMessage DisplayName="Log Message - Login eror" sap2010:WorkflowViewState.IdRef="LogMessage_4" Level="Error" Message="[&quot;Failed to succesfully sign into mySI-net&quot;]" />
+              <ui:LogMessage DisplayName="Log Message - Error message" sap2010:WorkflowViewState.IdRef="LogMessage_5" Level="Error" Message="[&quot;Error message: '&quot; + exception.Message + &quot;' source: '&quot; + exception.Source + &quot;'&quot;]" />
+              <Throw DisplayName="Throw Login Exception" Exception="[new applicationexception(&quot;Application error while signing into mySI-net during initialisation step. &quot;)]" sap2010:WorkflowViewState.IdRef="Throw_1" />
+            </Sequence>
+          </ActivityAction>
+        </Catch>
+      </TryCatch.Catches>
+    </TryCatch>
+    <sads:DebugSymbol.Symbol>d2NEOlxDbGllbnRzXFVRXERFVlxScGFVaVBhdGhQcm9jZXNzXFByb2Nlc3Nlc1xVUUdTX0VPTV9wcm9jX1NJbmV0RHVlRGF0ZVVwZGF0ZV8xLjBcU0ktbmV0XExvZ2luLnhhbWxAUAPdAQ4CAQFRBdsBEAIBAlMJywEUAgEM0wEN1wEYAgEDVTpVaQIBEVg6WG8CAQ9bOltzAgENXQtjIwIBTGQLaiMCAURrC2uIAgIBQGwLygEcAgET1AEP1AHFAQIBCtUBD9UBgQICAQbWAQ/WAeUBAgEEYVNhXwIBUmBMYFoCAVBfTF9YAgFOXcQBXeYBAgFNaFNoXwIBSmdMZ1oCAUhmTGZYAgFGZMoBZOwBAgFFa4UBa4UCAgFBbMUBbIMCAgE9chHHARwCARTUAYoB1AHCAQIBC9UBjQHVAf4BAgEH1gFE1gG4AQIBBXMTogEaAgEmowETpwEsAgEkqAETqAHSAQIBIqkBE60BIQIBHq4BE7IBJwIBGbMBE8EBHgIBF8IBE8YBLAIBFXQVmAEiAgErmQEVoQEiAgEnpQFtpQGdAQIBJagBmAGoAc8BAgEjqQG+AakBzAECAR+rAW2rAZkBAgEhsAFtsAGVAQIBHa4BiwGuAZABAgEcrgGGAq4BlAICARq/AW2/AY0BAgEYxAFtxAGhAQIBFnYZei4CATp8F5cBIgIBLJsBGZ8BLgIBKHheeJkBAgE8eKQBeKsBAgE7fRl9yAECATh+GYIBJwIBNIMBGYcBLQIBL4gBGZYBJAIBLZ0BXp0BjgECASqdAZkBnQGfAQIBKX2YAX3FAQIBOX6+AX7MAQIBNYABc4ABnwECATeFAXOFAZ8BAgEzgwGRAYMBlgECATKDAYYCgwGUAgIBMJQBc5QBoAECAS4=</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -239,7 +261,46 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Login_1" sap:VirtualizedContainerService.HintSize="962,2390" />
+      <sap2010:ViewStateData Id="LogMessage_4" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="LogMessage_5" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="Throw_1" sap:VirtualizedContainerService.HintSize="314,22" />
+      <sap2010:ViewStateData Id="Sequence_4" sap:VirtualizedContainerService.HintSize="336,408">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Catch`1_1" sap:VirtualizedContainerService.HintSize="926,477">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="940,3097">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Sequence_5" sap:VirtualizedContainerService.HintSize="962,3221">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Login_1" sap:VirtualizedContainerService.HintSize="1002,3301">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="ShouldExpandAll">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>

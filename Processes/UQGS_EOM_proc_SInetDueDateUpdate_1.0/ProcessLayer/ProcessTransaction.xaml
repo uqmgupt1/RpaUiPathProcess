@@ -16,6 +16,8 @@
     <x:Property Name="io_TransactionItem" Type="InOutArgument(ui:QueueItem)" />
     <x:Property Name="in_TransactionNumber" Type="InArgument(x:Int32)" />
     <x:Property Name="in_RetryNumber" Type="InArgument(x:Int32)" />
+    <x:Property Name="in_studentID" Type="InArgument(x:String)" />
+    <x:Property Name="in_caseID" Type="InArgument(x:String)" />
   </x:Members>
   <mva:VisualBasic.Settings>
     <x:Null />
@@ -77,6 +79,7 @@
       <AssemblyReference>UiPath.Mail</AssemblyReference>
       <AssemblyReference>UiPath.PDF</AssemblyReference>
       <AssemblyReference>UiPath.Word</AssemblyReference>
+      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <TryCatch sap2010:Annotation.AnnotationText="##Business Process Layer##&#xA;Description: In this file all other process specific files will be invoked. If an application exception occurs, the current transaction can be retried. If a BRE is thrown, the transaction will be skipped. Can be a flowchart or sequence. " DisplayName="wbProcess" sap2010:WorkflowViewState.IdRef="TryCatch_4">
@@ -142,7 +145,8 @@
           <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke NavToChecklistManagementStudent workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_3" UnSafe="False" WorkflowFileName="SI-net\NavToChecklistManagementStudent.xaml">
             <ui:InvokeWorkflowFile.Arguments>
               <InArgument x:TypeArguments="x:String" x:Key="in_checkListCode">CANCON</InArgument>
-              <InArgument x:TypeArguments="x:String" x:Key="in_studentID">[io_TransactionItem.SpecificContent("StudentId").ToString]</InArgument>
+              <InArgument x:TypeArguments="x:String" x:Key="in_studentID">[in_studentID]</InArgument>
+              <InArgument x:TypeArguments="x:String" x:Key="in_caseID">[in_caseID]</InArgument>
             </ui:InvokeWorkflowFile.Arguments>
           </ui:InvokeWorkflowFile>
           <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke UpdateChecklistIManagement_1 workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_4" UnSafe="False" WorkflowFileName="SI-net\UpdateChecklistIManagement_1.xaml">
@@ -151,12 +155,16 @@
               <InArgument x:TypeArguments="x:Int32" x:Key="in_partTimeExtension">[Convert.ToInt32 (in_Config("partTimeExtension").ToString)]</InArgument>
               <InArgument x:TypeArguments="x:Int32" x:Key="in_fullTimeExtension">[Convert.ToInt32 (in_Config("fullTimeExtension").ToString)]</InArgument>
               <OutArgument x:TypeArguments="x:String" x:Key="out_dueDateNew">[updatedDueDate]</OutArgument>
+              <InArgument x:TypeArguments="x:String" x:Key="in_studentID">[in_studentID]</InArgument>
+              <InArgument x:TypeArguments="x:String" x:Key="in_caseID">[in_caseID]</InArgument>
             </ui:InvokeWorkflowFile.Arguments>
           </ui:InvokeWorkflowFile>
           <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke UpdateChecklistManagement_2 workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_5" UnSafe="False" WorkflowFileName="SI-net\UpdateChecklistManagement_2.xaml">
             <ui:InvokeWorkflowFile.Arguments>
-              <InArgument x:TypeArguments="x:String" x:Key="in_studentID">[io_TransactionItem.SpecificContent("StudentId").ToString]</InArgument>
+              <InArgument x:TypeArguments="x:String" x:Key="in_studentID">[in_studentID]</InArgument>
               <InArgument x:TypeArguments="x:String" x:Key="in_dueDateNew">[updatedDueDate]</InArgument>
+              <InArgument x:TypeArguments="x:String" x:Key="in_caseID">[in_caseID]</InArgument>
+              <InArgument x:TypeArguments="x:String" x:Key="in_responsibleID">[io_transactionItem.SpecificContent("UserID").ToString]</InArgument>
             </ui:InvokeWorkflowFile.Arguments>
           </ui:InvokeWorkflowFile>
         </Sequence>
@@ -222,7 +230,7 @@
         </ActivityAction>
       </Catch>
     </TryCatch.Catches>
-    <sads:DebugSymbol.Symbol>d3ZEOlxDbGllbnRzXFVRXERFVlxScGFVaVBhdGhQcm9jZXNzXFByb2Nlc3Nlc1xVUUdTX0VPTV9wcm9jX1NJbmV0RHVlRGF0ZVVwZGF0ZV8xLjBcUHJvY2Vzc0xheWVyXFByb2Nlc3NUcmFuc2FjdGlvbi54YW1sR1ID4gEOAgEBWQe3ARICAR+/AQvdARYCAQJaCYQBFAIBQoUBCaIBFAIBLKMBCbYBFAIBIMABDdsBGAIBBNwBDdwBRQIBA1sLYhQCAWFjC2oUAgFZawtyFAIBVXMLfR0CAUp+C4IBHQIBRoMBC4MBuQECAUOJAQuNASMCAT6OAQuTASMCATqUAQubASMCATKcAQuhASMCAS2kAQuqAR0CASirAQuvAR0CASewAQu0ASUCASS1AQu1AcIBAgEhwQEPyQEhAgEXygEP2QEUAgEJ2gEP2gHkAQIBBWA2YEgCAWRdN10/AgFiaDZohgECAVxlN2U/AgFacDhwRgIBWG05bUYCAVZ3RHdbAgFUdkt2xAECAVN7Snt5AgFRdUV1TQIBT3hFeE0CAU16RnpPAgFMeUV5ZgIBS4ABS4ABggECAUeDAYoBgwG2AQIBRIsBYosBbQIBQIkBzwGJAfkBAgE/kQFLkQGFAQIBPZABT5ABVQIBPI4B0gGOAf8BAgE7lwFSlwGNAQIBOZkBTpkBXgIBN5gBUpgBjQECATaWAVWWAWkCATSUAc8BlAH5AQIBM54BS54BhQECATGfAUyfAVwCAS+cAc4BnAH3AQIBLqYBR6YBUQIBK6cBRqcBSwIBKqgBTKgBhgECASmwAc0CsAHjAgIBJbUBiAG1Ab8BAgEiwwFLwwFRAgEexAFKxAFPAgEdxwFVxwFoAgEbxQFQxQGKAQIBGsYBUsYBagIBGMoBHcoBjQECAQrMARPQAS0CARLTARPXAS0CAQ3aAY0B2gHhAQIBBswBsQLMAcYCAgEVzAHnAswB/QICARPTAa0C0wHCAgIBENMB4wLTAfkCAgEO</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d3ZEOlxDbGllbnRzXFVRXERFVlxScGFVaVBhdGhQcm9jZXNzXFByb2Nlc3Nlc1xVUUdTX0VPTV9wcm9jX1NJbmV0RHVlRGF0ZVVwZGF0ZV8xLjBcUHJvY2Vzc0xheWVyXFByb2Nlc3NUcmFuc2FjdGlvbi54YW1sTFUD6gEOAgEBXAe/ARICAR/HAQvlARYCAQJdCYcBFAIBTYgBCaoBFAIBLKsBCb4BFAIBIMgBDeMBGAIBBOQBDeQBRQIBA14LZRQCAWxmC20UAgFkbgt1FAIBYHYLgAEdAgFVgQELhQEdAgFRhgELhgG5AQIBTowBC5ABIwIBSZEBC5cBIwIBQpgBC6EBIwIBNqIBC6kBIwIBLawBC7IBHQIBKLMBC7cBHQIBJ7gBC7wBJQIBJL0BC70BwgECASHJAQ/RASECARfSAQ/hARQCAQniAQ/iAeQBAgEFYzZjSAIBb2A3YD8CAW1rNmuGAQIBZ2g3aD8CAWVzOHNGAgFjcDlwRgIBYXpEelsCAV95S3nEAQIBXn5KfnkCAVx4RXhNAgFae0V7TQIBWH1GfU8CAVd8RXxmAgFWgwFLgwGCAQIBUoYBigGGAbYBAgFPjgFijgFtAgFLjAHPAYwB+QECAUqVAUiVAVMCAUeUAUuUAVkCAUWTAU+TAVUCAUSRAdIBkQH/AQIBQ58BSJ8BUwIBQJ4BS54BWQIBPpsBUpsBjQECAT2dAU6dAV4CATucAVKcAY0BAgE6mgFVmgFpAgE4mAHPAZgB+QECATemAUimAVMCATSkAUukAVkCATKlAUylAVwCATCnAU+nAYYBAgEvogHOAaIB9wECAS6uAUeuAVECASuvAUavAUsCASqwAUywAYYBAgEpuAHNArgB4wICASW9AYgBvQG/AQIBIssBS8sBUQIBHswBSswBTwIBHc8BVc8BaAIBG80BUM0BigECARrOAVLOAWoCARjSAR3SAY0BAgEK1AET2AEtAgES2wET3wEtAgEN4gGNAeIB4QECAQbUAbEC1AHGAgIBFdQB5wLUAf0CAgET2wGtAtsBwgICARDbAeMC2wH5AgIBDg==</sads:DebugSymbol.Symbol>
   </TryCatch>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
