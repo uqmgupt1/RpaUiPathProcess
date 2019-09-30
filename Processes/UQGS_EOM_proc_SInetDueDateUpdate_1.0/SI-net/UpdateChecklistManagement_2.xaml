@@ -14,6 +14,7 @@
     <x:Property Name="in_dueDateNew" Type="InArgument(x:String)" />
     <x:Property Name="in_caseID" Type="InArgument(x:String)" />
     <x:Property Name="in_responsibleID" Type="InArgument(x:String)" />
+    <x:Property Name="in_config" Type="InArgument(scg:Dictionary(x:String, x:Object))" />
   </x:Members>
   <mva:VisualBasic.Settings>
     <x:Null />
@@ -42,6 +43,7 @@
       <x:String>System.Windows.Markup</x:String>
       <x:String>UiPath.Core</x:String>
       <x:String>UiPath.Core.Activities</x:String>
+      <x:String>System.Xml.Serialization</x:String>
     </sco:Collection>
   </TextExpression.NamespacesForImplementation>
   <TextExpression.ReferencesForImplementation>
@@ -71,6 +73,8 @@
       <AssemblyReference>UiPath.Word</AssemblyReference>
       <AssemblyReference>System.ComponentModel.Composition</AssemblyReference>
       <AssemblyReference>UiPath.Studio.Plugin.Workflow</AssemblyReference>
+      <AssemblyReference>System.Collections.Immutable</AssemblyReference>
+      <AssemblyReference>Microsoft.VisualStudio.Services.Common</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence sap2010:Annotation.AnnotationText="This file will update the second tab on the 'Checklist Management - Person' page. On this page we update the 'Item', 'Due Date' and 'Responsible ID' fields. The 'Item' field is updated depending on it's current value, if that value is unexpected we throw a BRE.&#xA;Because the 'Responsible ID' field is part of the 'Extra Details' drop down we first check to see if we can find the element before clicking the drop down arrow.&#xA;On completion we should have successfully updated all fields, saved the changes and navigated back to the home page. If there was an error trying to save, we won't successfully navigate to the home page in which case we throw a BRE.&#xA;Inputs:&#xA;studentID&#xA;caseID&#xA;responsibleID&#xA;dueDateNew - this is the updated due date passed in from update checklist tab 1" DisplayName="UpdateChecklistManagement_2" sap2010:WorkflowViewState.IdRef="Sequence_12">
@@ -85,11 +89,20 @@
               <Variable x:TypeArguments="x:String" Name="itemValueCurrent" />
               <Variable x:TypeArguments="x:Boolean" Name="homePageFound" />
               <Variable x:TypeArguments="x:String" Name="itemValueNew" />
-              <Variable x:TypeArguments="x:String" Name="dueDateCurrent" />
+              <Variable x:TypeArguments="x:String" Name="allowedDueDate" />
               <Variable x:TypeArguments="x:Boolean" Name="responsibleIdFound" />
+              <Variable x:TypeArguments="x:Int32" Default="0" Name="index" />
+              <Variable x:TypeArguments="x:Boolean" Name="elementExists" />
+              <Variable x:TypeArguments="x:String" Name="dynamicSelector" />
+              <Variable x:TypeArguments="x:String" Name="allowedItem">
+                <Variable.Default>
+                  <Literal x:TypeArguments="x:String" Value="" />
+                </Variable.Default>
+              </Variable>
+              <Variable x:TypeArguments="x:Int32" Name="allowedIndex" />
             </Sequence.Variables>
             <ui:LogMessage DisplayName="Log Message - updating 'Checklist Management 2' tab" sap2010:WorkflowViewState.IdRef="LogMessage_9" Level="Info" Message="[&quot;Updating 'Checklist Management 2' page&quot;]" />
-            <ui:Click ClickType="CLICK_SINGLE" DelayBefore="3000" DelayMS="5000" DisplayName="Click 'Checklist Management 2' tab" sap2010:WorkflowViewState.IdRef="Click_4" KeyModifiers="None" MouseButton="BTN_LEFT" SendWindowMessages="True" SimulateClick="False">
+            <ui:Click DelayBefore="{x:Null}" ClickType="CLICK_SINGLE" DelayMS="2000" DisplayName="Click 'Checklist Management 2' tab" sap2010:WorkflowViewState.IdRef="Click_4" KeyModifiers="None" MouseButton="BTN_LEFT" SendWindowMessages="True" SimulateClick="False">
               <ui:Click.CursorPosition>
                 <ui:CursorPosition Position="Center">
                   <ui:CursorPosition.OffsetX>
@@ -104,23 +117,84 @@
                 <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="&lt;webctrl aaname='Checklist Management 2' /&gt;" WaitForReady="COMPLETE" />
               </ui:Click.Target>
             </ui:Click>
-            <ui:GetValue ContinueOnError="{x:Null}" DisplayName="Get 'Due Date' value" sap2010:WorkflowViewState.IdRef="GetValue_4">
-              <ui:GetValue.Target>
-                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="&lt;webctrl tag='INPUT' aaname='Due Date' /&gt;" WaitForReady="COMPLETE" />
-              </ui:GetValue.Target>
-              <ui:GetValue.Value>
-                <OutArgument x:TypeArguments="x:String">[dueDateCurrent]</OutArgument>
-              </ui:GetValue.Value>
-            </ui:GetValue>
-            <ui:GetValue ContinueOnError="{x:Null}" DisplayName="Get 'Item' value" sap2010:WorkflowViewState.IdRef="GetValue_3">
-              <ui:GetValue.Target>
-                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="&lt;webctrl tag='INPUT' aaname='Item' /&gt;" WaitForReady="COMPLETE" />
-              </ui:GetValue.Target>
-              <ui:GetValue.Value>
-                <OutArgument x:TypeArguments="x:String">[itemValueCurrent]</OutArgument>
-              </ui:GetValue.Value>
-            </ui:GetValue>
-            <Switch x:TypeArguments="x:String" DisplayName="Switch - get update for current 'Item' value" Expression="[itemValueCurrent.ToUpper]" sap2010:WorkflowViewState.IdRef="Switch`1_1">
+            <DoWhile DisplayName="Do While" sap2010:WorkflowViewState.IdRef="DoWhile_1" Condition="[elementExists]">
+              <Sequence sap2010:WorkflowViewState.IdRef="Sequence_28">
+                <Assign DisplayName="Create a dynamic selector for fetching items" sap2010:WorkflowViewState.IdRef="Assign_32">
+                  <Assign.To>
+                    <OutArgument x:TypeArguments="x:String">[dynamicSelector]</OutArgument>
+                  </Assign.To>
+                  <Assign.Value>
+                    <InArgument x:TypeArguments="x:String">["&lt;webctrl id='"+"PERSON_CHK_ITEM_CHKLST_ITEM_CD$"+index.ToString+"' tag='INPUT' /&gt;"]</InArgument>
+                  </Assign.Value>
+                </Assign>
+                <ui:UiElementExists DisplayName="Element Exists : Check 'Checklist Item' one by one" Exists="[elementExists]" sap2010:WorkflowViewState.IdRef="UiElementExists_6">
+                  <ui:UiElementExists.Target>
+                    <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" InformativeScreenshot="1335a1ee1f3714663341c78caa2491f0" Selector="[dynamicSelector]" TimeoutMS="3000" WaitForReady="INTERACTIVE" />
+                  </ui:UiElementExists.Target>
+                </ui:UiElementExists>
+                <If Condition="[elementExists]" sap2010:WorkflowViewState.IdRef="If_8">
+                  <If.Then>
+                    <Sequence DisplayName="Get the Item value and check in allowed item list from config file" sap2010:WorkflowViewState.IdRef="Sequence_21">
+                      <ui:GetValue ContinueOnError="{x:Null}" DisplayName="Get 'Item' value" sap2010:WorkflowViewState.IdRef="GetValue_9">
+                        <ui:GetValue.Target>
+                          <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="[dynamicSelector]" WaitForReady="COMPLETE" />
+                        </ui:GetValue.Target>
+                        <ui:GetValue.Value>
+                          <OutArgument x:TypeArguments="x:String">[itemValueCurrent]</OutArgument>
+                        </ui:GetValue.Value>
+                      </ui:GetValue>
+                      <If Condition="[in_config(&quot;allowedItemList&quot;).ToString.Contains(itemValueCurrent)]" sap2010:WorkflowViewState.IdRef="If_9">
+                        <If.Then>
+                          <Sequence DisplayName="If the Item value is allowed store the index and find the due date" sap2010:WorkflowViewState.IdRef="Sequence_33">
+                            <Assign sap2010:WorkflowViewState.IdRef="Assign_30">
+                              <Assign.To>
+                                <OutArgument x:TypeArguments="x:String">[allowedItem]</OutArgument>
+                              </Assign.To>
+                              <Assign.Value>
+                                <InArgument x:TypeArguments="x:String">[itemValueCurrent]</InArgument>
+                              </Assign.Value>
+                            </Assign>
+                            <Assign sap2010:WorkflowViewState.IdRef="Assign_31">
+                              <Assign.To>
+                                <OutArgument x:TypeArguments="x:Int32">[allowedIndex]</OutArgument>
+                              </Assign.To>
+                              <Assign.Value>
+                                <InArgument x:TypeArguments="x:Int32">[index]</InArgument>
+                              </Assign.Value>
+                            </Assign>
+                            <Assign sap2010:WorkflowViewState.IdRef="Assign_22">
+                              <Assign.To>
+                                <OutArgument x:TypeArguments="x:String">[dynamicSelector]</OutArgument>
+                              </Assign.To>
+                              <Assign.Value>
+                                <InArgument x:TypeArguments="x:String">["&lt;webctrl id='"+"PERSON_CHK_ITEM_DUE_DT$"+index.ToString+"' tag='INPUT' /&gt;"]</InArgument>
+                              </Assign.Value>
+                            </Assign>
+                            <ui:GetValue ContinueOnError="{x:Null}" DisplayName="Get 'Due Date' value" sap2010:WorkflowViewState.IdRef="GetValue_10">
+                              <ui:GetValue.Target>
+                                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="[dynamicSelector]" WaitForReady="COMPLETE" />
+                              </ui:GetValue.Target>
+                              <ui:GetValue.Value>
+                                <OutArgument x:TypeArguments="x:String">[allowedDueDate]</OutArgument>
+                              </ui:GetValue.Value>
+                            </ui:GetValue>
+                          </Sequence>
+                        </If.Then>
+                      </If>
+                      <Assign DisplayName="Assign - increment index" sap2010:WorkflowViewState.IdRef="Assign_18">
+                        <Assign.To>
+                          <OutArgument x:TypeArguments="x:Int32">[index]</OutArgument>
+                        </Assign.To>
+                        <Assign.Value>
+                          <InArgument x:TypeArguments="x:Int32">[index+1]</InArgument>
+                        </Assign.Value>
+                      </Assign>
+                    </Sequence>
+                  </If.Then>
+                </If>
+              </Sequence>
+            </DoWhile>
+            <Switch x:TypeArguments="x:String" DisplayName="Switch - get update for allowed 'Item' value" Expression="[allowedItem.ToUpper]" sap2010:WorkflowViewState.IdRef="Switch`1_1">
               <Switch.Default>
                 <Sequence DisplayName="'Item' value is invalid" sap2010:WorkflowViewState.IdRef="Sequence_8">
                   <ui:LogMessage DisplayName="Log Message - Invalid 'Item' code" sap2010:WorkflowViewState.IdRef="LogMessage_6" Level="Error" Message="[&quot;Item code: '&quot; + itemValueCurrent + &quot;' is invalid&quot;]" />
@@ -192,14 +266,30 @@
                 </Assign.Value>
               </Assign>
             </Switch>
-            <ui:LogMessage DisplayName="Log Message - update 'Item' value" sap2010:WorkflowViewState.IdRef="LogMessage_10" Level="Info" Message="[&quot;Updating 'Item' value from: '&quot; + itemValueCurrent + &quot;' to: '&quot; + itemValueNew + &quot;'&quot;]" />
-            <ui:SetValue ContinueOnError="{x:Null}" DelayAfter="5000" DelayBefore="3000" DisplayName="Update 'Item' value" sap2010:WorkflowViewState.IdRef="SetValue_5" Text="[itemValueNew]">
+            <ui:LogMessage DisplayName="Log Message - update 'Item' value" sap2010:WorkflowViewState.IdRef="LogMessage_10" Level="Info" Message="[&quot;Updating 'Item' value from: '&quot; + allowedItem + &quot;' to: '&quot; + itemValueNew + &quot;'&quot;]" />
+            <Assign DisplayName="Create a dynamic selector for allowed item" sap2010:WorkflowViewState.IdRef="Assign_23">
+              <Assign.To>
+                <OutArgument x:TypeArguments="x:String">[dynamicSelector]</OutArgument>
+              </Assign.To>
+              <Assign.Value>
+                <InArgument x:TypeArguments="x:String">["&lt;webctrl id='"+"PERSON_CHK_ITEM_CHKLST_ITEM_CD$"+allowedIndex.ToString+"' tag='INPUT' /&gt;"]</InArgument>
+              </Assign.Value>
+            </Assign>
+            <ui:SetValue ContinueOnError="{x:Null}" DelayAfter="{x:Null}" DelayBefore="{x:Null}" DisplayName="Update 'Item' value" sap2010:WorkflowViewState.IdRef="SetValue_8" Text="[itemValueNew]">
               <ui:SetValue.Target>
-                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="&lt;webctrl tag='INPUT' aaname='Item' /&gt;" WaitForReady="COMPLETE" />
+                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="[dynamicSelector]" WaitForReady="COMPLETE" />
               </ui:SetValue.Target>
             </ui:SetValue>
-            <ui:LogMessage DisplayName="Log Message - update 'Due Date'" sap2010:WorkflowViewState.IdRef="LogMessage_11" Level="Info" Message="[&quot;Updating 'Due Date' from: '&quot; + dueDateCurrent + &quot;' to: '&quot; + in_dueDateNew + &quot;'&quot;]" />
-            <ui:Click ClickType="CLICK_SINGLE" DelayBefore="3000" DelayMS="5000" DisplayName="Click 'Due Date'" sap2010:WorkflowViewState.IdRef="Click_5" KeyModifiers="None" MouseButton="BTN_LEFT" SendWindowMessages="True" SimulateClick="False">
+            <ui:LogMessage DisplayName="Log Message - update 'Due Date'" sap2010:WorkflowViewState.IdRef="LogMessage_11" Level="Info" Message="[&quot;Updating 'Due Date' from: '&quot; + allowedDueDate + &quot;' to: '&quot; + in_dueDateNew + &quot;'&quot;]" />
+            <Assign DisplayName="Create a dynamic selector for allowed due date" sap2010:WorkflowViewState.IdRef="Assign_24">
+              <Assign.To>
+                <OutArgument x:TypeArguments="x:String">[dynamicSelector]</OutArgument>
+              </Assign.To>
+              <Assign.Value>
+                <InArgument x:TypeArguments="x:String">["&lt;webctrl id='"+"PERSON_CHK_ITEM_DUE_DT$"+allowedIndex.ToString+"' tag='INPUT' /&gt;"]</InArgument>
+              </Assign.Value>
+            </Assign>
+            <ui:Click ClickType="CLICK_SINGLE" DelayBefore="1000" DelayMS="2000" DisplayName="Click 'Due Date'" sap2010:WorkflowViewState.IdRef="Click_9" KeyModifiers="None" MouseButton="BTN_LEFT" SendWindowMessages="True" SimulateClick="False">
               <ui:Click.CursorPosition>
                 <ui:CursorPosition Position="Center">
                   <ui:CursorPosition.OffsetX>
@@ -211,12 +301,12 @@
                 </ui:CursorPosition>
               </ui:Click.CursorPosition>
               <ui:Click.Target>
-                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="&lt;webctrl tag='INPUT' aaname='Due Date' /&gt;" WaitForReady="COMPLETE" />
+                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="[dynamicSelector]" WaitForReady="COMPLETE" />
               </ui:Click.Target>
             </ui:Click>
-            <ui:SetValue ContinueOnError="{x:Null}" DelayAfter="4000" DelayBefore="4000" DisplayName="Update 'Due Date'" sap2010:WorkflowViewState.IdRef="SetValue_6" Text="[in_dueDateNew]">
+            <ui:SetValue ContinueOnError="{x:Null}" DelayAfter="{x:Null}" DelayBefore="{x:Null}" DisplayName="Update 'Due Date'" sap2010:WorkflowViewState.IdRef="SetValue_9" Text="[in_dueDateNew]">
               <ui:SetValue.Target>
-                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="&lt;webctrl tag='INPUT' aaname='Due Date' /&gt;" WaitForReady="COMPLETE" />
+                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="[dynamicSelector]" WaitForReady="COMPLETE" />
               </ui:SetValue.Target>
             </ui:SetValue>
             <ui:LogMessage DisplayName="Log Message - update 'Responsible ID'" sap2010:WorkflowViewState.IdRef="LogMessage_19" Level="Info" Message="[&quot;Updating Responsible ID: '&quot; + in_responsibleID + &quot;'&quot;]" />
@@ -227,21 +317,40 @@
             </ui:UiElementExists>
             <If Condition="[NOT responsibleIdFound]" DisplayName="If element NOT found click 'Extra Details'" sap2010:WorkflowViewState.IdRef="If_5">
               <If.Then>
-                <ui:Click DelayBefore="{x:Null}" DelayMS="{x:Null}" ClickType="CLICK_SINGLE" DisplayName="Click 'Extra Details'" sap2010:WorkflowViewState.IdRef="Click_8" KeyModifiers="None" MouseButton="BTN_LEFT" SendWindowMessages="False" SimulateClick="True">
-                  <ui:Click.CursorPosition>
-                    <ui:CursorPosition Position="Center">
-                      <ui:CursorPosition.OffsetX>
-                        <InArgument x:TypeArguments="x:Int32" />
-                      </ui:CursorPosition.OffsetX>
-                      <ui:CursorPosition.OffsetY>
-                        <InArgument x:TypeArguments="x:Int32" />
-                      </ui:CursorPosition.OffsetY>
-                    </ui:CursorPosition>
-                  </ui:Click.CursorPosition>
-                  <ui:Click.Target>
-                    <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="&lt;webctrl aaname='Expand section Extra Details' /&gt;" WaitForReady="COMPLETE" />
-                  </ui:Click.Target>
-                </ui:Click>
+                <Sequence sap2010:WorkflowViewState.IdRef="Sequence_38">
+                  <Assign DisplayName="Create a dynamic selector for allowed 'Extra Details' section" sap2010:WorkflowViewState.IdRef="Assign_29">
+                    <Assign.To>
+                      <OutArgument x:TypeArguments="x:String">[dynamicSelector]</OutArgument>
+                    </Assign.To>
+                    <Assign.Value>
+                      <InArgument x:TypeArguments="x:String">["&lt;webctrl id='"+"*UQ_DRV_CHKLIST_UQ_CHK_ITM_ASN*$"+allowedIndex.ToString+"' tag='A' /&gt;"]</InArgument>
+                    </Assign.Value>
+                  </Assign>
+                  <ui:UiElementExists DisplayName="Element Exists 'Extra Details Section'" Exists="[elementExists]" sap2010:WorkflowViewState.IdRef="UiElementExists_8">
+                    <ui:UiElementExists.Target>
+                      <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" InformativeScreenshot="bdc4ea1149ca909a76ec3a43ed83e617" Selector="[dynamicSelector]" TimeoutMS="3000" WaitForReady="INTERACTIVE" />
+                    </ui:UiElementExists.Target>
+                  </ui:UiElementExists>
+                  <If Condition="[elementExists]" sap2010:WorkflowViewState.IdRef="If_12">
+                    <If.Then>
+                      <ui:Click DelayBefore="{x:Null}" DelayMS="{x:Null}" ClickType="CLICK_SINGLE" DisplayName="Click 'Extra Details'" sap2010:WorkflowViewState.IdRef="Click_10" KeyModifiers="None" MouseButton="BTN_LEFT" SendWindowMessages="False" SimulateClick="True">
+                        <ui:Click.CursorPosition>
+                          <ui:CursorPosition Position="Center">
+                            <ui:CursorPosition.OffsetX>
+                              <InArgument x:TypeArguments="x:Int32" />
+                            </ui:CursorPosition.OffsetX>
+                            <ui:CursorPosition.OffsetY>
+                              <InArgument x:TypeArguments="x:Int32" />
+                            </ui:CursorPosition.OffsetY>
+                          </ui:CursorPosition>
+                        </ui:Click.CursorPosition>
+                        <ui:Click.Target>
+                          <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="[dynamicSelector]" WaitForReady="COMPLETE" />
+                        </ui:Click.Target>
+                      </ui:Click>
+                    </If.Then>
+                  </If>
+                </Sequence>
               </If.Then>
             </If>
             <ui:WaitUiElementAppear FoundElement="{x:Null}" DisplayName="Find Element 'Responsible ID'" sap2010:WorkflowViewState.IdRef="WaitUiElementAppear_1" WaitActive="False" WaitVisible="False">
@@ -249,12 +358,12 @@
                 <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Selector="&lt;webctrl aaname='Responsible ID' /&gt;" TimeoutMS="10000" WaitForReady="COMPLETE" />
               </ui:WaitUiElementAppear.Target>
             </ui:WaitUiElementAppear>
-            <ui:SetValue ContinueOnError="{x:Null}" DelayAfter="3000" DelayBefore="3000" DisplayName="Update 'Responsible ID'" sap2010:WorkflowViewState.IdRef="SetValue_7" Text="[in_responsibleID]">
+            <ui:SetValue ContinueOnError="{x:Null}" DelayAfter="{x:Null}" DelayBefore="{x:Null}" DisplayName="Update 'Responsible ID'" sap2010:WorkflowViewState.IdRef="SetValue_7" Text="[in_responsibleID]">
               <ui:SetValue.Target>
                 <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="&lt;webctrl tag='INPUT' aaname='Responsible ID' /&gt;" WaitForReady="COMPLETE" />
               </ui:SetValue.Target>
             </ui:SetValue>
-            <ui:Click ClickType="CLICK_SINGLE" DelayBefore="2000" DelayMS="3000" DisplayName="Click 'Yes' to save changes" sap2010:WorkflowViewState.IdRef="Click_6" KeyModifiers="None" MouseButton="BTN_LEFT" SendWindowMessages="False" SimulateClick="True">
+            <ui:Click ClickType="CLICK_SINGLE" DelayBefore="1000" DelayMS="2000" DisplayName="Click 'Yes' to save changes" sap2010:WorkflowViewState.IdRef="Click_6" KeyModifiers="None" MouseButton="BTN_LEFT" SendWindowMessages="False" SimulateClick="True">
               <ui:Click.CursorPosition>
                 <ui:CursorPosition Position="Center">
                   <ui:CursorPosition.OffsetX>
@@ -304,14 +413,51 @@
         </ActivityAction>
       </ui:BrowserScope.Body>
     </ui:BrowserScope>
-    <sads:DebugSymbol.Symbol>d31DOlxVc2Vyc1x1cXJpbmdyYVxkZXZcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcVVFHU19FT01fcHJvY19TSW5ldER1ZURhdGVVcGRhdGVfMS4wXFNJLW5ldFxVcGRhdGVDaGVja2xpc3RNYW5hZ2VtZW50XzIueGFtbGZMA7QCDgIBAU0FsgIXAgECTe0BTbQCAwGCAVMLrwIWAgEDWw1b2wEDAYABXA1qGAIBfGsNchsCAXhzDXobAgF0ew3CARYCAUvDAQ3DAYkCAgFHxAENyAEbAgFByQENyQGEAgIBPcoBDdgBGAIBOdkBDd0BGwIBM94BDd4B5QECATDfAQ3jASICASvkAQ32ARICASb3AQ37ASYCASP8AQ2AAhsCAR2BAg2PAhgCARmQAg2eAhgCARefAg2jAiICARKkAg2uAhICAQRbogFb2AEDAYEBaGdomgECAX9cS1xRAgF+XDxcQgIBfXA5cEkCAXltZ22YAQIBe3g5eEsCAXV1Z3WUAQIBd3t2e5IBAgFMggEPiQEYAgFwigEPkQEYAgFskgEPmQEYAgFomgEPoQEYAgFkogEPqQEYAgFgqgEPsQEYAgFcsgEPuQEYAgFYugEPwQEYAgFUfRGAARwCAU7DAZEBwwGGAgIBSMQBQMQBRgIBRcQBrgHEAb4BAgFDxAFTxAFZAgFCxgFnxgGUAQIBRskBjwHJAYECAgE+1gFn1gGYAQIBPMoBS8oBUQIBO8oBPMoBQgIBOtkBQNkBRgIBN9kBrAHZAb0BAgE12QFT2QFZAgE02wFn2wGYAQIBON4BlQHeAeIBAgEx4QGLAeEBtgECAS/hAcEB4QHHAQIBLt8BVt8BbAIBLOQBG+QBNQIBJ+YBEfQBHAIBKfkBUvkBfQIBJfkBiAH5AY8BAgEk/AFA/AFGAgEh/AGyAfwBxgECAR/8AVP8AVkCAR7+AWf+AZ4BAgEijQJnjQKcAQIBHIECS4ECUQIBG4ECPIECQgIBGpwCZ5wCiAECARihAlKhArYBAgEWoQLBAaECyAECARWfAk+fAmACAROkAhukAjACAQWmAhGpAhwCAQusAhGsApsCAgEHhwE6hwFAAgFzhAE7hAFJAgFxjwE6jwFAAgFvjAE7jAFJAgFtlwE6lwFAAgFrlAE7lAFJAgFpnwE6nwFAAgFnnAE7nAFJAgFlpwE6pwFAAgFjpAE7pAFJAgFhrwE6rwFAAgFfrAE7rAFJAgFdtwE6twFAAgFbtAE7tAFJAgFZvwE6vwFAAgFXvAE7vAFJAgFVfhN+5AECAVF/E3+uAgIBT/IBa/IBpAECASqnAhOnApICAgEOqAITqAKQAgIBDKwCkwGsApgCAgEIfpcBfuEBAgFSfzx/gQICAVCnApABpwKPAgIBD6gCPKgC4wECAQ0=</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d4EBQzpcVXNlcnNcdXFzam9zZTZcd29ya3NwYWNlc1xGT1JLXFJwYVVpUGF0aFByb2Nlc3MgLSBHRUNcUHJvY2Vzc2VzXFVRR1NfR0VDX3Byb2NfMS4wXFNJLW5ldFx0ZW1wXFVwZGF0ZUNoZWNrbGlzdE1hbmFnZW1lbnRfMi54YW1sjQFQA6EDDgIBAVEFnwMXAgECUe0BUbQCAwHIAVcLnAMWAgEDXjtePgIBBWMTY0ICAQRoDWjbAQMBxgFpDXcYAwHDAXgNxAEXAwGNAcUBDYwCFgIBZI0CDY0ChAICAWCOAg2VAhYCAVuWAg2aAhsCAVabAg2bAoQCAgFSnAINowIWAgFNpAINsgIYAgFIswINtwIbAgFDuAINuALlAQIBQLkCDb0CIgIBO74CDeMCEgIBJuQCDegCJgIBI+kCDe0CGwIBH+4CDfwCGAIBG/0CDYsDGAIBGYwDDZADIgIBFJEDDZsDEgIBBmiiAWjYAQMBxwF1Z3WaAQMBxQFpT2lVAwHEAXhjeHQDAcEBeQ/DARoDAY4BxQF2xQGNAQIBZcwBD9MBGAMBiQHUAQ/bARgDAYUB3AEP4wEYAwGBAeQBD+sBGAIBfewBD/MBGAIBefQBD/sBGAIBdfwBD4MCGAIBcYQCD4sCGAIBbccBEcoBHAIBZ40CkQGNAoECAgFhkwI4kwKaAQIBXpACOZACSgIBXJYCtgGWAsYBAgFXmAJnmAJ6AgFZmwKPAZsCgQICAVOhAjihApIBAgFQngI5ngJKAgFOsAJnsAJ6AgFLpAJLpAJRAgFKpAI8pAJCAgFJswK0AbMCxQECAUS1Ame1AnoCAUa4ApUBuALiAQIBQbsCiwG7ArYBAgE/uwLBAbsCxwECAT65Ala5AmwCATy+Ahu+AjUCASfAAhHhAhwCASnmAlLmAn0CASXmAogB5gKPAQIBJOkCugHpAs4BAgEg6wJn6wKeAQIBIvoCZ/oCnAECAR7uAkvuAlECAR3uAjzuAkICARyJA2eJA4gBAgEajgNSjgO2AQIBGI4DwQGOA8gBAgEXjANPjANgAgEVkQMbkQMwAgEHkwMRlgMcAgENmQMRmQObAgIBCXoRgQEaAwG8AYIBEYYBJgMBtgGHARHCARYDAY8B0QE60QFAAwGMAc4BO84BSQMBigHZATrZAUADAYgB1gE71gFJAwGGAeEBOuEBQAMBhAHeATveAUkDAYIB6QE66QFAAwGAAeYBO+YBSQIBfvEBOvEBQAIBfO4BO+4BSQIBevkBOvkBQAIBePYBO/YBSQIBdoECOoECQAIBdP4BO/4BSQIBcokCOokCQAIBcIYCO4YCSQIBbsgBE8gB5AECAWrJARPJAa4CAgFowQITyAIcAgE2yQITzQIoAgEwzgIT4AIYAgEqlAMTlAOSAgIBEJUDE5UDkAICAQ6ZA5MBmQOYAgIBCn88f5cBAwG/AXw9fE4DAb0BhAGPAYQBogEDAboBhAGtAYQBswEDAbkBggFtggF+AwG3AYcBH4cBMAMBkAGJARXAASADAZIByAGXAcgB4QECAWvJATzJAYECAgFpxgI+xgKdAQIBOcMCP8MCUAIBN8sCkQHLAqQBAgE0ywKvAcsCtQECATPJAmPJAnQCATHOAiHOAjICASvQAhfeAiICAS2UA5ABlAOPAgIBEZUDPJUD4wECAQ+KAReRASUDAbEBkgEXtwEcAwGYAbgBF78BIAMBkwHcAnHcAoQBAgEujwFDjwFVAwGyAYwBcYwBhAEDAbQBkgElkgFzAwGZAZQBG7UBJgMBnAG9AUG9AUoDAZYBugFCugFJAwGUAZUBHZwBJgMBrAGdAR2kASYDAacBpQEdrAEmAwGiAa0BHbQBKwMBnQGaAUiaAVoDAa8BlwFJlwFWAwGtAaIBR6IBTgMBqgGfAUifAVYDAagBqgFIqgGbAQMBpQGnAUmnAVoDAaMBsgFJsgFZAwGeAa8Bd68BigEDAaAB</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
       <sap2010:ViewStateData Id="LogMessage_9" sap:VirtualizedContainerService.HintSize="675,91" />
-      <sap2010:ViewStateData Id="Click_4" sap:VirtualizedContainerService.HintSize="675,68" />
-      <sap2010:ViewStateData Id="GetValue_4" sap:VirtualizedContainerService.HintSize="675,68" />
-      <sap2010:ViewStateData Id="GetValue_3" sap:VirtualizedContainerService.HintSize="675,68" />
+      <sap2010:ViewStateData Id="Click_4" sap:VirtualizedContainerService.HintSize="675,68">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Assign_32" sap:VirtualizedContainerService.HintSize="611,60" />
+      <sap2010:ViewStateData Id="UiElementExists_6" sap:VirtualizedContainerService.HintSize="611,106" />
+      <sap2010:ViewStateData Id="GetValue_9" sap:VirtualizedContainerService.HintSize="464,68" />
+      <sap2010:ViewStateData Id="Assign_30" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="Assign_31" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="Assign_22" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="GetValue_10" sap:VirtualizedContainerService.HintSize="314,68" />
+      <sap2010:ViewStateData Id="Sequence_33" sap:VirtualizedContainerService.HintSize="336,492">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="If_9" sap:VirtualizedContainerService.HintSize="464,639" />
+      <sap2010:ViewStateData Id="Assign_18" sap:VirtualizedContainerService.HintSize="464,60" />
+      <sap2010:ViewStateData Id="Sequence_21" sap:VirtualizedContainerService.HintSize="486,971">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="If_8" sap:VirtualizedContainerService.HintSize="611,1118" />
+      <sap2010:ViewStateData Id="Sequence_28" sap:VirtualizedContainerService.HintSize="633,1488">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="DoWhile_1" sap:VirtualizedContainerService.HintSize="675,1649" />
       <sap2010:ViewStateData Id="LogMessage_6" sap:VirtualizedContainerService.HintSize="314,91" />
       <sap2010:ViewStateData Id="Throw_4" sap:VirtualizedContainerService.HintSize="314,22" />
       <sap2010:ViewStateData Id="Sequence_8" sap:VirtualizedContainerService.HintSize="336,277">
@@ -332,19 +478,23 @@
       <sap2010:ViewStateData Id="Switch`1_1" sap:VirtualizedContainerService.HintSize="675,1460">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
             <x:Boolean x:Key="IsPinned">False</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="LogMessage_10" sap:VirtualizedContainerService.HintSize="675,91" />
-      <sap2010:ViewStateData Id="SetValue_5" sap:VirtualizedContainerService.HintSize="675,96" />
+      <sap2010:ViewStateData Id="Assign_23" sap:VirtualizedContainerService.HintSize="675,60" />
+      <sap2010:ViewStateData Id="SetValue_8" sap:VirtualizedContainerService.HintSize="675,96" />
       <sap2010:ViewStateData Id="LogMessage_11" sap:VirtualizedContainerService.HintSize="675,91" />
-      <sap2010:ViewStateData Id="Click_5" sap:VirtualizedContainerService.HintSize="675,68" />
-      <sap2010:ViewStateData Id="SetValue_6" sap:VirtualizedContainerService.HintSize="675,96" />
+      <sap2010:ViewStateData Id="Assign_24" sap:VirtualizedContainerService.HintSize="675,60" />
+      <sap2010:ViewStateData Id="Click_9" sap:VirtualizedContainerService.HintSize="675,68" />
+      <sap2010:ViewStateData Id="SetValue_9" sap:VirtualizedContainerService.HintSize="675,96" />
       <sap2010:ViewStateData Id="LogMessage_19" sap:VirtualizedContainerService.HintSize="675,91" />
       <sap2010:ViewStateData Id="UiElementExists_5" sap:VirtualizedContainerService.HintSize="675,106" />
-      <sap2010:ViewStateData Id="Click_8" sap:VirtualizedContainerService.HintSize="314,68">
+      <sap2010:ViewStateData Id="Assign_29" sap:VirtualizedContainerService.HintSize="464,60" />
+      <sap2010:ViewStateData Id="UiElementExists_8" sap:VirtualizedContainerService.HintSize="464,106" />
+      <sap2010:ViewStateData Id="Click_10" sap:VirtualizedContainerService.HintSize="314,68">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -352,7 +502,15 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_5" sap:VirtualizedContainerService.HintSize="675,215" />
+      <sap2010:ViewStateData Id="If_12" sap:VirtualizedContainerService.HintSize="464,215" />
+      <sap2010:ViewStateData Id="Sequence_38" sap:VirtualizedContainerService.HintSize="486,585">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="If_5" sap:VirtualizedContainerService.HintSize="675,732" />
       <sap2010:ViewStateData Id="WaitUiElementAppear_1" sap:VirtualizedContainerService.HintSize="675,68" />
       <sap2010:ViewStateData Id="SetValue_7" sap:VirtualizedContainerService.HintSize="675,96" />
       <sap2010:ViewStateData Id="Click_6" sap:VirtualizedContainerService.HintSize="675,68" />
@@ -369,7 +527,7 @@
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="LogMessage_8" sap:VirtualizedContainerService.HintSize="314,91" />
       <sap2010:ViewStateData Id="If_4" sap:VirtualizedContainerService.HintSize="675,424" />
-      <sap2010:ViewStateData Id="Sequence_10" sap:VirtualizedContainerService.HintSize="697,4245">
+      <sap2010:ViewStateData Id="Sequence_10" sap:VirtualizedContainerService.HintSize="697,6435">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -377,8 +535,8 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="BrowserScope_1" sap:VirtualizedContainerService.HintSize="711,4353" />
-      <sap2010:ViewStateData Id="Sequence_12" sap:VirtualizedContainerService.HintSize="733,4654">
+      <sap2010:ViewStateData Id="BrowserScope_1" sap:VirtualizedContainerService.HintSize="711,6543" />
+      <sap2010:ViewStateData Id="Sequence_12" sap:VirtualizedContainerService.HintSize="733,6844">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -386,7 +544,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="UpdateChecklistManagement_2_1" sap:VirtualizedContainerService.HintSize="773,4734">
+      <sap2010:ViewStateData Id="UpdateChecklistManagement_2_1" sap:VirtualizedContainerService.HintSize="773,6924">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="ShouldExpandAll">True</x:Boolean>
