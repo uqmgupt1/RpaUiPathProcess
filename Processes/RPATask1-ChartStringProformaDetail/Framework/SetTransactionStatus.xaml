@@ -23,6 +23,7 @@
     <x:Property Name="in_TransactionSkipped" Type="InArgument(x:Int32)" />
     <x:Property Name="in_TransactionCounted" Type="InArgument(x:Int32)" />
     <x:Property Name="in_RuleException" Type="InArgument(WorkflowTerminatedException)" />
+    <x:Property Name="io_TransactionData" Type="InOutArgument(scg:List(ui:QueueItem))" />
   </x:Members>
   <mva:VisualBasic.Settings>
     <x:Null />
@@ -78,6 +79,7 @@
       <AssemblyReference>System.ValueTuple</AssemblyReference>
       <AssemblyReference>UiPath.Studio.Plugin.Workflow</AssemblyReference>
       <AssemblyReference>Newtonsoft.Json</AssemblyReference>
+      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence sap2010:Annotation.AnnotationText="This workflow sets the TransactionStatus and Logs that status and details in extra Logging Fields. &#xA;The flowchart branches out into the three possible Transaction Statuses: Success, Business Exception and Application Exception. &#xA;&#xA;Each branch analyzes the type of content of TransactionItem. If its not empty and is a QueueItem, then it means we are using a Orchestrator queue, so we must call the “Set Transaction Status” activity to inform Orchestrator about the outcome of our transaction. If TransactionItem is not a QueueItem, we can skip passing it and the “Set Transaction Status” activity will not be triggered. &#xA;&#xA;After that we log the result of the transaction within custom log fields to make it easier to search for within results. &#xA;&#xA;This workflow is also where incrementing of the io_TransactionNumber variable takes place. If we have an application exception and our MaxRetryNumber has not been reached, we increment the io_RetryNumber variable and not the io_TransactionNumber variables. This is done in the Robot Retry flowchart, which manages the retry mechanism of the framework and which is part of the &quot;Handle System Error&quot; sequence." DisplayName="SetTransactionStatus" sap2010:WorkflowViewState.IdRef="Sequence_11">
@@ -111,17 +113,27 @@
               </Catch>
             </TryCatch.Catches>
             <TryCatch.Finally>
-              <ui:SetTransactionStatus ContinueOnError="{x:Null}" Reason="{x:Null}" ServiceBaseAddress="{x:Null}" TimeoutMS="{x:Null}" DisplayName="Set Transaction Success" ErrorType="Business" Status="Successful" TransactionItem="[in_TransactionItem]">
-                <ui:SetTransactionStatus.Output>
-                  <InArgument x:TypeArguments="x:String" x:Key="RM Number">[in_TransactionRM]</InArgument>
-                  <InArgument x:TypeArguments="x:String" x:Key="Proforma Updated">[in_TransactionCounted.ToString]</InArgument>
-                  <InArgument x:TypeArguments="x:String" x:Key="Proforma Skipped">[in_TransactionSkipped.ToString]</InArgument>
-                </ui:SetTransactionStatus.Output>
-                <sap2010:WorkflowViewState.IdRef>SetTransactionStatus_1</sap2010:WorkflowViewState.IdRef>
-              </ui:SetTransactionStatus>
+              <Sequence sap2010:WorkflowViewState.IdRef="Sequence_12">
+                <ui:SetTransactionStatus ContinueOnError="{x:Null}" Reason="{x:Null}" ServiceBaseAddress="{x:Null}" TimeoutMS="{x:Null}" DisplayName="Set Transaction Success" ErrorType="Business" sap2010:WorkflowViewState.IdRef="SetTransactionStatus_1" Status="Successful" TransactionItem="[in_TransactionItem]">
+                  <ui:SetTransactionStatus.Output>
+                    <InArgument x:TypeArguments="x:String" x:Key="RM Number">[in_TransactionRM]</InArgument>
+                    <InArgument x:TypeArguments="x:String" x:Key="Proforma Updated">[in_TransactionCounted.ToString]</InArgument>
+                    <InArgument x:TypeArguments="x:String" x:Key="Proforma Skipped">[in_TransactionSkipped.ToString]</InArgument>
+                  </ui:SetTransactionStatus.Output>
+                </ui:SetTransactionStatus>
+                <Assign sap2010:WorkflowViewState.IdRef="Assign_22">
+                  <Assign.To>
+                    <OutArgument x:TypeArguments="ui:QueueItemStatus">[in_TransactionItem.Status]</OutArgument>
+                  </Assign.To>
+                  <Assign.Value>
+                    <InArgument x:TypeArguments="ui:QueueItemStatus">[QueueItemStatus.Successful]</InArgument>
+                  </Assign.Value>
+                </Assign>
+                <AddToCollection x:TypeArguments="ui:QueueItem" Collection="[io_TransactionData]" DisplayName="Add To Collection" Item="[in_TransactionItem]" sap2010:WorkflowViewState.IdRef="AddToCollection`1_2" />
+              </Sequence>
             </TryCatch.Finally>
           </TryCatch>
-          <ui:AppendLine DisplayName="Append Line" FileName="Test_Framework\debug_queueitem.json" Text="[&quot;In Progress&quot; + vbNewLine + JObject.Parse(JsonConvert.SerializeObject(in_TransactionItem)).ToString]" sap2010:WorkflowViewState.IdRef="AppendLine_1" />
+          <ui:AppendLine DisplayName="Append Line" FileName="Test_Framework\debug_queueitem.json" sap2010:WorkflowViewState.IdRef="AppendLine_1" Text="[&quot;In Progress&quot; + vbNewLine + JObject.Parse(JsonConvert.SerializeObject(in_TransactionItem)).ToString]" />
           <ui:AddLogFields DisplayName="Add Transaction log fields" sap2010:WorkflowViewState.IdRef="AddLogFields_3">
             <ui:AddLogFields.Fields>
               <InArgument x:TypeArguments="x:String" x:Key="logF_TransactionStatus">Success</InArgument>
@@ -170,14 +182,14 @@
                   </Catch>
                 </TryCatch.Catches>
                 <TryCatch.Finally>
-                  <ui:SetTransactionStatus ContinueOnError="{x:Null}" ServiceBaseAddress="{x:Null}" TimeoutMS="{x:Null}" Details="[in_RuleException.InnerException.ToString]" DisplayName="Set Transaction Rule Exception" ErrorType="Business" sap2010:WorkflowViewState.IdRef="SetTransactionStatus_2" Reason="[in_RuleException.Message]" Status="Failed" TransactionItem="[in_TransactionItem]">
+                  <ui:SetTransactionStatus ContinueOnError="{x:Null}" ServiceBaseAddress="{x:Null}" TimeoutMS="{x:Null}" Details="[in_RuleException.ToString]" DisplayName="Set Transaction Rule Exception" ErrorType="Business" sap2010:WorkflowViewState.IdRef="SetTransactionStatus_2" Reason="[in_RuleException.Message]" Status="Failed" TransactionItem="[in_TransactionItem]">
                     <ui:SetTransactionStatus.Output>
                       <scg:Dictionary x:TypeArguments="x:String, InArgument" />
                     </ui:SetTransactionStatus.Output>
                   </ui:SetTransactionStatus>
                 </TryCatch.Finally>
               </TryCatch>
-              <ui:AppendLine DisplayName="Append Line" FileName="Test_Framework\debug_queueitem.json" Text="[&quot;In Progress&quot; + vbNewLine + JObject.Parse(JsonConvert.SerializeObject(in_TransactionItem)).ToString]" sap2010:WorkflowViewState.IdRef="AppendLine_2" />
+              <ui:AppendLine DisplayName="Append Line" FileName="Test_Framework\debug_queueitem.json" sap2010:WorkflowViewState.IdRef="AppendLine_2" Text="[&quot;In Progress&quot; + vbNewLine + JObject.Parse(JsonConvert.SerializeObject(in_TransactionItem)).ToString]" />
               <ui:AddLogFields DisplayName="Add Transaction log fields" sap2010:WorkflowViewState.IdRef="AddLogFields_4">
                 <ui:AddLogFields.Fields>
                   <InArgument x:TypeArguments="x:String" x:Key="logF_TransactionStatus">Success</InArgument>
@@ -186,7 +198,7 @@
                   <InArgument x:TypeArguments="x:String" x:Key="logF_TransactionRM">[in_TransactionRM]</InArgument>
                 </ui:AddLogFields.Fields>
               </ui:AddLogFields>
-              <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Error" Message="[in_Config(&quot;LogMessage_BusinessRuleException&quot;).ToString + in_RuleException.Message]" />
+              <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Warn" Message="[in_RuleException.Message]" />
               <ui:RemoveLogFields DisplayName="Remove Transaction log fields" sap2010:WorkflowViewState.IdRef="RemoveLogFields_8">
                 <ui:RemoveLogFields.Fields>
                   <scg:List x:TypeArguments="InArgument(x:String)" Capacity="8">
@@ -227,14 +239,14 @@
                   </Catch>
                 </TryCatch.Catches>
                 <TryCatch.Finally>
-                  <ui:SetTransactionStatus ContinueOnError="{x:Null}" ServiceBaseAddress="{x:Null}" TimeoutMS="{x:Null}" Details="[in_SystemError.InnerException.ToString]" DisplayName="Set Transaction System Error" ErrorType="Application" sap2010:WorkflowViewState.IdRef="SetTransactionStatus_3" Reason="[in_SystemError.Message]" Status="Failed" TransactionItem="[in_TransactionItem]">
+                  <ui:SetTransactionStatus ContinueOnError="{x:Null}" ServiceBaseAddress="{x:Null}" TimeoutMS="{x:Null}" Details="[in_SystemError.ToString]" DisplayName="Set Transaction System Error" ErrorType="Application" sap2010:WorkflowViewState.IdRef="SetTransactionStatus_3" Reason="[in_SystemError.Message]" Status="Failed" TransactionItem="[in_TransactionItem]">
                     <ui:SetTransactionStatus.Output>
                       <scg:Dictionary x:TypeArguments="x:String, InArgument" />
                     </ui:SetTransactionStatus.Output>
                   </ui:SetTransactionStatus>
                 </TryCatch.Finally>
               </TryCatch>
-              <ui:AppendLine DisplayName="Append Line" FileName="Test_Framework\debug_queueitem.json" Text="[&quot;In Progress&quot; + vbNewLine + JObject.Parse(JsonConvert.SerializeObject(in_TransactionItem)).ToString]" sap2010:WorkflowViewState.IdRef="AppendLine_3" />
+              <ui:AppendLine DisplayName="Append Line" FileName="Test_Framework\debug_queueitem.json" sap2010:WorkflowViewState.IdRef="AppendLine_3" Text="[&quot;In Progress&quot; + vbNewLine + JObject.Parse(JsonConvert.SerializeObject(in_TransactionItem)).ToString]" />
               <Assign DisplayName="Assign RetryNumber from Queue" sap2010:WorkflowViewState.IdRef="Assign_21">
                 <Assign.To>
                   <OutArgument x:TypeArguments="x:Int32">[retry]</OutArgument>
@@ -335,7 +347,7 @@
         </If>
       </If.Else>
     </If>
-    <sads:DebugSymbol.Symbol>d2tDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUlBBVGFzazEtQ2hhcnRTdHJpbmdQcm9mb3JtYURldGFpbFxGcmFtZXdvcmtcU2V0VHJhbnNhY3Rpb25TdGF0dXMueGFtbIABAXcBgQEBAlMD0wIOAgEBWAVfHQMBtQFgBdECCgIBAltGW2gDAbsBWkZaUAMBuQFdR11RAwG3AVi+AVjgAQMBtgFgE2BQAgEDYgmYARQDAYUBmwEJzwIOAgEGYwt7FgMBnQF8C3yLAgMBmgF9C4QBHQMBkwGFAQuFAbEBAwGQAYYBC48BIAMBiwGQAQuXARQDAYYBmwEXmwE5AgEHnQEN0AEYAgFW0wENzQIYAgEJZQ9loQMDAaoBcg95KQMBoQFtE22bAQMBngF8aHzZAQMBnAF8PXxiAwGbAYIBUYIBYwMBmAGAAVWAAXQDAZYBgQFRgQFvAwGVAX9Vf1wDAZQBhQF4hQGuAQMBkQGJATiJAU4DAY8BigE4igFOAwGOAYsBOIsBSgMBjQGMATiMAUoDAYwBlQE1lQFNAwGJAZIBNpIBTAMBhwGeAQ+zARoCAW+0AQ+0AY8CAgFstQEPvAEhAgFlvQEPvQHfAQIBYb4BD8cBJAIBXMgBD88BGAIBV9cBD+wBGgIBQO0BD+0BjwICAT3uAQ/1ARgCATn2AQ/9ASECATL+AQ/+AdgCAgEs/wEPhgIYAgEnhwIPkAIkAgEikQIPpAIaAgEZpQIPzAIaAgEKZZIDZZ4DAwGzAWW0AWXAAQMBsQFlgANljAMDAa8BZd0CZfYCAwGtAWWnAmXQAgMBqwF1U3VzAwGoAXRMdF4DAaYBcucBcv0BAwGkAXZTdnMDAaIBbYIBbZgBAwGfAaABE6ABqQMCAXqtAROxAS0CAXOoAReoAZ8BAgFwtAFstAHdAQIBbrQBQbQBZgIBbboBVboBZwIBargBWbgBeAIBaLkBVbkBcwIBZ7cBWbcBYAIBZr0Bfb0B3AECAWLBATzBAVICAWDCATzCAVICAV/DATzDAU4CAV7EATzEAU4CAV3NATnNAVECAVrKATrKAVACAVjZARPZAakDAgFL5gET6gEtAgFE4QEX4QGfAQIBQe0BbO0B3QECAT/tAUHtAWYCAT7zATnzAVUCATzwATrwAUECATr7AVX7AWcCATf5AVn5AXgCATX6AVX6AXMCATT4AVn4AWACATP+AY4B/gHVAgIBLYQCOYQCUQIBKoECOoECUAIBKIoCPIoCUgIBJosCPIsCUgIBJYwCPIwCTgIBJI0CPI0CTgIBI5MCE5gCKwIBHqACF6AC9gECARqnAhOrAisCARezAhfIAiICAQugAZoDoAGmAwMBgwGgAbgBoAHEAQMBgQGgAYgDoAGUAwIBf6AB5QKgAf4CAgF9oAGrAqAB2AICAXutAbECrQHNAgIBeK0BggGtAa4BAgF2rQHuAq0BhAMCAXSoAYYBqAGcAQIBcdkBmgPZAaYDAgFU2QG4AdkBxAECAVLZAYgD2QGUAwIBUNkB5QLZAf4CAgFO2QGrAtkB2AICAUzmAbAC5gHKAgIBSeYBggHmAawBAgFH5gHrAuYBgQMCAUXhAYYB4QGcAQIBQpUCUJUCfwIBIJMCyQGTAugBAgEfoAKEAaAC8wECARunAs8BpwL0AQIBGLQCGbQC8gECARO1AhnHAiQCAQy0AoYBtALvAQIBFLcCHbsCNQIBEcMCIcMC9gECAQ23AtUBtwL2AQIBEsMCjgHDAvMBAgEO</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d2tDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUlBBVGFzazEtQ2hhcnRTdHJpbmdQcm9mb3JtYURldGFpbFxGcmFtZXdvcmtcU2V0VHJhbnNhY3Rpb25TdGF0dXMueGFtbIcBAXcBgQEBAlUD3wIOAgEBWgVhHQMBvQFiBd0CCgIBAl1GXWgDAcMBXEZcUAMBwQFfR19RAwG/AVq+AVrgAQMBvgFiE2JQAgEDZAmkARQDAYQBpwEJ2wIOAgEGZQuHARYDAZwBiAELiAGLAgMBmQGJAQuQAR0DAZIBkQELkQGxAQMBjwGSAQubASADAYoBnAELowEUAwGFAacBF6cBOQIBB6kBDdwBGAIBVt8BDdkCGAIBCWcPZ6EDAwGyAXQPhQEaAwGgAW8Tb5sBAwGdAYgBlwGIAYgCAwGbAYgBPYgBYgMBmgGOAVGOAWMDAZcBjAFVjAF0AwGVAY0BUY0BbwMBlAGLAVWLAVwDAZMBkQF4kQGuAQMBkAGVATiVAU4DAY4BlgE4lgFOAwGNAZcBOJcBSgMBjAGYATiYAUoDAYsBoQE1oQFNAwGIAZ4BNp4BTAMBhgGqAQ+/ARoCAW7AAQ/AAY8CAgFrwQEPyAEhAgFkyQEPyQGbAQIBYcoBD9MBJAIBXNQBD9sBGAIBV+MBD/gBGgIBQPkBD/kBjwICAT36AQ+BAhgCATmCAg+JAiECATKKAg+KAtgCAgEsiwIPkgIYAgEnkwIPnAIkAgEinQIPsAIaAgEZsQIP2AIaAgEKZ5IDZ54DAwG7AWe0AWfAAQMBuQFngANnjAMDAbcBZ90CZ/YCAwG1AWenAmfQAgMBswF1EXsrAwGpAXwRgwEaAwGlAYQBEYQB1wEDAaEBb4IBb5gBAwGeAawBE6wBqQMCAXm5ARO9AS0CAXK0ARe0AZ8BAgFvwAGbAcABjAICAW3AAUHAAWYCAWzGAVXGAWcCAWnEAVnEAXgCAWfFAVXFAXMCAWbDAVnDAWACAWXJAXzJAZgBAgFizQE8zQFSAgFgzgE8zgFSAgFfzwE8zwFOAgFe0AE80AFOAgFd2QE52QFRAgFa1gE61gFQAgFY5QET5QGpAwIBS/IBE/YBLQIBRO0BF+0BnwECAUH5AZsB+QGMAgIBP/kBQfkBZgIBPv8BOf8BVQIBPPwBOvwBQQIBOocCVYcCZwIBN4UCWYUCeAIBNYYCVYYCcwIBNIQCWYQCYAIBM4oCjgGKAtUCAgEtkAI5kAJRAgEqjQI6jQJQAgEolgI8lgJSAgEmlwI8lwJSAgElmAI8mAJOAgEkmQI8mQJOAgEjnwITpAIrAgEerAIXrAL2AQIBGrMCE7cCKwIBF78CF9QCIgIBC3hVeHUDAbABd053YAMBrgF1ogJ1uAIDAawBeVV5dQMBqgGBAUaBAWIDAagBfkd+YgMBpgGEAUyEAWIDAaQBhAGIAYQBngEDAaIBrAGaA6wBpgMDAYIBrAG4AawBxAEDAYABrAGIA6wBlAMCAX6sAeUCrAH+AgIBfKwBqwKsAdgCAgF6uQGiArkBvgICAXe5AYIBuQGfAQIBdbkB3wK5AfUCAgFztAGGAbQBnAECAXDlAZoD5QGmAwIBVOUBuAHlAcQBAgFS5QGIA+UBlAMCAVDlAeUC5QH+AgIBTuUBqwLlAdgCAgFM8gGhAvIBuwICAUnyAYIB8gGdAQIBR/IB3ALyAfICAgFF7QGGAe0BnAECAUKhAlChAn8CASCfAskBnwLoAQIBH6wChAGsAvMBAgEbswLPAbMC9AECARjAAhnAAvIBAgETwQIZ0wIkAgEMwAKGAcAC7wECARTDAh3HAjUCARHPAiHPAvYBAgENwwLVAcMC9gECARLPAo4BzwLzAQIBDg==</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -350,14 +362,23 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="SetTransactionStatus_1" sap:VirtualizedContainerService.HintSize="1432,2544" />
-      <sap2010:ViewStateData Id="TryCatch_4" sap:VirtualizedContainerService.HintSize="418,287" />
+      <sap2010:ViewStateData Id="SetTransactionStatus_1" sap:VirtualizedContainerService.HintSize="1432,2517" />
+      <sap2010:ViewStateData Id="Assign_22" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="AddToCollection`1_2" sap:VirtualizedContainerService.HintSize="242,22" />
+      <sap2010:ViewStateData Id="Sequence_12" sap:VirtualizedContainerService.HintSize="264,308">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="TryCatch_4" sap:VirtualizedContainerService.HintSize="418,535" />
       <sap2010:ViewStateData Id="AppendLine_1" sap:VirtualizedContainerService.HintSize="418,87" />
       <sap2010:ViewStateData Id="AddLogFields_3" sap:VirtualizedContainerService.HintSize="418,22" />
       <sap2010:ViewStateData Id="LogMessage_8" sap:VirtualizedContainerService.HintSize="418,91" />
       <sap2010:ViewStateData Id="RemoveLogFields_3" sap:VirtualizedContainerService.HintSize="418,22" />
       <sap2010:ViewStateData Id="Assign_7" sap:VirtualizedContainerService.HintSize="418,60" />
-      <sap2010:ViewStateData Id="Sequence_6" sap:VirtualizedContainerService.HintSize="440,935">
+      <sap2010:ViewStateData Id="Sequence_6" sap:VirtualizedContainerService.HintSize="440,1183">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -403,7 +424,7 @@
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="SetTransactionStatus_3" sap:VirtualizedContainerService.HintSize="200,22" />
-      <sap2010:ViewStateData Id="TryCatch_6" sap:VirtualizedContainerService.HintSize="418,314" />
+      <sap2010:ViewStateData Id="TryCatch_6" sap:VirtualizedContainerService.HintSize="418,287" />
       <sap2010:ViewStateData Id="AppendLine_3" sap:VirtualizedContainerService.HintSize="418,87" />
       <sap2010:ViewStateData Id="Assign_21" sap:VirtualizedContainerService.HintSize="418,60" />
       <sap2010:ViewStateData Id="AddLogFields_5" sap:VirtualizedContainerService.HintSize="418,22" />
@@ -478,7 +499,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_5" sap:VirtualizedContainerService.HintSize="440,1755">
+      <sap2010:ViewStateData Id="Sequence_5" sap:VirtualizedContainerService.HintSize="440,1728">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -487,9 +508,9 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_6" sap:VirtualizedContainerService.HintSize="905,1903" />
-      <sap2010:ViewStateData Id="If_5" sap:VirtualizedContainerService.HintSize="1370,2051" />
-      <sap2010:ViewStateData Id="Sequence_11" sap:VirtualizedContainerService.HintSize="1392,2464">
+      <sap2010:ViewStateData Id="If_6" sap:VirtualizedContainerService.HintSize="905,1876" />
+      <sap2010:ViewStateData Id="If_5" sap:VirtualizedContainerService.HintSize="1370,2024" />
+      <sap2010:ViewStateData Id="Sequence_11" sap:VirtualizedContainerService.HintSize="1392,2437">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
