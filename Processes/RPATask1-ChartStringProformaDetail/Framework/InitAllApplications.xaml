@@ -8,6 +8,7 @@
  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
  xmlns:scg="clr-namespace:System.Collections.Generic;assembly=mscorlib"
  xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=mscorlib"
+ xmlns:ss="clr-namespace:System.Security;assembly=mscorlib"
  xmlns:ui="http://schemas.uipath.com/workflow/activities"
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <x:Members>
@@ -67,10 +68,37 @@
       <AssemblyReference>Microsoft.VisualStudio.Services.Common</AssemblyReference>
       <AssemblyReference>System.ValueTuple</AssemblyReference>
       <AssemblyReference>System.Collections.Immutable</AssemblyReference>
+      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
+      <AssemblyReference>UiPath.Studio.Plugin.Workflow</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence sap2010:Annotation.AnnotationText="Description: Open and initialize application as needed.&#xA;&#xA;Pre Condition: N/A&#xA;Post Condtion: Applications opened" DisplayName="Initialization Sequence" sap2010:WorkflowViewState.IdRef="Sequence_9">
     <ui:LogMessage DisplayName="Log App Initialization message" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[&quot;Starting all applications&quot;]" />
+    <Sequence DisplayName="Map network drive using credentials" sap2010:WorkflowViewState.IdRef="Sequence_11">
+      <Sequence.Variables>
+        <Variable x:TypeArguments="x:String" Name="sharedrive" />
+        <Variable x:TypeArguments="x:String" Name="username" />
+        <Variable x:TypeArguments="x:String" Name="password" />
+      </Sequence.Variables>
+      <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke GetAppCredentials workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_3" UnSafe="False" WorkflowFileName="Framework\GetAppCredentials.xaml">
+        <ui:InvokeWorkflowFile.Arguments>
+          <OutArgument x:TypeArguments="x:String" x:Key="out_Username">[username]</OutArgument>
+          <InArgument x:TypeArguments="x:String" x:Key="in_Credential">[in_Config("CredentialsNetwork")]</InArgument>
+          <OutArgument x:TypeArguments="ss:SecureString" x:Key="out_Password" />
+          <OutArgument x:TypeArguments="x:String" x:Key="out_Plaintext">[password]</OutArgument>
+        </ui:InvokeWorkflowFile.Arguments>
+      </ui:InvokeWorkflowFile>
+      <Assign DisplayName="Assign drive letter and path" sap2010:WorkflowViewState.IdRef="Assign_1">
+        <Assign.To>
+          <OutArgument x:TypeArguments="x:String">[sharedrive]</OutArgument>
+        </Assign.To>
+        <Assign.Value>
+          <InArgument x:TypeArguments="x:String">[in_Config("NetworkShareDrive")]</InArgument>
+        </Assign.Value>
+      </Assign>
+      <ui:StartProcess WorkingDirectory="{x:Null}" Arguments="[String.Format(&quot;use {0} /persistent:no /user:{1} {2}&quot;, shareDrive, username, password)]" DisplayName="Start delete all mapped drives" FileName="net" sap2010:WorkflowViewState.IdRef="StartProcess_1" />
+      <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_3" Level="Info" Message="[&quot;Mapped &quot; + sharedrive.Split(&quot; &quot;c).Last + &quot; to &quot; + sharedrive.Split(&quot; &quot;c).First + &quot; as &quot; + username]" />
+    </Sequence>
     <TryCatch DisplayName="Try Catch" sap2010:WorkflowViewState.IdRef="TryCatch_2">
       <TryCatch.Try>
         <Sequence DisplayName="Check if exchange is accessible" sap2010:WorkflowViewState.IdRef="Sequence_10">
@@ -128,11 +156,22 @@
         </Catch>
       </TryCatch.Catches>
     </TryCatch>
-    <sads:DebugSymbol.Symbol>d2pDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUlBBVGFzazEtQ2hhcnRTdHJpbmdQcm9mb3JtYURldGFpbFxGcmFtZXdvcmtcSW5pdEFsbEFwcGxpY2F0aW9ucy54YW1sIUgDhAEOAgEBSQVJsQECATZKBW4QAgEPbwWCARACAQJJhQFJrgECATdMCVoUAgEbYg1ipwICARZqDWrSAgIBEHEJdiECAQl+DX7JAgIBA05ETlsCARxQC1C7AQIBMlELUd8BAgEtUgtS4QECAShTC1PnAQIBI1QLWSMCAR1iQWL6AQIBF2pBaqUCAgERdEh0YAIBDXNQc28CAQtxuwFx0gECAQp+Pn6cAgIBBFBCUFICATRQsQFQuAECATNRQlFSAgEwUbQBUdwBAgEuUkJSUgIBK1K1AVLeAQIBKVNCU1ICASZTtwFT5AECASRXWFdmAgEhVlJWdAIBH1S/AVTbAQIBHg==</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d2pDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUlBBVGFzazEtQ2hhcnRTdHJpbmdQcm9mb3JtYURldGFpbFxGcmFtZXdvcmtcSW5pdEFsbEFwcGxpY2F0aW9ucy54YW1sL0sDoAEOAgEBTAVMsQECAUxNBWUQAgE2ZgWKARACAQ+LAQWeARACAQJMhQFMrgECAU1TB1ofAgFEWwdiEAIBP2MHY5ECAgE5ZAdkkAICATdoCXYUAgEbfg1+pwICARaGAQ2GAdICAgEQjQEJkgEhAgEJmgENmgHJAgIBA1ZIVmkCAUpVSFVSAgFIWElYUwIBRlPAAVPiAQIBRWAyYFICAUJdM10/AgFAYz5joQECATtj2AFj3QECATpkdGSNAgIBOGpEalsCARxsC2y7AQIBMm0Lbd8BAgEtbgtu4QECAShvC2/nAQIBI3ALdSMCAR1+QX76AQIBF4YBQYYBpQICARGQAUiQAWACAQ2PAVCPAW8CAQuNAbsBjQHSAQIBCpoBPpoBnAICAQRsQmxSAgE0bLEBbLgBAgEzbUJtUgIBMG20AW3cAQIBLm5CblICAStutQFu3gECASlvQm9SAgEmb7cBb+QBAgEkc1hzZgIBIXJScnQCAR9wvwFw2wECAR4=</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
       <sap2010:ViewStateData Id="LogMessage_2" sap:VirtualizedContainerService.HintSize="418,91" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_3" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="Assign_1" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="StartProcess_1" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="LogMessage_3" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="Sequence_11" sap:VirtualizedContainerService.HintSize="418,569">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="AddToCollection`1_1" sap:VirtualizedContainerService.HintSize="314,22" />
       <sap2010:ViewStateData Id="AddToCollection`1_2" sap:VirtualizedContainerService.HintSize="314,22" />
       <sap2010:ViewStateData Id="AddToCollection`1_3" sap:VirtualizedContainerService.HintSize="314,22" />
@@ -175,7 +214,7 @@
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="418,314" />
-      <sap2010:ViewStateData Id="Sequence_9" sap:VirtualizedContainerService.HintSize="440,1389">
+      <sap2010:ViewStateData Id="Sequence_9" sap:VirtualizedContainerService.HintSize="440,1998">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -183,7 +222,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Initialization_1" sap:VirtualizedContainerService.HintSize="480,1469" />
+      <sap2010:ViewStateData Id="Initialization_1" sap:VirtualizedContainerService.HintSize="480,2078" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
