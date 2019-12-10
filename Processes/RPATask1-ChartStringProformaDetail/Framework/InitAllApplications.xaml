@@ -8,6 +8,7 @@
  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
  xmlns:scg="clr-namespace:System.Collections.Generic;assembly=mscorlib"
  xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=mscorlib"
+ xmlns:sd="clr-namespace:System.Data;assembly=System.Data"
  xmlns:ss="clr-namespace:System.Security;assembly=mscorlib"
  xmlns:ui="http://schemas.uipath.com/workflow/activities"
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
@@ -42,6 +43,7 @@
       <x:String>UiPath.Core</x:String>
       <x:String>System.Security</x:String>
       <x:String>UiPath.Core.Activities</x:String>
+      <x:String>System.Xml.Serialization</x:String>
     </sco:Collection>
   </TextExpression.NamespacesForImplementation>
   <TextExpression.ReferencesForImplementation>
@@ -68,8 +70,10 @@
       <AssemblyReference>Microsoft.VisualStudio.Services.Common</AssemblyReference>
       <AssemblyReference>System.ValueTuple</AssemblyReference>
       <AssemblyReference>System.Collections.Immutable</AssemblyReference>
-      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
       <AssemblyReference>UiPath.Studio.Plugin.Workflow</AssemblyReference>
+      <AssemblyReference>System.Data.DataSetExtensions</AssemblyReference>
+      <AssemblyReference>System.Data.Entity</AssemblyReference>
+      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence sap2010:Annotation.AnnotationText="Description: Open and initialize application as needed.&#xA;&#xA;Pre Condition: N/A&#xA;Post Condtion: Applications opened" DisplayName="Initialization Sequence" sap2010:WorkflowViewState.IdRef="Sequence_9">
@@ -99,7 +103,34 @@
       <ui:StartProcess WorkingDirectory="{x:Null}" Arguments="[String.Format(&quot;use {0} /persistent:no /user:{1} {2}&quot;, shareDrive, username, password)]" DisplayName="Start delete all mapped drives" FileName="net" sap2010:WorkflowViewState.IdRef="StartProcess_1" />
       <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_3" Level="Info" Message="[&quot;Mapped &quot; + sharedrive.Split(&quot; &quot;c).Last + &quot; to &quot; + sharedrive.Split(&quot; &quot;c).First + &quot; as &quot; + username]" />
     </Sequence>
-    <TryCatch DisplayName="Try Catch" sap2010:WorkflowViewState.IdRef="TryCatch_2">
+    <TryCatch DisplayName="Try Catch - Init Accountant file" sap2010:WorkflowViewState.IdRef="TryCatch_3">
+      <TryCatch.Try>
+        <Sequence sap2010:WorkflowViewState.IdRef="Sequence_12">
+          <Sequence.Variables>
+            <Variable x:TypeArguments="sd:DataTable" Name="accountantLookup" />
+          </Sequence.Variables>
+          <ui:ReadRange AddHeaders="True" DataTable="[accountantLookup]" DisplayName="Read Accountant Lookup File Range" sap2010:WorkflowViewState.IdRef="ReadRange_1" SheetName="[in_Config(&quot;Accountant_LookupSheet&quot;)]" WorkbookPath="[in_Config(&quot;Accountant_LookupWorkbook&quot;)]">
+            <ui:ReadRange.Range>
+              <InArgument x:TypeArguments="x:String">
+                <Literal x:TypeArguments="x:String" Value="" />
+              </InArgument>
+            </ui:ReadRange.Range>
+          </ui:ReadRange>
+          <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_4" Level="Info" Message="[String.Format(&quot;Got {0} opal units for accountant lookup from {1}&quot;,&#xD;&#xA;accountantLookup.Rows.Count, in_Config(&quot;Accountant_LookupWorkbook&quot;))]" />
+        </Sequence>
+      </TryCatch.Try>
+      <TryCatch.Catches>
+        <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch`1_4">
+          <ActivityAction x:TypeArguments="s:Exception">
+            <ActivityAction.Argument>
+              <DelegateInArgument x:TypeArguments="s:Exception" Name="exception" />
+            </ActivityAction.Argument>
+            <Throw DisplayName="Throw accountant file" Exception="[New System.Exception(String.Format(in_Config(&quot;SystemError_AccountantFile&quot;), in_Config(&quot;Accountant_LookupWorkbook&quot;), exception.Message, exception.Source), exception)]" sap2010:WorkflowViewState.IdRef="Throw_5" />
+          </ActivityAction>
+        </Catch>
+      </TryCatch.Catches>
+    </TryCatch>
+    <TryCatch DisplayName="Try Catch - Init Exchange" sap2010:WorkflowViewState.IdRef="TryCatch_2">
       <TryCatch.Try>
         <Sequence DisplayName="Check if exchange is accessible" sap2010:WorkflowViewState.IdRef="Sequence_10">
           <Sequence.Variables>
@@ -123,7 +154,7 @@
             <ActivityAction.Argument>
               <DelegateInArgument x:TypeArguments="s:Exception" Name="exception" />
             </ActivityAction.Argument>
-            <Throw DisplayName="Throw exchange error" Exception="[New System.Exception(&#xA;  String.Format(&#xA;    in_Config(&quot;SystemError_InitExchange&quot;),&#xA;    in_Config(&quot;CredentialsExchange&quot;)&#xA;  ),&#xA;  exception&#xA;)]" sap2010:WorkflowViewState.IdRef="Throw_4" />
+            <Throw DisplayName="Throw exchange error" Exception="[New System.Exception(String.Format(in_Config(&quot;SystemError_InitExchange&quot;), in_Config(&quot;CredentialsExchange&quot;), exception.Message, exception.Source), exception)]" sap2010:WorkflowViewState.IdRef="Throw_4" />
           </ActivityAction>
         </Catch>
         <Catch x:TypeArguments="WorkflowTerminatedException" sap2010:WorkflowViewState.IdRef="Catch`1_3">
@@ -131,12 +162,12 @@
             <ActivityAction.Argument>
               <DelegateInArgument x:TypeArguments="WorkflowTerminatedException" Name="exception" />
             </ActivityAction.Argument>
-            <Throw DisplayName="Throw exchange error" Exception="[New System.Exception(&#xA;  String.Format(&#xA;    in_Config(&quot;SystemError_CheckExchange&quot;),&#xA;    exception.Message,&#xA;    in_Config(&quot;CredentialsExchange&quot;)&#xA;  ),&#xA;  exception.InnerException&#xA;)]" sap2010:WorkflowViewState.IdRef="Throw_3" />
+            <Throw DisplayName="Throw exchange error" Exception="[New System.Exception(String.Format(in_Config(&quot;SystemError_CheckExchange&quot;), in_Config(&quot;CredentialsExchange&quot;), exception.Message, exception.Source), exception)]" sap2010:WorkflowViewState.IdRef="Throw_3" />
           </ActivityAction>
         </Catch>
       </TryCatch.Catches>
     </TryCatch>
-    <TryCatch DisplayName="Try Catch" sap2010:WorkflowViewState.IdRef="TryCatch_1">
+    <TryCatch DisplayName="Try Catch - Login UniFi" sap2010:WorkflowViewState.IdRef="TryCatch_1">
       <TryCatch.Try>
         <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke LoginUniFi workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_1" UnSafe="False" WorkflowFileName="UniFi\LoginUniFi.xaml">
           <ui:InvokeWorkflowFile.Arguments>
@@ -151,12 +182,12 @@
             <ActivityAction.Argument>
               <DelegateInArgument x:TypeArguments="s:Exception" Name="exception" />
             </ActivityAction.Argument>
-            <Throw DisplayName="Throw unifi error" Exception="[New System.Exception(&#xA;  String.Format(&#xA;    in_Config(&quot;SystemError_LoginUniFi&quot;),&#xA;    in_Config(&quot;CredentialsUniFi&quot;),&#xA;    in_Config(&quot;UniFi_URL&quot;)&#xA;  ),&#xA;  exception&#xA;)]" sap2010:WorkflowViewState.IdRef="Throw_1" />
+            <Throw DisplayName="Throw unifi error" Exception="[New System.Exception(String.Format(in_Config(&quot;SystemError_LoginUniFi&quot;), in_Config(&quot;CredentialsUniFi&quot;), in_Config(&quot;UniFi_URL&quot;), exception.Message, exception.Source), exception)]" sap2010:WorkflowViewState.IdRef="Throw_1" />
           </ActivityAction>
         </Catch>
       </TryCatch.Catches>
     </TryCatch>
-    <sads:DebugSymbol.Symbol>d2pDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUlBBVGFzazEtQ2hhcnRTdHJpbmdQcm9mb3JtYURldGFpbFxGcmFtZXdvcmtcSW5pdEFsbEFwcGxpY2F0aW9ucy54YW1sL0sDoAEOAgEBTAVMsQECAUxNBWUQAgE2ZgWKARACAQ+LAQWeARACAQJMhQFMrgECAU1TB1ofAgFEWwdiEAIBP2MHY5ECAgE5ZAdkkAICATdoCXYUAgEbfg1+pwICARaGAQ2GAdICAgEQjQEJkgEhAgEJmgENmgHJAgIBA1ZIVmkCAUpVSFVSAgFIWElYUwIBRlPAAVPiAQIBRWAyYFICAUJdM10/AgFAYz5joQECATtj2AFj3QECATpkdGSNAgIBOGpEalsCARxsC2y7AQIBMm0Lbd8BAgEtbgtu4QECAShvC2/nAQIBI3ALdSMCAR1+QX76AQIBF4YBQYYBpQICARGQAUiQAWACAQ2PAVCPAW8CAQuNAbsBjQHSAQIBCpoBPpoBnAICAQRsQmxSAgE0bLEBbLgBAgEzbUJtUgIBMG20AW3cAQIBLm5CblICAStutQFu3gECASlvQm9SAgEmb7cBb+QBAgEkc1hzZgIBIXJScnQCAR9wvwFw2wECAR4=</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d2pDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUlBBVGFzazEtQ2hhcnRTdHJpbmdQcm9mb3JtYURldGFpbFxGcmFtZXdvcmtcSW5pdEFsbEFwcGxpY2F0aW9ucy54YW1sOk8DvwEOAgEBUAVQsQECAWRRBWkQAgFOagWEARACATuFAQWpARACARGqAQW9ARACAQJQhQFQrgECAWVXB14fAgFcXwdmEAIBV2cHZ5ECAgFRaAdokAICAU9sCXgUAgFDgAENgAGrAgIBPIcBCZUBFAIBIJ0BDZ0BogICARmlAQ2lAaMCAgESrAEJsQEhAgELuQENuQG8AgIBA1pIWmkCAWJZSFlSAgFgXElcUwIBXlfAAVfiAQIBXWQyZFICAVphM2E/AgFYZz5noQECAVNn2AFn3QECAVJodGiNAgIBUHALdhoCAUZ3C3ejAgIBRIABQoAB/gECAT2JAUSJAVsCASGLAQuLAbsBAgE3jAELjAHfAQIBMo0BC40B4QECAS2OAQuOAecBAgEojwELlAEjAgEinQFBnQH1AQIBGqUBQaUB9gECAROvAUivAWACAQ+uAVCuAW8CAQ2sAbsBrAHSAQIBDLkBPrkBjwICAQRwNXBJAgFMcxFzQAIBS3CyAXDjAQIBSXDxAXClAgIBR3d4d6ACAgFFiwFCiwFSAgE5iwGxAYsBuAECATiMAUKMAVICATWMAbQBjAHcAQIBM40BQo0BUgIBMI0BtQGNAd4BAgEujgFCjgFSAgErjgG3AY4B5AECASmSAViSAWYCASaRAVKRAXQCASSPAb8BjwHbAQIBIw==</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -165,10 +196,37 @@
       <sap2010:ViewStateData Id="Assign_1" sap:VirtualizedContainerService.HintSize="314,60" />
       <sap2010:ViewStateData Id="StartProcess_1" sap:VirtualizedContainerService.HintSize="314,87" />
       <sap2010:ViewStateData Id="LogMessage_3" sap:VirtualizedContainerService.HintSize="314,91" />
-      <sap2010:ViewStateData Id="Sequence_11" sap:VirtualizedContainerService.HintSize="418,569">
+      <sap2010:ViewStateData Id="Sequence_11" sap:VirtualizedContainerService.HintSize="418,51">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="ReadRange_1" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="LogMessage_4" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="Sequence_12" sap:VirtualizedContainerService.HintSize="336,342">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Throw_5" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="Catch`1_4" sap:VirtualizedContainerService.HintSize="404,21">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="TryCatch_3" sap:VirtualizedContainerService.HintSize="418,569">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
@@ -202,10 +260,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_2" sap:VirtualizedContainerService.HintSize="418,708" />
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_1" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="Throw_1" sap:VirtualizedContainerService.HintSize="200,22" />
-      <sap2010:ViewStateData Id="Catch`1_1" sap:VirtualizedContainerService.HintSize="404,21">
+      <sap2010:ViewStateData Id="TryCatch_2" sap:VirtualizedContainerService.HintSize="418,51">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">False</x:Boolean>
@@ -213,8 +268,25 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="418,314" />
-      <sap2010:ViewStateData Id="Sequence_9" sap:VirtualizedContainerService.HintSize="440,1998">
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_1" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="Throw_1" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="Catch`1_1" sap:VirtualizedContainerService.HintSize="400,104">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="418,51">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Sequence_9" sap:VirtualizedContainerService.HintSize="440,1169">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -222,7 +294,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Initialization_1" sap:VirtualizedContainerService.HintSize="480,2078" />
+      <sap2010:ViewStateData Id="Initialization_1" sap:VirtualizedContainerService.HintSize="480,1249" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
