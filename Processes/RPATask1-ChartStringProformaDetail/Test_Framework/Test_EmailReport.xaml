@@ -2,6 +2,7 @@
  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
  xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities"
+ xmlns:s="clr-namespace:System;assembly=mscorlib"
  xmlns:sads="http://schemas.microsoft.com/netfx/2010/xaml/activities/debugger"
  xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
@@ -40,6 +41,7 @@
       <x:String>System.Windows.Markup</x:String>
       <x:String>UiPath.Core</x:String>
       <x:String>UiPath.Core.Activities</x:String>
+      <x:String>Microsoft.VisualBasic.CompilerServices</x:String>
     </sco:Collection>
   </TextExpression.NamespacesForImplementation>
   <TextExpression.ReferencesForImplementation>
@@ -109,25 +111,51 @@
         <OutArgument x:TypeArguments="scg:Dictionary(x:String, x:String)" x:Key="out_Config">[in_Config]</OutArgument>
       </ui:InvokeWorkflowFile.Arguments>
     </ui:InvokeWorkflowFile>
-    <ui:GetQueueItems Duration="{x:Null}" From="{x:Null}" Priority="{x:Null}" Reference="{x:Null}" Skip="{x:Null}" TimeoutMS="{x:Null}" To="{x:Null}" Top="{x:Null}" DisplayName="Get Queue Items" FilterStrategy="StartsWith" sap2010:WorkflowViewState.IdRef="GetQueueItems_1" QueueItemStates="Failed, Successful" QueueName="[in_Config(&quot;OrchestratorQueueName&quot;)]" Result="[TransactionData]" />
-    <ui:ForEach x:TypeArguments="ui:QueueItem" CurrentIndex="{x:Null}" DisplayName="For Each" Values="[TransactionData]">
+    <TryCatch DisplayName="Try Catch" sap2010:WorkflowViewState.IdRef="TryCatch_1">
+      <TryCatch.Try>
+        <ui:GetQueueItems Duration="{x:Null}" From="{x:Null}" Priority="{x:Null}" Reference="{x:Null}" Skip="{x:Null}" TimeoutMS="{x:Null}" To="{x:Null}" Top="{x:Null}" DisplayName="Get Queue Items" FilterStrategy="StartsWith" sap2010:WorkflowViewState.IdRef="GetQueueItems_1" QueueItemStates="Failed, Successful" QueueName="[in_Config(&quot;OrchestratorQueueName&quot;)]" Result="[TransactionData]" />
+      </TryCatch.Try>
+      <TryCatch.Catches>
+        <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch`1_1">
+          <ActivityAction x:TypeArguments="s:Exception">
+            <ActivityAction.Argument>
+              <DelegateInArgument x:TypeArguments="s:Exception" Name="exception" />
+            </ActivityAction.Argument>
+            <If Condition="[in_Config(&quot;ProcessMode&quot;) &lt;&gt; &quot;DEV&quot;]" DisplayName="If prd or uat" sap2010:WorkflowViewState.IdRef="If_10">
+              <If.Then>
+                <Rethrow sap2010:WorkflowViewState.IdRef="Rethrow_1" />
+              </If.Then>
+              <If.Else>
+                <Sequence sap2010:WorkflowViewState.IdRef="Sequence_3">
+                  <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_4" Level="Error" Message="[exception.Message]" />
+                  <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke TestBuildQueue workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_4" UnSafe="False" WorkflowFileName="TestBuildQueue.xaml">
+                    <ui:InvokeWorkflowFile.Arguments>
+                      <scg:Dictionary x:TypeArguments="x:String, Argument" />
+                    </ui:InvokeWorkflowFile.Arguments>
+                  </ui:InvokeWorkflowFile>
+                </Sequence>
+              </If.Else>
+            </If>
+          </ActivityAction>
+        </Catch>
+      </TryCatch.Catches>
+    </TryCatch>
+    <ui:ForEach x:TypeArguments="ui:QueueItem" CurrentIndex="{x:Null}" DisplayName="For Each" sap2010:WorkflowViewState.IdRef="ForEach`1_3" Values="[TransactionData]">
       <ui:ForEach.Body>
         <ActivityAction x:TypeArguments="ui:QueueItem">
           <ActivityAction.Argument>
             <DelegateInArgument x:TypeArguments="ui:QueueItem" Name="item" />
           </ActivityAction.Argument>
-          <Assign>
+          <Assign sap2010:WorkflowViewState.IdRef="Assign_11">
             <Assign.To>
               <OutArgument x:TypeArguments="x:String">[item.Reference]</OutArgument>
             </Assign.To>
             <Assign.Value>
               <InArgument x:TypeArguments="x:String">[If(item.Reference Is Nothing, item.Id.ToString, item.Reference)]</InArgument>
             </Assign.Value>
-            <sap2010:WorkflowViewState.IdRef>Assign_11</sap2010:WorkflowViewState.IdRef>
           </Assign>
         </ActivityAction>
       </ui:ForEach.Body>
-      <sap2010:WorkflowViewState.IdRef>ForEach`1_3</sap2010:WorkflowViewState.IdRef>
     </ui:ForEach>
     <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_3" Level="Info" Message="[&quot;Got &quot; &amp; TransactionData.Count &amp; &quot; transactions&quot;]" />
     <ui:ForEach x:TypeArguments="ui:QueueItem" CurrentIndex="{x:Null}" DisplayName="For Each transaction item" sap2010:WorkflowViewState.IdRef="ForEach`1_2" Values="[TransactionData]">
@@ -174,7 +202,7 @@
         </ActivityAction>
       </ui:OpenBrowser.Body>
     </ui:OpenBrowser>
-    <sads:DebugSymbol.Symbol>d2xDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUlBBVGFzazEtQ2hhcnRTdHJpbmdQcm9mb3JtYURldGFpbFxUZXN0X0ZyYW1ld29ya1xUZXN0X0VtYWlsUmVwb3J0LnhhbWw6SQOyAQ4CAQFNQk1cAgEETkJOXAIBA09CT1wCAQJTBVOvAgIBQlQFaQoCAThqBW8dAgEycAVwjwMCAS5xBYMBEgIBKYQBBYQBxQECASeFAQWcARICARWdAQWmAR0CAQunAQWnAZsBAgEHqAEFsAEWAgEFU90BU4ACAgFFU4sCU5ECAgFEUzpTQAIBQ1QTVDICATlWCV0SAgE+YAlnEgIBOm1ebWkCATZqvAFq3AECATVsRmxSAgEzcMECcPECAgEwcPkCcIwDAgEvcWZxeQIBLXcLfxQCASqEAXKEAcIBAgEohQGlAYUBuAECASaLAQuZARACARahAVahAWQCARSfAUWfAVcCAROgAVigAWgCARKiAUWiAVwCARGkAUmkAVgCAQ+jAVyjAWcCAQ2dAbsBnQHZAQIBDKcBhwGnAZgBAgEJpwE+pwFPAgEIqAG7AagB7AECAQZbNFtZAgFBWDVYQQIBP2U0ZUcCAT1iNWJBAgE7fDZ8dwIBLHk3eUcCASuLARmLAUUCAReNAQ+NAb8BAgEikAEPlwEUAgEYjQFKjQFYAgEljQG0AY0BvAECASOQAR2QAWoCARmSAROSAcwBAgEelQETlQHIAQIBGpIBTpIBYAIBIZIBwQGSAckBAgEflQFOlQFeAgEdlQG9AZUBxQECARs=</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d4QBQzpcVXNlcnNcc3BhbWlzaFxEb2N1bWVudHNcVWlQYXRoXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXFJQQVRhc2sxLUNoYXJ0U3RyaW5nUHJvZm9ybWFEZXRhaWxcVGVzdF9GcmFtZXdvcmtcVGVzdF9FbWFpbFJlcG9ydC54YW1sQ0sDzgEOAgEBT0JPXAIBBFBCUFwCAQNRQlFcAgECVQVVrwICAU1WBWsKAgFDbAVxHQIBPXIFjgEQAgEujwEFnwESAgEpoAEFoAHFAQIBJ6EBBbgBEgIBFbkBBcIBHQIBC8MBBcMBmwECAQfEAQXMARYCAQVV3QFVgAICAVBViwJVkQICAU9VOlVAAgFOVhNWMgIBRFgJXxICAUliCWkSAgFFb15vaQIBQWy8AWzcAQIBQG5GblICAT50CXSTAwIBOXwNigESAgEvjwGUAY8BpwECAS2VAQucARQCASqgAXKgAcIBAgEooQGlAaEBuAECASanAQu1ARACARa9AVa9AWQCARS7AUW7AVcCARO8AVi8AWgCARK+AUW+AVwCARHAAUnAAVgCAQ+/AVy/AWcCAQ25AbsBuQHZAQIBDMMBhwHDAZgBAgEJwwE+wwFPAgEIxAG7AcQB7AECAQZdNF1ZAgFMWjVaQQIBSmc0Z0cCAUhkNWRBAgFGdMUCdPUCAgE7dP0CdJADAgE6fBt8WgIBMH4RfkgCATiBARGIARwCATKaATaaAXcCASyXATeXAUcCASunARmnAUUCARepAQ+pAb8BAgEirAEPswEUAgEYggETggGZAQIBNYMBE4cBKwIBM6kBSqkBWAIBJakBtAGpAbwBAgEjrAEdrAFqAgEZrgETrgHMAQIBHrEBE7EByAECARqCAYEBggGWAQIBNoMByQGDAd4BAgE0rgFOrgFgAgEhrgHBAa4ByQECAR+xAU6xAV4CAR2xAb0BsQHFAQIBGw==</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -183,7 +211,27 @@
       <sap2010:ViewStateData Id="Assign_2" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="705,208" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_2" sap:VirtualizedContainerService.HintSize="705,87" />
-      <sap2010:ViewStateData Id="GetQueueItems_1" sap:VirtualizedContainerService.HintSize="705,22" />
+      <sap2010:ViewStateData Id="GetQueueItems_1" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="Rethrow_1" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="LogMessage_4" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_4" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="Sequence_3" sap:VirtualizedContainerService.HintSize="336,342">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="If_10" sap:VirtualizedContainerService.HintSize="561,490" />
+      <sap2010:ViewStateData Id="Catch`1_1" sap:VirtualizedContainerService.HintSize="404,21">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="705,287" />
       <sap2010:ViewStateData Id="Assign_11" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="ForEach`1_3" sap:VirtualizedContainerService.HintSize="705,194" />
       <sap2010:ViewStateData Id="LogMessage_3" sap:VirtualizedContainerService.HintSize="705,91" />
@@ -217,14 +265,14 @@
       <sap2010:ViewStateData Id="InvokeWorkflowFile_3" sap:VirtualizedContainerService.HintSize="705,87" />
       <sap2010:ViewStateData Id="WriteTextFile_1" sap:VirtualizedContainerService.HintSize="705,87" />
       <sap2010:ViewStateData Id="OpenBrowser_1" sap:VirtualizedContainerService.HintSize="705,114" />
-      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="727,1970">
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="727,2235">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Test_EmailReport_1" sap:VirtualizedContainerService.HintSize="767,2090" />
+      <sap2010:ViewStateData Id="Test_EmailReport_1" sap:VirtualizedContainerService.HintSize="767,2315" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>

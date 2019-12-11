@@ -2,6 +2,7 @@
  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
  xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities"
+ xmlns:s="clr-namespace:System;assembly=mscorlib"
  xmlns:sads="http://schemas.microsoft.com/netfx/2010/xaml/activities/debugger"
  xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
@@ -43,6 +44,7 @@
       <x:String>System.Runtime.InteropServices</x:String>
       <x:String>System.Xml.Serialization</x:String>
       <x:String>UiPath.Core.Activities</x:String>
+      <x:String>Microsoft.VisualBasic.CompilerServices</x:String>
     </sco:Collection>
   </TextExpression.NamespacesForImplementation>
   <TextExpression.ReferencesForImplementation>
@@ -83,7 +85,25 @@
         <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)">[New Dictionary(Of String, String)]</InArgument>
       </Assign.Value>
     </Assign>
-    <ui:CheckTrue DisplayName="Check True" ErrorMessage="[String.Format(&quot;0.0{0}Config Error{1}The configuration file {2} does not exist&quot;,&#xD;&#xA;vbTab, vbNewLine, in_ConfigFile)]" Expression="[File.Exists(in_ConfigFile)]" sap2010:WorkflowViewState.IdRef="CheckTrue_1" />
+    <Assign DisplayName="Assign start tme">
+      <Assign.To>
+        <OutArgument x:TypeArguments="scg:Dictionary(x:String, x:String)">[out_Config]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)">[New Dictionary(Of String, String)]</InArgument>
+      </Assign.Value>
+      <sap2010:WorkflowViewState.IdRef>Assign_29</sap2010:WorkflowViewState.IdRef>
+    </Assign>
+    <Assign DisplayName="New dictionary">
+      <Assign.To>
+        <OutArgument x:TypeArguments="scg:Dictionary(x:String, x:String)">[out_Config]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)">[New Dictionary(Of String, String)]</InArgument>
+      </Assign.Value>
+      <sap2010:WorkflowViewState.IdRef>Assign_30</sap2010:WorkflowViewState.IdRef>
+    </Assign>
+    <ui:CheckTrue DisplayName="Check True" ErrorMessage="[String.Format(&quot;0.0{0}Config Error{1}The configuration file {2} does not exist&quot;,&#xA;vbTab, vbNewLine, in_ConfigFile)]" Expression="[File.Exists(in_ConfigFile)]" sap2010:WorkflowViewState.IdRef="CheckTrue_1" />
     <ui:ExcelApplicationScope Password="{x:Null}" DisplayName="Excel Application Scope" sap2010:WorkflowViewState.IdRef="ExcelApplicationScope_1" WorkbookPath="[in_ConfigFile]">
       <ui:ExcelApplicationScope.Body>
         <ActivityAction x:TypeArguments="ui:WorkbookApplication">
@@ -205,11 +225,32 @@
                         <If.Then>
                           <Sequence sap2010:WorkflowViewState.IdRef="Sequence_14">
                             <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_6" Level="Trace" Message="[&quot;Fetching asset &quot; + row(&quot;Name&quot;).ToString + &quot; from orchestrator&quot;]" />
-                            <ui:GetRobotAsset TimeoutMS="{x:Null}" AssetName="[row(&quot;Asset&quot;).ToString]" DisplayName="Get Asset Value" sap2010:WorkflowViewState.IdRef="GetRobotAsset_4">
-                              <ui:GetRobotAsset.Value>
-                                <OutArgument x:TypeArguments="ui:GenericValue">[assetValue]</OutArgument>
-                              </ui:GetRobotAsset.Value>
-                            </ui:GetRobotAsset>
+                            <TryCatch DisplayName="Try Catch" sap2010:WorkflowViewState.IdRef="TryCatch_1">
+                              <TryCatch.Try>
+                                <ui:GetRobotAsset TimeoutMS="{x:Null}" AssetName="[row(&quot;Asset&quot;).ToString]" DisplayName="Get Asset Value" sap2010:WorkflowViewState.IdRef="GetRobotAsset_4">
+                                  <ui:GetRobotAsset.Value>
+                                    <OutArgument x:TypeArguments="ui:GenericValue">[assetValue]</OutArgument>
+                                  </ui:GetRobotAsset.Value>
+                                </ui:GetRobotAsset>
+                              </TryCatch.Try>
+                              <TryCatch.Catches>
+                                <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch`1_1">
+                                  <ActivityAction x:TypeArguments="s:Exception">
+                                    <ActivityAction.Argument>
+                                      <DelegateInArgument x:TypeArguments="s:Exception" Name="exception" />
+                                    </ActivityAction.Argument>
+                                    <If Condition="[out_Config(&quot;ProcessMode&quot;) &lt;&gt; &quot;DEV&quot;]" DisplayName="If prd or uat" sap2010:WorkflowViewState.IdRef="If_14">
+                                      <If.Then>
+                                        <Rethrow sap2010:WorkflowViewState.IdRef="Rethrow_1" />
+                                      </If.Then>
+                                      <If.Else>
+                                        <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_11" Level="Error" Message="[exception.Message]" />
+                                      </If.Else>
+                                    </If>
+                                  </ActivityAction>
+                                </Catch>
+                              </TryCatch.Catches>
+                            </TryCatch>
                           </Sequence>
                         </If.Then>
                       </If>
@@ -217,7 +258,28 @@
                         <If.Then>
                           <Sequence sap2010:WorkflowViewState.IdRef="Sequence_13">
                             <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_9" Level="Trace" Message="[&quot;Checking credential &quot; + row(&quot;Name&quot;).ToString + &quot; in orchestrator&quot;]" />
-                            <ui:GetRobotCredential Password="{x:Null}" TimeoutMS="{x:Null}" Username="{x:Null}" AssetName="[row(&quot;Credential&quot;).ToString]" DisplayName="Get Credential" sap2010:WorkflowViewState.IdRef="GetRobotCredential_1" />
+                            <TryCatch DisplayName="Try Catch" sap2010:WorkflowViewState.IdRef="TryCatch_2">
+                              <TryCatch.Try>
+                                <ui:GetRobotCredential Password="{x:Null}" TimeoutMS="{x:Null}" Username="{x:Null}" AssetName="[row(&quot;Credential&quot;).ToString]" DisplayName="Get Credential" sap2010:WorkflowViewState.IdRef="GetRobotCredential_1" />
+                              </TryCatch.Try>
+                              <TryCatch.Catches>
+                                <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch`1_2">
+                                  <ActivityAction x:TypeArguments="s:Exception">
+                                    <ActivityAction.Argument>
+                                      <DelegateInArgument x:TypeArguments="s:Exception" Name="exception" />
+                                    </ActivityAction.Argument>
+                                    <If Condition="[out_Config(&quot;ProcessMode&quot;) &lt;&gt; &quot;DEV&quot;]" DisplayName="If prd or uat" sap2010:WorkflowViewState.IdRef="If_15">
+                                      <If.Then>
+                                        <Rethrow sap2010:WorkflowViewState.IdRef="Rethrow_2" />
+                                      </If.Then>
+                                      <If.Else>
+                                        <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_12" Level="Error" Message="[exception.Message]" />
+                                      </If.Else>
+                                    </If>
+                                  </ActivityAction>
+                                </Catch>
+                              </TryCatch.Catches>
+                            </TryCatch>
                             <Assign sap2010:WorkflowViewState.IdRef="Assign_24">
                               <Assign.To>
                                 <OutArgument x:TypeArguments="ui:GenericValue">[assetValue]</OutArgument>
@@ -247,16 +309,18 @@
       </ui:ExcelApplicationScope.Body>
     </ui:ExcelApplicationScope>
     <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_7" Level="Info" Message="[&quot;End InitAllSettings.xaml, running &quot; &amp; out_Config(&quot;ProcessMode&quot;) &amp; &quot; with &quot; &amp; out_Config.Count &amp; &quot; settings&quot;]" />
-    <sads:DebugSymbol.Symbol>d2ZDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUlBBVGFzazEtQ2hhcnRTdHJpbmdQcm9mb3JtYURldGFpbFxGcmFtZXdvcmtcSW5pdEFsbFNldHRpbmdzLnhhbWxWTAP7AQ4CAQFNBU25AQIBZ04FVQ4CAWNWBVabAgIBYFcF+AEgAgEG+QEF+QGdAgIBAk1yTbYBAgFoU0pTbQIBZlBLUFcCAWRWzAFW6gECAWJWOVbAAQIBYVegAVexAQIBXl0L9QEWAgEH+QFy+QGaAgIBA2ENYZ0BAgFbYg1iyQECAVdjDWPNAQIBU2QNjgEaAgE+jwENsAEYAgEusQEN9AEYAgEIYYwBYZoBAgFcYkliVwIBWWK+AWLGAQIBWGNJY1cCAVVjwAFjygECAVRkrQFkuwECAVFqE4sBHgIBP5MBD5MBrwECATyUAQ+aASMCATebAQ+vAR8CAS+1AQ+1AawBAgEstgEPvAEjAgEnvQEP8wEfAgEJbhVutAECAU5vFXUpAgFIdhWKASUCAUCTAX6TAawBAgE9lAE+lAFMAgE6lwEVlwFEAgE5lAGsAZQBtgECATibAUCbAU4CATWhARWsARoCATC1AX21AakBAgEttgE+tgFIAgEquQEVuQFEAgEptgGmAbYBrgECASi9AUC9AUoCASXDARXwASACAQpugwFusQECAU9vRG9TAgFMchtySgIBS2+zAW+8AQIBSXZGdlUCAUZ8G4cBIAIBQaEBI6EBZAIBMaMBGaoBIgIBMscBF8sBHAIBIswBF9cBHAIBGdgBF+cBHAIBDugBF+8BIAIBC3wpfGoCAUJ+H4UBKAIBQ6gBRKgBpAECATSlAUWlAWwCATPHASXHAWICASPJARvJAVcCASTMASXMAWcCARrOARvVASYCARvYASXYAWwCAQ/aARvlASYCARDtAULtAVcCAQ3qAUPqAWUCAQyDAUqDAWECAUWAAUuAAXICAUTPAR3PAe8BAgEg0AEd1AEwAgEc2wEd2wHyAQIBF9wBHdwB+gECARXdAR3kASYCARHPAYsBzwHsAQIBIdIBUNIBXAIBHtABTtABcQIBHdsBiwHbAe8BAgEY3AF73AGjAQIBFuIBT+IBawIBFN8BUN8BXAIBEg==</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d35DOlxVc2Vyc1xzcGFtaXNoXERvY3VtZW50c1xVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUlBBVGFzazEtQ2hhcnRTdHJpbmdQcm9mb3JtYURldGFpbFxGcmFtZXdvcmtcSW5pdEFsbFNldHRpbmdzLnhhbWxoTgO5Ag4CAQFPBU+5AQIBf1AFVw4CAXtYBWAOAgF3YQVpDgIBc2oFapYCAgFwawW2AiACAQa3AgW3Ap0CAgECT3JPtgEDAYABVUpVbQIBflJLUlcCAXxdSl1tAgF6WktaVwIBeGZKZm0CAXZjS2NXAgF0ascBauUBAgFyajlquwECAXFroAFrsQECAW5xC7MCFgIBB7cCcrcCmgICAQN1DXWdAQIBa3YNdskBAgFndw13zQECAWN4DaIBGgIBTqMBDcQBGAIBPsUBDbICGAIBCHWMAXWaAQIBbHZJdlcCAWl2vgF2xgECAWh3SXdXAgFld8ABd8oBAgFkeK0BeLsBAgFhfhOfAR4CAU+nAQ+nAa8BAgFMqAEPrgEjAgFHrwEPwwEfAgE/yQEPyQGsAQIBPMoBD9ABIwIBN9EBD7ECHwIBCYIBFYIBtAECAV6DARWJASkCAViKARWeASUCAVCnAX6nAawBAgFNqAE+qAFMAgFKqwEVqwFEAgFJqAGsAagBtgECAUivAUCvAU4CAUW1ARXAARoCAUDJAX3JAakBAgE9ygE+ygFIAgE6zQEVzQFEAgE5ygGmAcoBrgECATjRAUDRAUoCATXXARWuAiACAQqCAYMBggGxAQIBX4MBRIMBUwIBXIYBG4YBSgIBW4MBswGDAbwBAgFZigFGigFVAgFWkAEbmwEgAgFRtQEjtQFkAgFBtwEZvgEiAgFC2wEX3wEcAgEy4AEXgAIcAgEhgQIXpQIcAgEOpgIXrQIgAgELkAEpkAFqAgFSkgEfmQEoAgFTvAFEvAGkAQIBRLkBRbkBbAIBQ9sBJdsBYgIBM90BG90BVwIBNOABJeABZwIBIuIBG/4BJgIBI4ECJYECbAIBD4MCG6MCJgIBEKsCQqsCVwIBDagCQ6gCZQIBDJcBSpcBYQIBVZQBS5QBcgIBVOMBHeMB7wECATDkAR39ASgCASSEAh2EAvIBAgEfhQIdmgIoAgEVmwIdogImAgER4wGLAeMB7AECATHmASHqATQCASzyASX5ASoCASWEAosBhALvAQIBIIcCIYcC/gECAR2PAiWWAioCARagAk+gAmsCARSdAlCdAlwCARLoAVToAWACAS7mAVLmAXUCAS3yATPyAXMCASb0ASn0AWACASv3ASn3AbABAgEohwJ/hwKnAQIBHo8CM48CcwIBF5ECKZECYAIBHJQCKZQCsAECARn3AZgB9wGtAQIBKZQCmAGUAq0BAgEa</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
-      <sap2010:ViewStateData Id="LogMessage_4" sap:VirtualizedContainerService.HintSize="574,91" />
-      <sap2010:ViewStateData Id="Assign_1" sap:VirtualizedContainerService.HintSize="574,60" />
-      <sap2010:ViewStateData Id="CheckTrue_1" sap:VirtualizedContainerService.HintSize="574,87" />
-      <sap2010:ViewStateData Id="ExcelGetWorkbookSheets_1" sap:VirtualizedContainerService.HintSize="538,22" />
-      <sap2010:ViewStateData Id="RemoveFromCollection`1_1" sap:VirtualizedContainerService.HintSize="538,22" />
-      <sap2010:ViewStateData Id="RemoveFromCollection`1_2" sap:VirtualizedContainerService.HintSize="538,22" />
+      <sap2010:ViewStateData Id="LogMessage_4" sap:VirtualizedContainerService.HintSize="816,91" />
+      <sap2010:ViewStateData Id="Assign_1" sap:VirtualizedContainerService.HintSize="816,60" />
+      <sap2010:ViewStateData Id="Assign_29" sap:VirtualizedContainerService.HintSize="816,60" />
+      <sap2010:ViewStateData Id="Assign_30" sap:VirtualizedContainerService.HintSize="816,60" />
+      <sap2010:ViewStateData Id="CheckTrue_1" sap:VirtualizedContainerService.HintSize="816,87" />
+      <sap2010:ViewStateData Id="ExcelGetWorkbookSheets_1" sap:VirtualizedContainerService.HintSize="780,22" />
+      <sap2010:ViewStateData Id="RemoveFromCollection`1_1" sap:VirtualizedContainerService.HintSize="780,22" />
+      <sap2010:ViewStateData Id="RemoveFromCollection`1_2" sap:VirtualizedContainerService.HintSize="780,22" />
       <sap2010:ViewStateData Id="LogMessage_5" sap:VirtualizedContainerService.HintSize="494,91" />
       <sap2010:ViewStateData Id="ExcelReadRange_1" sap:VirtualizedContainerService.HintSize="494,59" />
       <sap2010:ViewStateData Id="Assign_25" sap:VirtualizedContainerService.HintSize="242,60" />
@@ -270,7 +334,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="ForEach`1_3" sap:VirtualizedContainerService.HintSize="538,841">
+      <sap2010:ViewStateData Id="ForEach`1_3" sap:VirtualizedContainerService.HintSize="780,841">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -290,7 +354,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_18" sap:VirtualizedContainerService.HintSize="538,708">
+      <sap2010:ViewStateData Id="Sequence_18" sap:VirtualizedContainerService.HintSize="780,708">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -298,10 +362,10 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="LogMessage_8" sap:VirtualizedContainerService.HintSize="516,91" />
-      <sap2010:ViewStateData Id="ExcelReadRange_2" sap:VirtualizedContainerService.HintSize="516,59" />
+      <sap2010:ViewStateData Id="LogMessage_8" sap:VirtualizedContainerService.HintSize="758,91" />
+      <sap2010:ViewStateData Id="ExcelReadRange_2" sap:VirtualizedContainerService.HintSize="758,59" />
       <sap2010:ViewStateData Id="Continue_1" sap:VirtualizedContainerService.HintSize="200,22" />
-      <sap2010:ViewStateData Id="If_7" sap:VirtualizedContainerService.HintSize="464,207">
+      <sap2010:ViewStateData Id="If_7" sap:VirtualizedContainerService.HintSize="706,207">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -309,29 +373,34 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="LogMessage_6" sap:VirtualizedContainerService.HintSize="314,91" />
-      <sap2010:ViewStateData Id="GetRobotAsset_4" sap:VirtualizedContainerService.HintSize="314,22" />
-      <sap2010:ViewStateData Id="Sequence_14" sap:VirtualizedContainerService.HintSize="336,277">
+      <sap2010:ViewStateData Id="LogMessage_6" sap:VirtualizedContainerService.HintSize="418,91" />
+      <sap2010:ViewStateData Id="GetRobotAsset_4" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="Rethrow_1" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="LogMessage_11" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="If_14" sap:VirtualizedContainerService.HintSize="539,238" />
+      <sap2010:ViewStateData Id="Catch`1_1" sap:VirtualizedContainerService.HintSize="404,21">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="418,287" />
+      <sap2010:ViewStateData Id="Sequence_14" sap:VirtualizedContainerService.HintSize="440,542">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_6" sap:VirtualizedContainerService.HintSize="464,424" />
-      <sap2010:ViewStateData Id="LogMessage_9" sap:VirtualizedContainerService.HintSize="314,91" />
-      <sap2010:ViewStateData Id="GetRobotCredential_1" sap:VirtualizedContainerService.HintSize="314,22" />
-      <sap2010:ViewStateData Id="Assign_24" sap:VirtualizedContainerService.HintSize="314,60" />
-      <sap2010:ViewStateData Id="Sequence_13" sap:VirtualizedContainerService.HintSize="336,377">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_8" sap:VirtualizedContainerService.HintSize="464,524" />
-      <sap2010:ViewStateData Id="Assign_23" sap:VirtualizedContainerService.HintSize="464,60" />
-      <sap2010:ViewStateData Id="Sequence_11" sap:VirtualizedContainerService.HintSize="486,1459">
+      <sap2010:ViewStateData Id="If_6" sap:VirtualizedContainerService.HintSize="706,689" />
+      <sap2010:ViewStateData Id="LogMessage_9" sap:VirtualizedContainerService.HintSize="559,91" />
+      <sap2010:ViewStateData Id="GetRobotCredential_1" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="Rethrow_2" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="LogMessage_12" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="If_15" sap:VirtualizedContainerService.HintSize="539,238" />
+      <sap2010:ViewStateData Id="Catch`1_2" sap:VirtualizedContainerService.HintSize="545,307">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -339,7 +408,18 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="ForEachRow_3" sap:VirtualizedContainerService.HintSize="516,1606">
+      <sap2010:ViewStateData Id="TryCatch_2" sap:VirtualizedContainerService.HintSize="559,469" />
+      <sap2010:ViewStateData Id="Assign_24" sap:VirtualizedContainerService.HintSize="559,60" />
+      <sap2010:ViewStateData Id="Sequence_13" sap:VirtualizedContainerService.HintSize="581,824">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="If_8" sap:VirtualizedContainerService.HintSize="706,971" />
+      <sap2010:ViewStateData Id="Assign_23" sap:VirtualizedContainerService.HintSize="706,60" />
+      <sap2010:ViewStateData Id="Sequence_11" sap:VirtualizedContainerService.HintSize="728,2171">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -347,7 +427,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_6" sap:VirtualizedContainerService.HintSize="538,1960">
+      <sap2010:ViewStateData Id="ForEachRow_3" sap:VirtualizedContainerService.HintSize="758,2318">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -355,7 +435,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_12" sap:VirtualizedContainerService.HintSize="560,3899">
+      <sap2010:ViewStateData Id="Sequence_6" sap:VirtualizedContainerService.HintSize="780,2672">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -363,9 +443,17 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="ExcelApplicationScope_1" sap:VirtualizedContainerService.HintSize="574,4008" />
-      <sap2010:ViewStateData Id="LogMessage_7" sap:VirtualizedContainerService.HintSize="574,91" />
-      <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="596,4678">
+      <sap2010:ViewStateData Id="Sequence_12" sap:VirtualizedContainerService.HintSize="802,4611">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="ExcelApplicationScope_1" sap:VirtualizedContainerService.HintSize="816,4720" />
+      <sap2010:ViewStateData Id="LogMessage_7" sap:VirtualizedContainerService.HintSize="816,91" />
+      <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="838,5590">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -373,7 +461,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="GetAllSettings_1" sap:VirtualizedContainerService.HintSize="636,4758" />
+      <sap2010:ViewStateData Id="GetAllSettings_1" sap:VirtualizedContainerService.HintSize="878,5670" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
