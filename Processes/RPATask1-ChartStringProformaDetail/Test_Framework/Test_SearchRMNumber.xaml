@@ -65,15 +65,16 @@
       <AssemblyReference>System.ServiceModel</AssemblyReference>
       <AssemblyReference>System.ValueTuple</AssemblyReference>
       <AssemblyReference>System.ComponentModel.Composition</AssemblyReference>
-      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
       <AssemblyReference>System.Collections.Immutable</AssemblyReference>
       <AssemblyReference>Microsoft.VisualStudio.Services.Common</AssemblyReference>
+      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence DisplayName="Test_SearchRMNumber" sap2010:WorkflowViewState.IdRef="Sequence_1">
     <Sequence.Variables>
       <Variable x:TypeArguments="sd:DataTable" Name="proposals" />
       <Variable x:TypeArguments="x:String" Name="rmNumber" />
+      <Variable x:TypeArguments="x:Boolean" Name="initialised" />
     </Sequence.Variables>
     <If Condition="[in_TestingRow IsNot Nothing]" sap2010:WorkflowViewState.IdRef="If_1">
       <If.Then>
@@ -98,6 +99,51 @@
           </Assign.Value>
         </Assign>
       </If.Else>
+    </If>
+    <ui:UiElementExists DisplayName="UniFi Exists" Exists="[initialised]" sap2010:WorkflowViewState.IdRef="UiElementExists_1">
+      <ui:UiElementExists.Target>
+        <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Selector="&lt;html app='chrome.exe' title='Maintain Staged Proposals' /&gt;" TimeoutMS="3000" WaitForReady="INTERACTIVE" />
+      </ui:UiElementExists.Target>
+    </ui:UiElementExists>
+    <If Condition="[Not initialised]" sap2010:WorkflowViewState.IdRef="If_4">
+      <If.Then>
+        <Sequence sap2010:WorkflowViewState.IdRef="Sequence_2">
+          <Sequence.Variables>
+            <Variable x:TypeArguments="x:String" Name="credentials" />
+            <Variable x:TypeArguments="x:String" Name="url" />
+            <Variable x:TypeArguments="scg:List(x:String)" Name="navigation" />
+          </Sequence.Variables>
+          <Assign sap2010:WorkflowViewState.IdRef="Assign_4">
+            <Assign.To>
+              <OutArgument x:TypeArguments="scg:List(x:String)">[navigation]</OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="scg:List(x:String)">[{"Grants", "Proposals", "Maintain Staged Proposals"}.ToList]</InArgument>
+            </Assign.Value>
+          </Assign>
+          <ui:InputDialog DisplayName="Input Dialog" sap2010:WorkflowViewState.IdRef="InputDialog_1" IsPassword="False" Label="Select your credentials asset" Options="[{&quot;Proforma-PRD-UniFi&quot;, &quot;Proforma-UAT-UniFi&quot;, &quot;Proforma-DEV-UniFi&quot;}]" Title="Testing UniFi">
+            <ui:InputDialog.Result>
+              <OutArgument x:TypeArguments="x:String">[credentials]</OutArgument>
+            </ui:InputDialog.Result>
+          </ui:InputDialog>
+          <ui:InputDialog DisplayName="Input Dialog" sap2010:WorkflowViewState.IdRef="InputDialog_2" IsPassword="False" Label="Select the UniFi url" Options="[{&quot;https://www.unifi.uq.edu.au/psp/ps/?cmd=login&quot;, &quot;https://fs92rept.dev.unifi.uq.edu.au/psp/ps/?cmd=login&quot;}]" Title="Testing UniFi">
+            <ui:InputDialog.Result>
+              <OutArgument x:TypeArguments="x:String">[url]</OutArgument>
+            </ui:InputDialog.Result>
+          </ui:InputDialog>
+          <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke LoginUniFi workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_2" UnSafe="False" WorkflowFileName="UniFi\LoginUniFi.xaml">
+            <ui:InvokeWorkflowFile.Arguments>
+              <InArgument x:TypeArguments="x:String" x:Key="in_CredentialsAsset">[credentials]</InArgument>
+              <InArgument x:TypeArguments="x:String" x:Key="in_UniFiUrl">[url]</InArgument>
+            </ui:InvokeWorkflowFile.Arguments>
+          </ui:InvokeWorkflowFile>
+          <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke NavToMainMenuItem workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_3" UnSafe="False" WorkflowFileName="UniFi\NavToMainMenuItem.xaml">
+            <ui:InvokeWorkflowFile.Arguments>
+              <InArgument x:TypeArguments="scg:List(x:String)" x:Key="in_NavigationSteps">[navigation]</InArgument>
+            </ui:InvokeWorkflowFile.Arguments>
+          </ui:InvokeWorkflowFile>
+        </Sequence>
+      </If.Then>
     </If>
     <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke SearchRMNumber workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_1" UnSafe="False" WorkflowFileName="UniFi\SearchRMNumber.xaml">
       <ui:InvokeWorkflowFile.Arguments>
@@ -142,19 +188,33 @@
         </ActivityAction>
       </ui:BrowserScope.Body>
     </ui:BrowserScope>
-    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[proposals.Select(&quot;[RM Load Status] = 'Edit'&quot;).Count &amp; &quot; of &quot; +&#xD;&#xA;String.Join(&quot;, &quot;, proposals.AsEnumerable.Select(Function(r) r(&quot;RM Load Status&quot;).ToString))]" />
+    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[proposals.Select(&quot;[RM Load Status] = 'Edit'&quot;).Count &amp; &quot; of &quot; +&#xA;String.Join(&quot;, &quot;, proposals.AsEnumerable.Select(Function(r) r(&quot;RM Load Status&quot;).ToString))]" />
     <If Condition="[proposals.Select(&quot;[RM Load Status] = 'Edit'&quot;).Count = 0]" DisplayName="If no rows to edit" sap2010:WorkflowViewState.IdRef="If_3">
       <If.Then>
-        <TerminateWorkflow DisplayName="Terminate No Results" sap2010:WorkflowViewState.IdRef="TerminateWorkflow_1" Reason="[String.Format(&quot;10.2-11.3&quot; + vbTab +&#xD;&#xA;  &quot;No Updated Entries&quot; + vbNewLine +&#xD;&#xA;  &quot;I wasn't able to update {0} as the rows were: {1}&quot;,&#xD;&#xA;  rmNumber,&#xD;&#xA;  String.Join(&quot;, &quot;, proposals.AsEnumerable.Select(Function(r) r(&quot;RM Load Status&quot;).ToString))&#xD;&#xA;)]" />
+        <TerminateWorkflow DisplayName="Terminate No Results" sap2010:WorkflowViewState.IdRef="TerminateWorkflow_1" Reason="[String.Format(&quot;10.2-11.3&quot; + vbTab +&#xA;  &quot;No Updated Entries&quot; + vbNewLine +&#xA;  &quot;I wasn't able to update {0} as the rows were: {1}&quot;,&#xA;  rmNumber,&#xA;  String.Join(&quot;, &quot;, proposals.AsEnumerable.Select(Function(r) r(&quot;RM Load Status&quot;).ToString))&#xA;)]" />
       </If.Then>
     </If>
-    <sads:DebugSymbol.Symbol>d29DOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUlBBVGFzazEtQ2hhcnRTdHJpbmdQcm9mb3JtYURldGFpbFxUZXN0X0ZyYW1ld29ya1xUZXN0X1NlYXJjaFJNTnVtYmVyLnhhbWwfSQOYAQ4CAQFOBWUKAgEeZgVrHQIBGGwFdwoCARF4BXj9AQIBDHkFkAEXAgEIkQEFkQHHAgIBBpIBBZYBCgIBAk4TTjICAR9QCVcSAgEkWgljEgIBIGhEaE4CARxpUWlcAgEaZrsBZtYBAgEZbBNsLgIBEm4JdRICARR4RnhTAgEPeIkBeMkBAgENeZkCedwCAgELfwuNARYCAQmRAXKRAcQCAgEHkgETkgFYAgEDlAEJlAHMAwIBBFU0VVkCASdSNVI/AgElYA9gPgIBI1w1XD8CASFzNHM6AgEXcDVwPwIBFYsBngGLAY0CAgEKlAF8lAHJAwIBBQ==</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d29DOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUlBBVGFzazEtQ2hhcnRTdHJpbmdQcm9mb3JtYURldGFpbFxUZXN0X0ZyYW1ld29ya1xUZXN0X1NlYXJjaFJNTnVtYmVyLnhhbWw6SQPGAQ4CAQFPBWYKAgFBZwVrGgIBPGwFkwEKAgEelAEFmQEdAgEYmgEFpQEKAgERpgEFpgH9AQIBDKcBBb4BFwIBCL8BBb8BwgICAQbAAQXEAQoCAQJPE08yAgFCUQlYEgIBR1sJZBICAUNpSmmNAQIBQGmYAWmeAQIBP2c7Z0oCAT1sE2wmAgEfbgmRARQCASGWAUSWAU4CARyXAVGXAVwCARqUAbsBlAHWAQIBGZoBE5oBLgIBEpwBCaMBEgIBFKYBRqYBUwIBD6YBiQGmAckBAgENpwGZAqcB3AICAQutAQu7ARYCAQm/AXK/Ab8CAgEHwAETwAFYAgEDwgEJwgGzAwIBBFY0VlkCAUpTNVM/AgFIYQ9hPgIBRl01XT8CAUR0C3sUAgE4fAuAARwCATKBAQuFARwCASyGAQuLASMCASaMAQuQASMCASKhATShAToCAReeATWeAT8CARW5AZ4BuQGNAgIBCsIBfMIBsAMCAQV5QHl9AgE7dkF2TQIBOXx/fJ4BAgE3fKcBfIsCAgE2fjd+RAIBNHySAnyhAgIBM4EBf4EBlQECATGBAZ4BgQGhAgIBMIMBN4MBPAIBLoEBqAKBAbcCAgEtiQFKiQFPAgEqiAFSiAFfAgEohgG9AYYB1AECASeOAVuOAWcCASSMAcQBjAHiAQIBIw==</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
       <sap2010:ViewStateData Id="Assign_1" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="Assign_2" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="509,208" />
+      <sap2010:ViewStateData Id="UiElementExists_1" sap:VirtualizedContainerService.HintSize="509,68" />
+      <sap2010:ViewStateData Id="Assign_4" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="InputDialog_1" sap:VirtualizedContainerService.HintSize="314,92" />
+      <sap2010:ViewStateData Id="InputDialog_2" sap:VirtualizedContainerService.HintSize="314,92" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_2" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_3" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="336,702">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="If_4" sap:VirtualizedContainerService.HintSize="509,850" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_1" sap:VirtualizedContainerService.HintSize="509,87" />
       <sap2010:ViewStateData Id="Assign_3" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="If_2" sap:VirtualizedContainerService.HintSize="509,208" />
@@ -171,14 +231,14 @@
       <sap2010:ViewStateData Id="LogMessage_1" sap:VirtualizedContainerService.HintSize="509,91" />
       <sap2010:ViewStateData Id="TerminateWorkflow_1" sap:VirtualizedContainerService.HintSize="200,22" />
       <sap2010:ViewStateData Id="If_3" sap:VirtualizedContainerService.HintSize="509,208" />
-      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="531,1570">
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="531,2568">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Test_SearchRMNumber_1" sap:VirtualizedContainerService.HintSize="571,1650" />
+      <sap2010:ViewStateData Id="Test_SearchRMNumber_1" sap:VirtualizedContainerService.HintSize="571,2648" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>

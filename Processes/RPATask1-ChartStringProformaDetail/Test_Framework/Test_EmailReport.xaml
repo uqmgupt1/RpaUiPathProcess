@@ -42,6 +42,7 @@
       <x:String>UiPath.Core</x:String>
       <x:String>UiPath.Core.Activities</x:String>
       <x:String>Microsoft.VisualBasic.CompilerServices</x:String>
+      <x:String>System.Xml.Serialization</x:String>
     </sco:Collection>
   </TextExpression.NamespacesForImplementation>
   <TextExpression.ReferencesForImplementation>
@@ -69,7 +70,6 @@
       <AssemblyReference>UiPath.Studio.Plugin.Workflow</AssemblyReference>
       <AssemblyReference>System.Collections.Immutable</AssemblyReference>
       <AssemblyReference>Microsoft.VisualStudio.Services.Common</AssemblyReference>
-      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence DisplayName="Test_EmailReport" sap2010:WorkflowViewState.IdRef="Sequence_1">
@@ -81,6 +81,7 @@
       <Variable x:TypeArguments="scg:List(ui:QueueItem)" Default="[New List(Of QueueItem)]" Name="successful" />
       <Variable x:TypeArguments="scg:IEnumerable(ui:QueueItem)" Name="TransactionData" />
       <Variable x:TypeArguments="x:String" Name="reportMessage" />
+      <Variable x:TypeArguments="sd:DataTable" Name="issuesTable" />
     </Sequence.Variables>
     <ui:CloseWindow UseWindow="{x:Null}" ContinueOnError="True" DisplayName="Close Window 'iexplore.exe'" sap2010:WorkflowViewState.IdRef="CloseWindow_1" InformativeScreenshot="29868bddc011177e2fb38b69e0c2f933" Selector="&lt;html app='iexplore.exe' /&gt;" TimeoutMS="1000" WaitForReady="INTERACTIVE" />
     <If Condition="[in_TestingRow IsNot Nothing]" sap2010:WorkflowViewState.IdRef="If_1">
@@ -182,7 +183,7 @@
         </ActivityAction>
       </ui:ForEach.Body>
     </ui:ForEach>
-    <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke BuildJobReport workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_3" UnSafe="False" WorkflowFileName="Exchange\BuildJobReport.xaml">
+    <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke BuildReport workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_3" UnSafe="False" WorkflowFileName="Reporting\BuildReport.xaml">
       <ui:InvokeWorkflowFile.Arguments>
         <InArgument x:TypeArguments="x:Int32" x:Key="in_Successful">[successful.Count]</InArgument>
         <InArgument x:TypeArguments="scg:List(ui:QueueItem)" x:Key="in_RuleExceptions">[ruleExceptions]</InArgument>
@@ -190,8 +191,10 @@
         <InArgument x:TypeArguments="x:Int32" x:Key="in_TotalItems">[TransactionData.Count]</InArgument>
         <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)" x:Key="in_Config">[in_Config]</InArgument>
         <OutArgument x:TypeArguments="x:String" x:Key="out_MessageBody">[reportMessage]</OutArgument>
+        <OutArgument x:TypeArguments="sd:DataTable" x:Key="out_IssuesTable">[issuesTable]</OutArgument>
       </ui:InvokeWorkflowFile.Arguments>
     </ui:InvokeWorkflowFile>
+    <ui:WriteRange AddHeaders="True" DataTable="[issuesTable]" DisplayName="Write Range" sap2010:WorkflowViewState.IdRef="WriteRange_1" SheetName="ReportResults" StartingCell="A1" WorkbookPath="TestData.xlsx" />
     <ui:WriteTextFile DisplayName="Write Text File" FileName="tempReport.html" sap2010:WorkflowViewState.IdRef="WriteTextFile_1" Text="[reportMessage]" />
     <ui:OpenBrowser UiBrowser="{x:Null}" BrowserType="IE" DisplayName="Open Browser" Hidden="False" sap2010:WorkflowViewState.IdRef="OpenBrowser_1" NewSession="True" Private="False" Url="[Path.GetFullPath(&quot;tempReport.html&quot;)]">
       <ui:OpenBrowser.Body>
@@ -202,7 +205,7 @@
         </ActivityAction>
       </ui:OpenBrowser.Body>
     </ui:OpenBrowser>
-    <sads:DebugSymbol.Symbol>d4QBQzpcVXNlcnNcc3BhbWlzaFxEb2N1bWVudHNcVWlQYXRoXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXFJQQVRhc2sxLUNoYXJ0U3RyaW5nUHJvZm9ybWFEZXRhaWxcVGVzdF9GcmFtZXdvcmtcVGVzdF9FbWFpbFJlcG9ydC54YW1sQ0sDzgEOAgEBT0JPXAIBBFBCUFwCAQNRQlFcAgECVQVVrwICAU1WBWsKAgFDbAVxHQIBPXIFjgEQAgEujwEFnwESAgEpoAEFoAHFAQIBJ6EBBbgBEgIBFbkBBcIBHQIBC8MBBcMBmwECAQfEAQXMARYCAQVV3QFVgAICAVBViwJVkQICAU9VOlVAAgFOVhNWMgIBRFgJXxICAUliCWkSAgFFb15vaQIBQWy8AWzcAQIBQG5GblICAT50CXSTAwIBOXwNigESAgEvjwGUAY8BpwECAS2VAQucARQCASqgAXKgAcIBAgEooQGlAaEBuAECASanAQu1ARACARa9AVa9AWQCARS7AUW7AVcCARO8AVi8AWgCARK+AUW+AVwCARHAAUnAAVgCAQ+/AVy/AWcCAQ25AbsBuQHZAQIBDMMBhwHDAZgBAgEJwwE+wwFPAgEIxAG7AcQB7AECAQZdNF1ZAgFMWjVaQQIBSmc0Z0cCAUhkNWRBAgFGdMUCdPUCAgE7dP0CdJADAgE6fBt8WgIBMH4RfkgCATiBARGIARwCATKaATaaAXcCASyXATeXAUcCASunARmnAUUCARepAQ+pAb8BAgEirAEPswEUAgEYggETggGZAQIBNYMBE4cBKwIBM6kBSqkBWAIBJakBtAGpAbwBAgEjrAEdrAFqAgEZrgETrgHMAQIBHrEBE7EByAECARqCAYEBggGWAQIBNoMByQGDAd4BAgE0rgFOrgFgAgEhrgHBAa4ByQECAR+xAU6xAV4CAR2xAb0BsQHFAQIBGw==</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d2xDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUlBBVGFzazEtQ2hhcnRTdHJpbmdQcm9mb3JtYURldGFpbFxUZXN0X0ZyYW1ld29ya1xUZXN0X0VtYWlsUmVwb3J0LnhhbWxJSwPRAQ4CAQFPQk9cAgEEUEJQXAIBA1FCUVwCAQJWBVavAgIBVVcFbAoCAUttBXIdAgFFcwWPARACATaQAQWgARICATGhAQWhAcUBAgEvogEFuQESAgEdugEFxAEdAgERxQEFxQHUAQIBC8YBBcYBmwECAQfHAQXPARYCAQVW3QFWgAICAVhWiwJWkQICAVdWOlZAAgFWVxNXMgIBTFkJYBICAVFjCWoSAgFNcF5waQIBSW28AW3cAQIBSG9Gb1ICAUZ1CXWTAwIBQX0NiwESAgE3kAGUAZABpwECATWWAQudARQCATKhAXKhAcIBAgEwogGlAaIBuAECAS6oAQu2ARACAR6+AVa+AWQCARy8AUW8AVcCARvCAU3CAVoCARm9AVi9AWgCARi/AUW/AVwCARfBAUnBAVgCARXAAVzAAWcCARO6AbgBugHUAQIBEsUBsAHFAbQBAgEQxQEwxQE/AgEOxQGTAcUBogECAQ3FAcIBxQHRAQIBDMYBhwHGAZgBAgEJxgE+xgFPAgEIxwG7AccB7AECAQZeNF5ZAgFUWzVbQQIBUmg0aEcCAVBlNWVBAgFOdcUCdfUCAgFDdf0CdZADAgFCfRt9WgIBOH8Rf0gCAUCCARGJARwCATqbATabAXcCATSYATeYAUcCATOoARmoAUUCAR+qAQ+qAb8BAgEqrQEPtAEUAgEggwETgwGZAQIBPYQBE4gBKwIBO6oBSqoBWAIBLaoBtAGqAbwBAgErrQEdrQFqAgEhrwETrwHMAQIBJrIBE7IByAECASKDAYEBgwGWAQIBPoQByQGEAd4BAgE8rwFOrwFgAgEprwHBAa8ByQECASeyAU6yAV4CASWyAb0BsgHFAQIBIw==</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -263,16 +266,17 @@
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="InvokeWorkflowFile_3" sap:VirtualizedContainerService.HintSize="705,87" />
+      <sap2010:ViewStateData Id="WriteRange_1" sap:VirtualizedContainerService.HintSize="705,115" />
       <sap2010:ViewStateData Id="WriteTextFile_1" sap:VirtualizedContainerService.HintSize="705,87" />
       <sap2010:ViewStateData Id="OpenBrowser_1" sap:VirtualizedContainerService.HintSize="705,114" />
-      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="727,2235">
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="727,2390">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Test_EmailReport_1" sap:VirtualizedContainerService.HintSize="767,2315" />
+      <sap2010:ViewStateData Id="Test_EmailReport_1" sap:VirtualizedContainerService.HintSize="767,2470" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
