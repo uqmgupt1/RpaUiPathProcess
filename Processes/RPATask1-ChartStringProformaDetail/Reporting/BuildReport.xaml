@@ -12,13 +12,16 @@
  xmlns:ui="http://schemas.uipath.com/workflow/activities"
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <x:Members>
-    <x:Property Name="in_Successful" Type="InArgument(x:Int32)" />
+    <x:Property Name="in_Successful" Type="InArgument(scg:List(ui:QueueItem))" />
     <x:Property Name="in_RuleExceptions" Type="InArgument(scg:List(ui:QueueItem))" />
     <x:Property Name="in_SystemErrors" Type="InArgument(scg:List(ui:QueueItem))" />
     <x:Property Name="in_TotalItems" Type="InArgument(x:Int32)" />
-    <x:Property Name="in_Config" Type="InArgument(scg:Dictionary(x:String, x:String))" />
     <x:Property Name="out_MessageBody" Type="OutArgument(x:String)" />
     <x:Property Name="out_IssuesTable" Type="OutArgument(sd:DataTable)" />
+    <x:Property Name="in_EmailTemplate" Type="InArgument(x:String)" />
+    <x:Property Name="in_ProcessName" Type="InArgument(x:String)" />
+    <x:Property Name="in_SignatureLogo" Type="InArgument(x:String)" />
+    <x:Property Name="in_SignatureBanner" Type="InArgument(x:String)" />
   </x:Members>
   <mva:VisualBasic.Settings>
     <x:Null />
@@ -104,7 +107,7 @@
           <OutArgument x:TypeArguments="s:String[]">[html]</OutArgument>
         </Assign.To>
         <Assign.Value>
-          <InArgument x:TypeArguments="s:String[]">[File.ReadAllLines(in_Config("Email_Job"))]</InArgument>
+          <InArgument x:TypeArguments="s:String[]">[File.ReadAllLines(in_EmailTemplate)]</InArgument>
         </Assign.Value>
       </Assign>
       <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Trace" Message="[String.Join(vbNewLine, html)]" />
@@ -153,6 +156,38 @@
       </ui:ForEach>
       <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[&quot;Got template parts &quot; + String.Join(&quot;, &quot;, templateParts.Keys)]" />
     </Sequence>
+    <ui:ForEach x:TypeArguments="ui:QueueItem" CurrentIndex="{x:Null}" DisplayName="For Each successful item" sap2010:WorkflowViewState.IdRef="ForEach`1_9" Values="[in_Successful]">
+      <ui:ForEach.Body>
+        <ActivityAction x:TypeArguments="ui:QueueItem">
+          <ActivityAction.Argument>
+            <DelegateInArgument x:TypeArguments="ui:QueueItem" Name="item" />
+          </ActivityAction.Argument>
+          <Sequence DisplayName="Successful row entry" sap2010:WorkflowViewState.IdRef="Sequence_23">
+            <Sequence.Variables>
+              <Variable x:TypeArguments="ui:ProcessingException" Name="exception" />
+              <Variable x:TypeArguments="sd:DataRow" Name="row" />
+            </Sequence.Variables>
+            <Assign DisplayName="Init row" sap2010:WorkflowViewState.IdRef="Assign_80">
+              <Assign.To>
+                <OutArgument x:TypeArguments="sd:DataRow">[row]</OutArgument>
+              </Assign.To>
+              <Assign.Value>
+                <InArgument x:TypeArguments="sd:DataRow">[out_IssuesTable.NewRow]</InArgument>
+              </Assign.Value>
+            </Assign>
+            <Assign DisplayName="Assign reference" sap2010:WorkflowViewState.IdRef="Assign_81">
+              <Assign.To>
+                <OutArgument x:TypeArguments="x:Object">[row("Reference")]</OutArgument>
+              </Assign.To>
+              <Assign.Value>
+                <InArgument x:TypeArguments="x:String">[If(item.Reference.Length &gt; 25, item.Reference.Substring(0, 22) + "...", item.Reference)]</InArgument>
+              </Assign.Value>
+            </Assign>
+            <ui:AddDataRow ArrayRow="{x:Null}" DataRow="[row]" DataTable="[out_IssuesTable]" DisplayName="Add Successful Row" sap2010:WorkflowViewState.IdRef="AddDataRow_3" />
+          </Sequence>
+        </ActivityAction>
+      </ui:ForEach.Body>
+    </ui:ForEach>
     <If Condition="[in_TotalItems &gt; 0]" DisplayName="If any items processed" sap2010:WorkflowViewState.IdRef="If_9">
       <If.Then>
         <Assign DisplayName="Assign number of successful documents" sap2010:WorkflowViewState.IdRef="Assign_11">
@@ -161,9 +196,9 @@
           </Assign.To>
           <Assign.Value>
             <InArgument x:TypeArguments="x:String" xml:space="preserve">[templateParts("SuccessMessage").
-Replace("{ALL}", If(in_Successful &lt;&gt; in_TotalItems, "", If(in_Successful = 1, "the ", "all "))).
-Replace("{SUCCESS}", in_Successful.ToString).
-Replace("{S}", If(in_Successful &lt;&gt; in_TotalItems, "s", ""))]</InArgument>
+Replace("{ALL}", If(in_Successful.Count &lt;&gt; in_TotalItems, "", If(in_Successful.Count = 1, "the ", "all "))).
+Replace("{SUCCESS}", in_Successful.Count.ToString).
+Replace("{S}", If(in_Successful.Count &lt;&gt; in_TotalItems, "s", ""))]</InArgument>
           </Assign.Value>
         </Assign>
       </If.Then>
@@ -449,7 +484,7 @@ Replace("{ALSO}", If(in_RuleExceptions.Count &gt; 0, "also ", ""))]</InArgument>
         </Assign>
       </If.Else>
     </If>
-    <If Condition="[in_Successful &lt;&gt; in_TotalItems]" DisplayName="If any errors or exceptions" sap2010:WorkflowViewState.IdRef="If_7">
+    <If Condition="[in_Successful.Count &lt;&gt; in_TotalItems]" DisplayName="If any errors or exceptions" sap2010:WorkflowViewState.IdRef="If_7">
       <If.Then>
         <Sequence DisplayName="Set exception message" sap2010:WorkflowViewState.IdRef="Sequence_9">
           <Sequence.Variables>
@@ -505,21 +540,20 @@ Replace("{SYSTEM_ERRORS}", seMessages)]</InArgument>
           <InArgument x:TypeArguments="x:String">[Now.ToString("hh:mm:ss tt")]</InArgument>
         </Assign.Value>
       </Assign>
-      <Assign DisplayName="Assign process name">
+      <Assign DisplayName="Assign process name" sap2010:WorkflowViewState.IdRef="Assign_79">
         <Assign.To>
           <OutArgument x:TypeArguments="x:String">[process]</OutArgument>
         </Assign.To>
         <Assign.Value>
-          <InArgument x:TypeArguments="x:String">[in_Config("logF_BusinessProcessName")]</InArgument>
+          <InArgument x:TypeArguments="x:String">[in_ProcessName]</InArgument>
         </Assign.Value>
-        <sap2010:WorkflowViewState.IdRef>Assign_79</sap2010:WorkflowViewState.IdRef>
       </Assign>
       <Assign DisplayName="Assign email logo" sap2010:WorkflowViewState.IdRef="Assign_39">
         <Assign.To>
           <OutArgument x:TypeArguments="x:String">[logo]</OutArgument>
         </Assign.To>
         <Assign.Value>
-          <InArgument x:TypeArguments="x:String">[Path.GetFileName(in_Config("Email_Logo"))]</InArgument>
+          <InArgument x:TypeArguments="x:String">[Path.GetFileName(in_SignatureLogo)]</InArgument>
         </Assign.Value>
       </Assign>
       <Assign DisplayName="Assign email banner" sap2010:WorkflowViewState.IdRef="Assign_78">
@@ -527,7 +561,7 @@ Replace("{SYSTEM_ERRORS}", seMessages)]</InArgument>
           <OutArgument x:TypeArguments="x:String">[banner]</OutArgument>
         </Assign.To>
         <Assign.Value>
-          <InArgument x:TypeArguments="x:String">[Path.GetFileName(in_Config("Email_Banner"))]</InArgument>
+          <InArgument x:TypeArguments="x:String">[Path.GetFileName(in_SignatureBanner)]</InArgument>
         </Assign.Value>
       </Assign>
       <Assign DisplayName="Assign message body" sap2010:WorkflowViewState.IdRef="Assign_41">
@@ -546,7 +580,7 @@ Replace("{BANNER}", banner)]</InArgument>
         </Assign.Value>
       </Assign>
     </Sequence>
-    <sads:DebugSymbol.Symbol>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</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>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</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -567,6 +601,25 @@ Replace("{BANNER}", banner)]</InArgument>
       <sap2010:ViewStateData Id="ForEach`1_3" sap:VirtualizedContainerService.HintSize="547,566" />
       <sap2010:ViewStateData Id="LogMessage_2" sap:VirtualizedContainerService.HintSize="547,91" />
       <sap2010:ViewStateData Id="Sequence_6" sap:VirtualizedContainerService.HintSize="591,1052">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Assign_80" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="Assign_81" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="AddDataRow_3" sap:VirtualizedContainerService.HintSize="242,22" />
+      <sap2010:ViewStateData Id="Sequence_23" sap:VirtualizedContainerService.HintSize="264,346">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="ForEach`1_9" sap:VirtualizedContainerService.HintSize="591,480">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -707,14 +760,14 @@ Replace("{BANNER}", banner)]</InArgument>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_5" sap:VirtualizedContainerService.HintSize="613,5843">
+      <sap2010:ViewStateData Id="Sequence_5" sap:VirtualizedContainerService.HintSize="613,6363">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="BuildJobReport_1" sap:VirtualizedContainerService.HintSize="653,5923" />
+      <sap2010:ViewStateData Id="BuildJobReport_1" sap:VirtualizedContainerService.HintSize="653,6443" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
