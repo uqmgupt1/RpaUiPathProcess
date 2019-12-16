@@ -78,6 +78,7 @@
       <AssemblyReference>System.ValueTuple</AssemblyReference>
       <AssemblyReference>UiPath.Studio.Plugin.Workflow</AssemblyReference>
       <AssemblyReference>Newtonsoft.Json</AssemblyReference>
+      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence sap2010:Annotation.AnnotationText="This workflow sets the TransactionStatus and Logs that status and details in extra Logging Fields. &#xA;The flowchart branches out into the three possible Transaction Statuses: Success, Business Exception and Application Exception. &#xA;&#xA;Each branch analyzes the type of content of TransactionItem. If its not empty and is a QueueItem, then it means we are using a Orchestrator queue, so we must call the “Set Transaction Status” activity to inform Orchestrator about the outcome of our transaction. If TransactionItem is not a QueueItem, we can skip passing it and the “Set Transaction Status” activity will not be triggered. &#xA;&#xA;After that we log the result of the transaction within custom log fields to make it easier to search for within results. &#xA;&#xA;This workflow is also where incrementing of the io_TransactionNumber variable takes place. If we have an application exception and our MaxRetryNumber has not been reached, we increment the io_RetryNumber variable and not the io_TransactionNumber variables. This is done in the Robot Retry flowchart, which manages the retry mechanism of the framework and which is part of the &quot;Handle System Error&quot; sequence." DisplayName="SetTransactionStatus" sap2010:WorkflowViewState.IdRef="Sequence_11">
@@ -87,8 +88,9 @@
     </Sequence.Variables>
     <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke GetAppCredentials workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_4" UnSafe="False" WorkflowFileName="Framework\GetAppCredentials.xaml">
       <ui:InvokeWorkflowFile.Arguments>
+        <InArgument x:TypeArguments="x:String" x:Key="in_Format">Email</InArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="in_Credential">[in_Config("SSO Credentials")]</InArgument>
         <OutArgument x:TypeArguments="x:String" x:Key="out_Username">[username]</OutArgument>
-        <InArgument x:TypeArguments="x:String" x:Key="in_Credential">[in_Config("CredentialsExchange")]</InArgument>
         <OutArgument x:TypeArguments="ss:SecureString" x:Key="out_Password" />
         <OutArgument x:TypeArguments="x:String" x:Key="out_Plaintext">[password]</OutArgument>
       </ui:InvokeWorkflowFile.Arguments>
@@ -117,7 +119,6 @@
                   <InArgument x:TypeArguments="x:String" x:Key="Proforma Updated">[in_TransactionCounted.ToString]</InArgument>
                   <InArgument x:TypeArguments="x:String" x:Key="Proforma Skipped">[in_TransactionSkipped.ToString]</InArgument>
                 </ui:SetTransactionStatus.Output>
-                <sap2010:WorkflowViewState.IdRef>SetTransactionStatus_1</sap2010:WorkflowViewState.IdRef>
               </ui:SetTransactionStatus>
             </TryCatch.Finally>
           </TryCatch>
@@ -332,7 +333,7 @@
         </If>
       </If.Else>
     </If>
-    <sads:DebugSymbol.Symbol>d2tDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUlBBVGFzazEtQ2hhcnRTdHJpbmdQcm9mb3JtYURldGFpbFxGcmFtZXdvcmtcU2V0VHJhbnNhY3Rpb25TdGF0dXMueGFtbHcBdwGBAQECUwPQAg4CAQFYBV8dAwGrAWAFzgIKAgECW0ZbaAMBsQFaRlpQAwGvAV1HXVEDAa0BWL4BWOABAwGsAWATYFACAQNiCZcBFAIBfpoBCcwCDgIBBmMLexYDAZMBfAuDAR0DAYwBhAELhAGxAQMBiQGFAQuOASADAYQBjwELlgEUAgF/mgEXmgE5AgEHnAENzgEYAgFT0QENygIYAgEJZQ9loQMDAaABcg95KQMBlwFtE22bAQMBlAGBAVGBAWMDAZEBf1V/dAMBjwGAAVGAAW8DAY4BflV+XAMBjQGEAXiEAa4BAwGKAYgBOIgBTgMBiAGJATiJAU4DAYcBigE4igFKAwGGAYsBOIsBSgMBhQGUATWUAU0DAYIBkQE2kQFMAwGAAZ0BD7IBGgIBaLMBD7oBIQIBYbsBD7sBmwECAV68AQ/FASQCAVnGAQ/NARgCAVTVAQ/qARoCAT3rAQ/yARgCATnzAQ/6ASECATL7AQ/7AdgCAgEs/AEPgwIYAgEnhAIPjQIkAgEijgIPoQIaAgEZogIPyQIaAgEKZZIDZZ4DAwGpAWW0AWXAAQMBpwFlgANljAMDAaUBZd0CZfYCAwGjAWWnAmXQAgMBoQF1U3VzAwGeAXRMdF4DAZwBcucBcv0BAwGaAXZTdnMDAZgBbYIBbZgBAwGVAZ8BE58BqQMCAXOsAROwAS0CAWynARenAZ8BAgFpuAFVuAFnAgFmtgFZtgF4AgFktwFVtwFzAgFjtQFZtQFgAgFiuwF8uwGYAQIBX78BPL8BUgIBXcABPMABUgIBXMEBPMEBTgIBW8IBPMIBTgIBWssBOcsBUQIBV8gBOsgBUAIBVdcBE9cBqQMCAUjkARPoAS0CAUHfARffAZ8BAgE+8AE58AFVAgE87QE67QFBAgE6+AFV+AFnAgE39gFZ9gF4AgE19wFV9wFzAgE09QFZ9QFgAgEz+wGOAfsB1QICAS2BAjmBAlECASr+ATr+AVACASiHAjyHAlICASaIAjyIAlICASWJAjyJAk4CASSKAjyKAk4CASOQAhOVAisCAR6dAhedAvYBAgEapAITqAIrAgEXsAIXxQIiAgELnwGaA58BpgMCAXyfAbgBnwHEAQIBep8BiAOfAZQDAgF4nwHlAp8B/gICAXafAasCnwHYAgIBdKwBogKsAb4CAgFxrAGCAawBnwECAW+sAd8CrAH1AgIBbacBhgGnAZwBAgFq1wGaA9cBpgMCAVHXAbgB1wHEAQIBT9cBiAPXAZQDAgFN1wHlAtcB/gICAUvXAasC1wHYAgIBSeQBoQLkAbsCAgFG5AGCAeQBnQECAUTkAdwC5AHyAgIBQt8BhgHfAZwBAgE/kgJQkgJ/AgEgkALJAZAC6AECAR+dAoQBnQLzAQIBG6QCzwGkAvQBAgEYsQIZsQLyAQIBE7ICGcQCJAIBDLEChgGxAu8BAgEUtAIduAI1AgERwAIhwAL2AQIBDbQC1QG0AvYBAgESwAKOAcAC8wECAQ4=</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d2tDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUlBBVGFzazEtQ2hhcnRTdHJpbmdQcm9mb3JtYURldGFpbFxGcmFtZXdvcmtcU2V0VHJhbnNhY3Rpb25TdGF0dXMueGFtbHgBdwGBAQECVAPRAg4CAQFZBWEdAwGrAWIFzwIKAgECW0JbRwMBswFcRlxkAwGxAV1GXVADAa8BX0dfUQMBrQFZvgFZ4AEDAawBYhNiUAIBA2QJmAEUAgF+mwEJzQIOAgEGZQt8FgMBkwF9C4QBHQMBjAGFAQuFAbEBAwGJAYYBC48BIAMBhAGQAQuXARQCAX+bARebATkCAQedAQ3PARgCAVPSAQ3LAhgCAQlnD2ehAwMBoAF0D3opAwGXAW8Tb5sBAwGUAYIBUYIBYwMBkQGAAVWAAXQDAY8BgQFRgQFvAwGOAX9Vf1wDAY0BhQF4hQGuAQMBigGJATiJAU4DAYgBigE4igFOAwGHAYsBOIsBSgMBhgGMATiMAUoDAYUBlQE1lQFNAwGCAZIBNpIBTAMBgAGeAQ+zARoCAWi0AQ+7ASECAWG8AQ+8AZsBAgFevQEPxgEkAgFZxwEPzgEYAgFU1gEP6wEaAgE97AEP8wEYAgE59AEP+wEhAgEy/AEP/AHYAgIBLP0BD4QCGAIBJ4UCD44CJAIBIo8CD6ICGgIBGaMCD8oCGgIBCmeSA2eeAwMBqQFntAFnwAEDAacBZ4ADZ4wDAwGlAWfdAmf2AgMBowFnpwJn0AIDAaEBd1N3cwMBngF2THZeAwGcAXTnAXT9AQMBmgF4U3hzAwGYAW+CAW+YAQMBlQGgAROgAakDAgFzrQETsQEtAgFsqAEXqAGfAQIBabkBVbkBZwIBZrcBWbcBeAIBZLgBVbgBcwIBY7YBWbYBYAIBYrwBfLwBmAECAV/AATzAAVICAV3BATzBAVICAVzCATzCAU4CAVvDATzDAU4CAVrMATnMAVECAVfJATrJAVACAVXYARPYAakDAgFI5QET6QEtAgFB4AEX4AGfAQIBPvEBOfEBVQIBPO4BOu4BQQIBOvkBVfkBZwIBN/cBWfcBeAIBNfgBVfgBcwIBNPYBWfYBYAIBM/wBjgH8AdUCAgEtggI5ggJRAgEq/wE6/wFQAgEoiAI8iAJSAgEmiQI8iQJSAgEligI8igJOAgEkiwI8iwJOAgEjkQITlgIrAgEengIXngL2AQIBGqUCE6kCKwIBF7ECF8YCIgIBC6ABmgOgAaYDAgF8oAG4AaABxAECAXqgAYgDoAGUAwIBeKAB5QKgAf4CAgF2oAGrAqAB2AICAXStAaICrQG+AgIBca0BggGtAZ8BAgFvrQHfAq0B9QICAW2oAYYBqAGcAQIBatgBmgPYAaYDAgFR2AG4AdgBxAECAU/YAYgD2AGUAwIBTdgB5QLYAf4CAgFL2AGrAtgB2AICAUnlAaEC5QG7AgIBRuUBggHlAZ0BAgFE5QHcAuUB8gICAULgAYYB4AGcAQIBP5MCUJMCfwIBIJECyQGRAugBAgEfngKEAZ4C8wECARulAs8BpQL0AQIBGLICGbIC8gECAROzAhnFAiQCAQyyAoYBsgLvAQIBFLUCHbkCNQIBEcECIcEC9gECAQ21AtUBtQL2AQIBEsECjgHBAvMBAgEO</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -347,7 +348,6 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="SetTransactionStatus_1" sap:VirtualizedContainerService.HintSize="1432,2436" />
       <sap2010:ViewStateData Id="TryCatch_4" sap:VirtualizedContainerService.HintSize="418,287" />
       <sap2010:ViewStateData Id="AddLogFields_3" sap:VirtualizedContainerService.HintSize="418,22" />
       <sap2010:ViewStateData Id="LogMessage_8" sap:VirtualizedContainerService.HintSize="418,91" />
@@ -398,7 +398,7 @@
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="SetTransactionStatus_3" sap:VirtualizedContainerService.HintSize="200,22" />
-      <sap2010:ViewStateData Id="TryCatch_6" sap:VirtualizedContainerService.HintSize="418,287" />
+      <sap2010:ViewStateData Id="TryCatch_6" sap:VirtualizedContainerService.HintSize="418,314" />
       <sap2010:ViewStateData Id="Assign_21" sap:VirtualizedContainerService.HintSize="418,60" />
       <sap2010:ViewStateData Id="AddLogFields_5" sap:VirtualizedContainerService.HintSize="418,22" />
       <sap2010:ViewStateData Id="LogMessage_12" sap:VirtualizedContainerService.HintSize="418,91">
@@ -472,7 +472,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_5" sap:VirtualizedContainerService.HintSize="440,1607">
+      <sap2010:ViewStateData Id="Sequence_5" sap:VirtualizedContainerService.HintSize="440,1634">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -481,9 +481,9 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_6" sap:VirtualizedContainerService.HintSize="905,1755" />
-      <sap2010:ViewStateData Id="If_5" sap:VirtualizedContainerService.HintSize="1370,1903" />
-      <sap2010:ViewStateData Id="Sequence_11" sap:VirtualizedContainerService.HintSize="1392,2316">
+      <sap2010:ViewStateData Id="If_6" sap:VirtualizedContainerService.HintSize="905,1782" />
+      <sap2010:ViewStateData Id="If_5" sap:VirtualizedContainerService.HintSize="1370,1930" />
+      <sap2010:ViewStateData Id="Sequence_11" sap:VirtualizedContainerService.HintSize="1392,2343">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -491,6 +491,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="SetTransactionStatus_1" sap:VirtualizedContainerService.HintSize="1432,2423" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>

@@ -9,7 +9,6 @@
  xmlns:scg="clr-namespace:System.Collections.Generic;assembly=mscorlib"
  xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=mscorlib"
  xmlns:sd="clr-namespace:System.Data;assembly=System.Data"
- xmlns:ss="clr-namespace:System.Security;assembly=mscorlib"
  xmlns:ui="http://schemas.uipath.com/workflow/activities"
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <x:Members>
@@ -73,35 +72,31 @@
       <AssemblyReference>UiPath.Studio.Plugin.Workflow</AssemblyReference>
       <AssemblyReference>System.Data.DataSetExtensions</AssemblyReference>
       <AssemblyReference>System.Data.Entity</AssemblyReference>
+      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence sap2010:Annotation.AnnotationText="Description: Open and initialize application as needed.&#xA;&#xA;Pre Condition: N/A&#xA;Post Condtion: Applications opened" DisplayName="Initialization Sequence" sap2010:WorkflowViewState.IdRef="Sequence_9">
     <ui:LogMessage DisplayName="Log App Initialization message" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[&quot;Starting all applications&quot;]" />
-    <Sequence DisplayName="Map network drive using credentials" sap2010:WorkflowViewState.IdRef="Sequence_11">
-      <Sequence.Variables>
-        <Variable x:TypeArguments="x:String" Name="sharedrive" />
-        <Variable x:TypeArguments="x:String" Name="username" />
-        <Variable x:TypeArguments="x:String" Name="password" />
-      </Sequence.Variables>
-      <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke GetAppCredentials workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_3" UnSafe="False" WorkflowFileName="Framework\GetAppCredentials.xaml">
-        <ui:InvokeWorkflowFile.Arguments>
-          <OutArgument x:TypeArguments="x:String" x:Key="out_Username">[username]</OutArgument>
-          <InArgument x:TypeArguments="x:String" x:Key="in_Credential">[in_Config("CredentialsFileShare")]</InArgument>
-          <OutArgument x:TypeArguments="ss:SecureString" x:Key="out_Password" />
-          <OutArgument x:TypeArguments="x:String" x:Key="out_Plaintext">[password]</OutArgument>
-        </ui:InvokeWorkflowFile.Arguments>
-      </ui:InvokeWorkflowFile>
-      <Assign DisplayName="Assign drive letter and path" sap2010:WorkflowViewState.IdRef="Assign_1">
-        <Assign.To>
-          <OutArgument x:TypeArguments="x:String">[sharedrive]</OutArgument>
-        </Assign.To>
-        <Assign.Value>
-          <InArgument x:TypeArguments="x:String">[in_Config("NetworkShareDrive")]</InArgument>
-        </Assign.Value>
-      </Assign>
-      <ui:StartProcess WorkingDirectory="{x:Null}" Arguments="[String.Format(&quot;use {0} /persistent:no /user:{1} {2}&quot;, shareDrive, username, password)]" DisplayName="Start map drive" FileName="net" sap2010:WorkflowViewState.IdRef="StartProcess_1" />
-      <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_3" Level="Info" Message="[&quot;Mapped &quot; + sharedrive.Split(&quot; &quot;c).Last + &quot; to &quot; + sharedrive.Split(&quot; &quot;c).First + &quot; as &quot; + username]" />
-    </Sequence>
+    <TryCatch DisplayName="Try Catch" sap2010:WorkflowViewState.IdRef="TryCatch_4">
+      <TryCatch.Try>
+        <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke MountFileServer workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_4" UnSafe="False" WorkflowFileName="FileServing\MountFileServer.xaml">
+          <ui:InvokeWorkflowFile.Arguments>
+            <InArgument x:TypeArguments="x:String" x:Key="in_Credentials">[in_Config("SSO Credentials")]</InArgument>
+            <InArgument x:TypeArguments="x:String" x:Key="in_MappedDrive">[in_Config("Trimm_StorageFolder")]</InArgument>
+          </ui:InvokeWorkflowFile.Arguments>
+        </ui:InvokeWorkflowFile>
+      </TryCatch.Try>
+      <TryCatch.Catches>
+        <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch`1_5">
+          <ActivityAction x:TypeArguments="s:Exception">
+            <ActivityAction.Argument>
+              <DelegateInArgument x:TypeArguments="s:Exception" Name="exception" />
+            </ActivityAction.Argument>
+            <Throw DisplayName="Throw file server" Exception="[New System.Exception(String.Format(in_Config(&quot;SystemError_FileServer&quot;), in_Config(&quot;Trimm_StorageFolder&quot;), exception.Message, exception.Source), exception)]" sap2010:WorkflowViewState.IdRef="Throw_6" />
+          </ActivityAction>
+        </Catch>
+      </TryCatch.Catches>
+    </TryCatch>
     <TryCatch DisplayName="Try Catch - Init Accountant file" sap2010:WorkflowViewState.IdRef="TryCatch_3">
       <TryCatch.Try>
         <Sequence sap2010:WorkflowViewState.IdRef="Sequence_12">
@@ -141,7 +136,7 @@
           <AddToCollection x:TypeArguments="x:String" Collection="[robotFolders]" DisplayName="Add robot error to folders" sap2010:WorkflowViewState.IdRef="AddToCollection`1_4" Item="[in_Config(&quot;ExchangeExceptions&quot;)]" />
           <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke InitExchange workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_2" UnSafe="False" WorkflowFileName="Exchange\InitExchange.xaml">
             <ui:InvokeWorkflowFile.Arguments>
-              <InArgument x:TypeArguments="x:String" x:Key="in_CredentialsAsset">[in_Config("CredentialsExchange")]</InArgument>
+              <InArgument x:TypeArguments="x:String" x:Key="in_CredentialsAsset">[in_Config("SSO Credentials")]</InArgument>
               <InArgument x:TypeArguments="scg:List(x:String)" x:Key="in_RobotFolders">[robotFolders]</InArgument>
             </ui:InvokeWorkflowFile.Arguments>
           </ui:InvokeWorkflowFile>
@@ -170,7 +165,7 @@
       <TryCatch.Try>
         <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke LoginUniFi workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_1" UnSafe="False" WorkflowFileName="UniFi\LoginUniFi.xaml">
           <ui:InvokeWorkflowFile.Arguments>
-            <InArgument x:TypeArguments="x:String" x:Key="in_CredentialsAsset">[in_Config("CredentialsUniFi")]</InArgument>
+            <InArgument x:TypeArguments="x:String" x:Key="in_CredentialsAsset">[in_Config("SSO Credentials")]</InArgument>
             <InArgument x:TypeArguments="x:String" x:Key="in_UniFiUrl">[in_Config("UniFi_URL")]</InArgument>
           </ui:InvokeWorkflowFile.Arguments>
         </ui:InvokeWorkflowFile>
@@ -186,16 +181,14 @@
         </Catch>
       </TryCatch.Catches>
     </TryCatch>
-    <sads:DebugSymbol.Symbol>d2pDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUlBBVGFzazEtQ2hhcnRTdHJpbmdQcm9mb3JtYURldGFpbFxGcmFtZXdvcmtcSW5pdEFsbEFwcGxpY2F0aW9ucy54YW1sOk4DvgEOAgEBTwVPsQECAWRQBWgQAgFOaQWDARACATuEAQWoARACARGpAQW8ARACAQJPhQFPrgECAWVWB10fAgFcXgdlEAIBV2YHZoICAgFRZwdnkAICAU9rCXcUAgFDfw1/qwICATyGAQmUARQCASCcAQ2cAaICAgEZpAENpAGjAgIBEqsBCbABIQIBC7gBDbgBvAICAQNZSFlrAgFiWEhYUgIBYFtJW1MCAV5WwAFW4gECAV1jMmNSAgFaYDNgPwIBWGY+ZqEBAgFTZskBZs4BAgFSZ3RnjQICAVBvC3UaAgFGdgt2ngICAUR/Qn/+AQIBPYgBRIgBWwIBIYoBC4oBuwECATeLAQuLAd8BAgEyjAELjAHhAQIBLY0BC40B5wECASiOAQuTASMCASKcAUGcAfUBAgEapAFBpAH2AQIBE64BSK4BYAIBD60BUK0BbwIBDasBuwGrAdIBAgEMuAE+uAGPAgIBBG81b0kCAUxyEXJAAgFLb7IBb+MBAgFJb/EBb6UCAgFHdnh2mwICAUWKAUKKAVICATmKAbEBigG4AQIBOIsBQosBUgIBNYsBtAGLAdwBAgEzjAFCjAFSAgEwjAG1AYwB3gECAS6NAUKNAVICASuNAbcBjQHkAQIBKZEBWJEBZgIBJpABUpABdAIBJI4BvwGOAdsBAgEj</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d2pDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUlBBVGFzazEtQ2hhcnRTdHJpbmdQcm9mb3JtYURldGFpbFxGcmFtZXdvcmtcSW5pdEFsbEFwcGxpY2F0aW9ucy54YW1sM04DuQEOAgEBTwVPsQECAVxQBWMQAgFOZAV+EAIBO38FowEQAgERpAEFtwEQAgECT4UBT64BAgFdUglXIQIBVl8NX50CAgFPZglyFAIBQ3oNeqsCAgE8gQEJjwEUAgEglwENlwGiAgIBGZ8BDZ8BowICARKmAQmrASECAQuzAQ2zAbwCAgEDVEtUaQIBWlVLVW0CAVhSwAFS4gECAVdfPl/wAQIBUGoLcBoCAUZxC3GeAgIBRHpCev4BAgE9gwFEgwFbAgEhhQELhQG7AQIBN4YBC4YB3wECATKHAQuHAeEBAgEtiAELiAHnAQIBKIkBC44BIwIBIpcBQZcB9QECARqfAUGfAfYBAgETqQFIqQFgAgEPqAFQqAFuAgENpgG7AaYB0gECAQyzAT6zAY8CAgEEajVqSQIBTG0RbUACAUtqsgFq4wECAUlq8QFqpQICAUdxeHGbAgIBRYUBQoUBUgIBOYUBsQGFAbgBAgE4hgFChgFSAgE1hgG0AYYB3AECATOHAUKHAVICATCHAbUBhwHeAQIBLogBQogBUgIBK4gBtwGIAeQBAgEpjAFYjAFmAgEmiwFSiwFwAgEkiQG/AYkB2wECASM=</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
       <sap2010:ViewStateData Id="LogMessage_2" sap:VirtualizedContainerService.HintSize="418,91" />
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_3" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="Assign_1" sap:VirtualizedContainerService.HintSize="314,60" />
-      <sap2010:ViewStateData Id="StartProcess_1" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="LogMessage_3" sap:VirtualizedContainerService.HintSize="314,91" />
-      <sap2010:ViewStateData Id="Sequence_11" sap:VirtualizedContainerService.HintSize="418,569">
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_4" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="Throw_6" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="Catch`1_5" sap:VirtualizedContainerService.HintSize="400,104">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -203,6 +196,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="TryCatch_4" sap:VirtualizedContainerService.HintSize="418,266" />
       <sap2010:ViewStateData Id="ReadRange_1" sap:VirtualizedContainerService.HintSize="314,87" />
       <sap2010:ViewStateData Id="LogMessage_4" sap:VirtualizedContainerService.HintSize="314,91" />
       <sap2010:ViewStateData Id="Sequence_12" sap:VirtualizedContainerService.HintSize="336,342">
@@ -259,17 +253,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_2" sap:VirtualizedContainerService.HintSize="418,51">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
-            <x:Boolean x:Key="IsPinned">False</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_1" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="Throw_1" sap:VirtualizedContainerService.HintSize="200,22" />
-      <sap2010:ViewStateData Id="Catch`1_1" sap:VirtualizedContainerService.HintSize="400,104">
+      <sap2010:ViewStateData Id="TryCatch_2" sap:VirtualizedContainerService.HintSize="418,708">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -277,7 +261,9 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="418,51">
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_1" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="Throw_1" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="Catch`1_1" sap:VirtualizedContainerService.HintSize="404,21">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">False</x:Boolean>
@@ -285,7 +271,15 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_9" sap:VirtualizedContainerService.HintSize="440,1687">
+      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="418,314">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Sequence_9" sap:VirtualizedContainerService.HintSize="440,2304">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -293,7 +287,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Initialization_1" sap:VirtualizedContainerService.HintSize="480,1767" />
+      <sap2010:ViewStateData Id="Initialization_1" sap:VirtualizedContainerService.HintSize="480,2384" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
