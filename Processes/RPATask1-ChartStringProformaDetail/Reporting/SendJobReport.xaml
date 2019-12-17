@@ -2,7 +2,6 @@
  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
  xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities"
- xmlns:s="clr-namespace:System;assembly=mscorlib"
  xmlns:sads="http://schemas.microsoft.com/netfx/2010/xaml/activities/debugger"
  xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
@@ -21,7 +20,6 @@
     <x:Property Name="in_SignatureBanner" Type="InArgument(x:String)" />
     <x:Property Name="in_TestingWorkbook" Type="InArgument(x:String)" />
     <x:Property Name="in_TestingSheet" Type="InArgument(x:String)" />
-    <x:Property Name="in_EmailSubject" Type="InArgument(s:String[])" />
     <x:Property Name="in_ReportRecipients" Type="InArgument(x:String)" />
   </x:Members>
   <mva:VisualBasic.Settings>
@@ -79,6 +77,7 @@
       <AssemblyReference>System.ComponentModel.Composition</AssemblyReference>
       <AssemblyReference>System.Data.Entity</AssemblyReference>
       <AssemblyReference>System.Collections.Immutable</AssemblyReference>
+      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence DisplayName="SendJobReport" sap2010:WorkflowViewState.IdRef="Sequence_1">
@@ -141,9 +140,9 @@
         <InArgument x:TypeArguments="x:String" x:Key="in_SignatureBanner">[in_SignatureBanner]</InArgument>
       </ui:InvokeWorkflowFile.Arguments>
     </ui:InvokeWorkflowFile>
-    <ui:CommentOut DisplayName="Comment Out">
+    <ui:CommentOut DisplayName="Comment Out" sap2010:WorkflowViewState.IdRef="CommentOut_1">
       <ui:CommentOut.Body>
-        <Sequence DisplayName="Ignored Activities">
+        <Sequence DisplayName="Ignored Activities" sap2010:WorkflowViewState.IdRef="Sequence_3">
           <If Condition="[in_TestingWorkbook Is Nothing]" DisplayName="If not running in prod mode" sap2010:WorkflowViewState.IdRef="If_3">
             <If.Then>
               <ui:ExcelApplicationScope Password="{x:Null}" DisplayName="Excel Application Scope" sap2010:WorkflowViewState.IdRef="ExcelApplicationScope_1" WorkbookPath="[in_TestingWorkbook]">
@@ -169,10 +168,8 @@
               </ui:ExcelApplicationScope>
             </If.Then>
           </If>
-          <sap2010:WorkflowViewState.IdRef>Sequence_3</sap2010:WorkflowViewState.IdRef>
         </Sequence>
       </ui:CommentOut.Body>
-      <sap2010:WorkflowViewState.IdRef>CommentOut_1</sap2010:WorkflowViewState.IdRef>
     </ui:CommentOut>
     <If Condition="[successful.Count = in_TransactionData.Count]" DisplayName="If no errors" sap2010:WorkflowViewState.IdRef="If_5">
       <If.Then>
@@ -181,7 +178,7 @@
             <OutArgument x:TypeArguments="x:String">[subject]</OutArgument>
           </Assign.To>
           <Assign.Value>
-            <InArgument x:TypeArguments="x:String">[in_EmailSubject.FirstOrDefault]</InArgument>
+            <InArgument x:TypeArguments="x:String">[in_ProcessName + " has finished processing"]</InArgument>
           </Assign.Value>
         </Assign>
       </If.Then>
@@ -191,7 +188,7 @@
             <OutArgument x:TypeArguments="x:String">[subject]</OutArgument>
           </Assign.To>
           <Assign.Value>
-            <InArgument x:TypeArguments="x:String">[in_EmailSubject.LastOrDefault]</InArgument>
+            <InArgument x:TypeArguments="x:String">[in_ProcessName + " found errors processing"]</InArgument>
           </Assign.Value>
         </Assign>
       </If.Else>
@@ -203,7 +200,7 @@
       </ui:SendExchangeMail.Files>
     </ui:SendExchangeMail>
     <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[&quot;End SendJobReport.xaml, send to &quot; + in_ReportRecipients]" />
-    <sads:DebugSymbol.Symbol>d2RDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUlBBVGFzazEtQ2hhcnRTdHJpbmdQcm9mb3JtYURldGFpbFxSZXBvcnRpbmdcU2VuZEpvYlJlcG9ydC54YW1sPFQDzwEOAgEBWEJYXAIBBFlCWVwCAQNaQlpcAgECXwVf4gECAVBgBWkdAgFHagWBARICATWCAQWPAR0CASOQAQWwARUCASKxAQXGAQoCARjHAQXMARsCAQjNAQXNAbsBAgEFX3Jf3wECAVFkRmRbAgFOZUZlUAIBTGNAY0kCAUtnR2dRAgFJYL4BYOABAgFIaqUBarsBAgFGcAt+EAIBNooBSYoBWwIBM4YBVoYBZAIBMoQBVIQBYAIBMYkBTYkBWgIBL4UBWIUBaAIBLo0BS40BXwIBLIcBRYcBXwIBK4gBSYgBVgIBKYsBR4sBVwIBJ4IBuAGCAdQBAgEmjAFJjAFbAgEksQETsQFCAgEZswEJugESAgEevQEJxAESAgEaygEwygFWAgEXxwG6A8cB0QMCARXJATDJAVQCARTHAdcDxwHjAwIBEscBnAHHAasBAgEQxwGrA8cBtgMCAQ7HAecBxwHzAQIBDMcBhQPHAZEDAgEKxwHzAscB+wICAQnNAXLNAbgBAgEGcBlwRQIBN3IPcr8BAgFCdQ98FAIBOLgBNLgBVAIBIbUBNbUBPgIBH8IBNMIBUwIBHb8BNb8BPgIBG3JKclgCAUVytAFyvAECAUN1HXVqAgE5dxN3zAECAT56E3rIAQIBOndOd2ACAUF3wQF3yQECAT96TnpeAgE9er0BesUBAgE7</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d2RDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUlBBVGFzazEtQ2hhcnRTdHJpbmdQcm9mb3JtYURldGFpbFxSZXBvcnRpbmdcU2VuZEpvYlJlcG9ydC54YW1sPFMDzAEOAgEBV0JXXAIBBFhCWFwCAQNZQllcAgECXgVe4gECAVJfBWgdAgFJaQWAARICATeBAQWOAR0CASWPAQWtARUCASSuAQXDAQoCARjEAQXJARsCAQjKAQXKAbsBAgEFXnJe3wECAVNjRmNbAgFQZEZkUAIBTmJAYkkCAU1mR2ZRAgFLX74BX+ABAgFKaaUBabsBAgFIbwt9EAIBOIkBSYkBWwIBNYUBVoUBZAIBNIMBVIMBYAIBM4gBTYgBWgIBMYQBWIQBaAIBMIwBS4wBXwIBLoYBRYYBXwIBLYcBSYcBVgIBK4oBR4oBVwIBKYEBuAGBAdQBAgEoiwFJiwFbAgEmrgETrgFCAgEZsAEJtwESAgEfugEJwQESAgEaxwEwxwFWAgEXxAG6A8QB0QMCARXGATDGAVQCARTEAdcDxAHjAwIBEsQBnAHEAasBAgEQxAGrA8QBtgMCAQ7EAecBxAHzAQIBDMQBhQPEAZEDAgEKxAHzAsQB+wICAQnKAXLKAbgBAgEGbxlvRQIBOXEPcb8BAgFEdA97FAIBOrUBNLUBYQIBIrIBNbIBPgIBIL8BNL8BYQIBHbwBNbwBPgIBG3FKcVgCAUdxtAFxvAECAUV0HXRqAgE7dhN2zAECAUB5E3nIAQIBPHZOdmACAUN2wQF2yQECAUF5TnleAgE/eb0BecUBAgE9</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>

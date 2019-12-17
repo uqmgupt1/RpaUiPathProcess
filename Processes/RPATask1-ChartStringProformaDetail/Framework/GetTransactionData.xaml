@@ -9,7 +9,6 @@
  xmlns:scg="clr-namespace:System.Collections.Generic;assembly=mscorlib"
  xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=mscorlib"
  xmlns:snm="clr-namespace:System.Net.Mail;assembly=System"
- xmlns:ss="clr-namespace:System.Security;assembly=mscorlib"
  xmlns:ui="http://schemas.uipath.com/workflow/activities"
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <x:Members>
@@ -86,16 +85,14 @@
       <Variable x:TypeArguments="x:String" Name="username" />
       <Variable x:TypeArguments="x:String" Name="password" />
     </Sequence.Variables>
-    <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke GetAppCredentials workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_1" UnSafe="False" WorkflowFileName="Framework\GetAppCredentials.xaml">
+    <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke GetExchangeMail workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_2" UnSafe="False" WorkflowFileName="Exchange\GetExchangeMail.xaml">
       <ui:InvokeWorkflowFile.Arguments>
-        <InArgument x:TypeArguments="x:String" x:Key="in_Format">Email</InArgument>
-        <InArgument x:TypeArguments="x:String" x:Key="in_Credential">[in_Config("SSO Credentials")]</InArgument>
-        <OutArgument x:TypeArguments="x:String" x:Key="out_Username">[username]</OutArgument>
-        <OutArgument x:TypeArguments="ss:SecureString" x:Key="out_Password" />
-        <OutArgument x:TypeArguments="x:String" x:Key="out_Plaintext">[password]</OutArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="in_CredentialsAsset">[in_Config("Credentials_Exchange")]</InArgument>
+        <InArgument x:TypeArguments="scg:List(x:String)" x:Key="in_RobotFolders">[{in_Config("ExchangeInbox")}.ToList]</InArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="in_ServerName">[in_Config("Exchange_ServerName")]</InArgument>
+        <OutArgument x:TypeArguments="scg:List(snm:MailMessage)" x:Key="out_Messages">[messages]</OutArgument>
       </ui:InvokeWorkflowFile.Arguments>
     </ui:InvokeWorkflowFile>
-    <ui:GetExchangeMailMessages Domain="{x:Null}" Server="{x:Null}" SharedMailbox="{x:Null}" TimeoutMS="{x:Null}" CustomFolder="[in_Config(&quot;ExchangeInbox&quot;)]" DisplayName="Get Exchange Robot In" EmailAutodiscover="[username]" ExchangeVersion="Exchange2007_SP1" GetAttachements="False" sap2010:WorkflowViewState.IdRef="GetExchangeMailMessages_1" IsBodyHtml="True" MailFolder="Calendar" MarkAsRead="False" Messages="[messages]" OnlyUnreadMessages="False" Password="[password]" Top="1" User="[username]" />
     <If Condition="[messages.Count &gt; 0]" DisplayName="If a new Item is fetched Grab it's significant data for logging" sap2010:WorkflowViewState.IdRef="If_1">
       <If.Then>
         <Sequence sap2010:Annotation.AnnotationText="Write data to the added fields that identify the Transaction" DisplayName="Write Transaction info in Logging Fields" sap2010:WorkflowViewState.IdRef="Sequence_2">
@@ -145,7 +142,7 @@
               <InArgument x:TypeArguments="x:String">[String.Join(String.Empty, subject.Where(Function(c) Not Path.GetInvalidFileNameChars.Contains(c)))]</InArgument>
             </Assign.Value>
           </Assign>
-          <ui:AddTransactionItem ServiceBaseAddress="{x:Null}" TimeoutMS="{x:Null}" ContinueOnError="[in_Config(&quot;ProcessMode&quot;) = &quot;DEV&quot;]" DisplayName="Add Transaction Item" sap2010:WorkflowViewState.IdRef="AddTransactionItem_1" QueueType="[in_Config(&quot;OrchestratorQueueName&quot;)]" Reference="[reference]" TransactionItem="[out_TransactionItem]">
+          <ui:AddTransactionItem ServiceBaseAddress="{x:Null}" TimeoutMS="{x:Null}" ContinueOnError="[in_Config(&quot;OperatingEnvironment&quot;) = &quot;DEV&quot;]" DisplayName="Add Transaction Item" sap2010:WorkflowViewState.IdRef="AddTransactionItem_1" QueueType="[in_Config(&quot;OrchestratorQueueName&quot;)]" Reference="[reference]" TransactionItem="[out_TransactionItem]">
             <ui:AddTransactionItem.TransactionInformation>
               <InArgument x:TypeArguments="x:String" x:Key="Robot Username">[in_Config("Robot Username")]</InArgument>
               <InArgument x:TypeArguments="x:String" x:Key="Job Start Time">[in_Config("Job Start Time")]</InArgument>
@@ -157,7 +154,7 @@
         </Sequence>
       </If.Then>
       <If.Else>
-        <Assign DisplayName="Clear TransactionMessage" sap2010:WorkflowViewState.IdRef="Assign_9">
+        <Assign DisplayName="Reset TransactionMessage" sap2010:WorkflowViewState.IdRef="Assign_11">
           <Assign.To>
             <OutArgument x:TypeArguments="snm:MailMessage">[out_TransactionMessage]</OutArgument>
           </Assign.To>
@@ -167,12 +164,11 @@
         </Assign>
       </If.Else>
     </If>
-    <sads:DebugSymbol.Symbol>d2lDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUlBBVGFzazEtQ2hhcnRTdHJpbmdQcm9mb3JtYURldGFpbFxGcmFtZXdvcmtcR2V0VHJhbnNhY3Rpb25EYXRhLnhhbWwtUwOrAQ4CAQFZBWEdAgE/YgVigQQCATNjBakBCgIBAltCW0cCAUdcRlxkAgFFXUZdUAIBQ19HX1ECAUFZvgFZ4AECAUBi6QNi7AMCAT5igAFiqAECATxi8gNi/gMCATpi3wFi6wECAThipwNiswMCATZi2ANi5AMCATRjE2MsAgEDZQmdARQCAQmgAQmnARICAQVsC3MUAgEvdAt7FAIBKnwLgwEUAgElhAELiwEUAgEhjAELkwEUAgEdlAELnAEjAgEKpQE7pQFEAgEIogE8ogFUAgEGcT1xTQIBMm4+blYCATB5NnlWAgEtdjd2QAIBK4EBNoEBXQIBKH43fj8CASaJATiJAYIBAgEkhgE5hgFDAgEikQE2kQGaAQIBII4BN44BQgIBHpQBvQKUAcoCAgEblAGCApQBsgICARmUAWWUAZ0BAgEXmAFFmAFNAgEVlwFNlwFqAgETmQFGmQFPAgERmgFMmgFfAgEPlgFNlgFqAgENlAHbApQB8gICAQs=</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d2lDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUlBBVGFzazEtQ2hhcnRTdHJpbmdQcm9mb3JtYURldGFpbFxGcmFtZXdvcmtcR2V0VHJhbnNhY3Rpb25EYXRhLnhhbWwmUgOoAQ4CAQFYBV8dAgEzYAWmAQoCAQJcRlxoAgE6XVddYQIBOFtSW3cCATdaTFpvAgE1WLwBWNsBAgE0YBNgLAIBA2IJmgEUAgEJnQEJpAESAgEFaQtwFAIBL3ELeBQCASp5C4ABFAIBJYEBC4gBFAIBIYkBC5ABFAIBHZEBC5kBIwIBCqIBO6IBRAIBCJ8BPJ8BVAIBBm49bk0CATJrPmtWAgEwdjZ2VgIBLXM3c0ACASt+Nn5dAgEoezd7PwIBJoYBOIYBggECASSDATmDAUMCASKOATaOAZoBAgEgiwE3iwFCAgEekQHGApEB0wICARuRAYsCkQG7AgIBGZEBZZEBpgECAReVAUWVAU0CARWUAU2UAWoCAROWAUaWAU8CARGXAUyXAV8CAQ+TAU2TAWoCAQ2RAeQCkQH7AgIBCw==</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_1" sap:VirtualizedContainerService.HintSize="531,87" />
-      <sap2010:ViewStateData Id="GetExchangeMailMessages_1" sap:VirtualizedContainerService.HintSize="531,22" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_2" sap:VirtualizedContainerService.HintSize="531,87" />
       <sap2010:ViewStateData Id="Assign_5" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="Assign_6" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="Assign_7" sap:VirtualizedContainerService.HintSize="242,60" />
@@ -187,9 +183,9 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Assign_9" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="Assign_11" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="531,836" />
-      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="553,1311">
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="553,1249">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -197,7 +193,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="GetTransactionData_1" sap:VirtualizedContainerService.HintSize="593,1391" />
+      <sap2010:ViewStateData Id="GetTransactionData_1" sap:VirtualizedContainerService.HintSize="593,1329" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
