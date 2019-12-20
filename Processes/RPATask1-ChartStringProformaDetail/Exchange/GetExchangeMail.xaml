@@ -14,9 +14,10 @@
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <x:Members>
     <x:Property Name="in_CredentialsAsset" Type="InArgument(x:String)" />
-    <x:Property Name="in_RobotFolders" Type="InArgument(scg:List(x:String))" />
     <x:Property Name="in_ServerName" Type="InArgument(x:String)" />
     <x:Property Name="out_Messages" Type="OutArgument(scg:List(snm:MailMessage))" />
+    <x:Property Name="in_Number" Type="InArgument(x:Int32)" />
+    <x:Property Name="in_MailboxPath" Type="InArgument(x:String)" />
   </x:Members>
   <mva:VisualBasic.Settings>
     <x:Null />
@@ -74,7 +75,6 @@
       <AssemblyReference>UiPath.Mail</AssemblyReference>
       <AssemblyReference>System.Collections.Immutable</AssemblyReference>
       <AssemblyReference>UiPath.Studio.Plugin.Workflow</AssemblyReference>
-      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence DisplayName="Get Exchange Mail" sap2010:WorkflowViewState.IdRef="Sequence_1">
@@ -83,6 +83,18 @@
       <Variable x:TypeArguments="x:String" Name="username" />
       <Variable x:TypeArguments="x:String" Name="folder" />
     </Sequence.Variables>
+    <If Condition="[in_Number = 0]" DisplayName="If number not set" sap2010:WorkflowViewState.IdRef="If_2">
+      <If.Then>
+        <Assign DisplayName="Assign one email" sap2010:WorkflowViewState.IdRef="Assign_6">
+          <Assign.To>
+            <OutArgument x:TypeArguments="x:Int32">[in_Number]</OutArgument>
+          </Assign.To>
+          <Assign.Value>
+            <InArgument x:TypeArguments="x:Int32">1</InArgument>
+          </Assign.Value>
+        </Assign>
+      </If.Then>
+    </If>
     <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke GetAppCredentials workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_1" UnSafe="False" WorkflowFileName="Framework\GetAppCredentials.xaml">
       <ui:InvokeWorkflowFile.Arguments>
         <InArgument x:TypeArguments="x:String" x:Key="in_Domain" />
@@ -94,97 +106,90 @@
       </ui:InvokeWorkflowFile.Arguments>
     </ui:InvokeWorkflowFile>
     <ui:LogMessage DisplayName="Log App Initialization message" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[&quot;Start GetExchangeMail.xaml, as &quot; + username]" />
-    <ui:ForEach x:TypeArguments="x:String" CurrentIndex="{x:Null}" DisplayName="For each folder" sap2010:WorkflowViewState.IdRef="ForEach`1_1" Values="[in_RobotFolders]">
-      <ui:ForEach.Body>
-        <ActivityAction x:TypeArguments="x:String">
-          <ActivityAction.Argument>
-            <DelegateInArgument x:TypeArguments="x:String" Name="item" />
-          </ActivityAction.Argument>
-          <TryCatch DisplayName="Try Catch" sap2010:WorkflowViewState.IdRef="TryCatch_1">
-            <TryCatch.Try>
-              <Sequence sap2010:WorkflowViewState.IdRef="Sequence_3">
+    <TryCatch DisplayName="Try Catch" sap2010:WorkflowViewState.IdRef="TryCatch_1">
+      <TryCatch.Try>
+        <Sequence sap2010:WorkflowViewState.IdRef="Sequence_3">
+          <Sequence.Variables>
+            <Variable x:TypeArguments="x:String" Name="mailbox" />
+          </Sequence.Variables>
+          <If Condition="[in_MailboxPath.Contains(&quot;@&quot;)]" DisplayName="If shared mailbox" sap2010:WorkflowViewState.IdRef="If_1">
+            <If.Then>
+              <Sequence sap2010:WorkflowViewState.IdRef="Sequence_4">
                 <Sequence.Variables>
-                  <Variable x:TypeArguments="x:String" Name="mailbox" />
+                  <Variable x:TypeArguments="ui:GenericValue" Name="index" />
                 </Sequence.Variables>
-                <If Condition="[item.Contains(&quot;@&quot;)]" DisplayName="If shared mailbox" sap2010:WorkflowViewState.IdRef="If_1">
-                  <If.Then>
-                    <Sequence sap2010:WorkflowViewState.IdRef="Sequence_4">
-                      <Sequence.Variables>
-                        <Variable x:TypeArguments="ui:GenericValue" Name="index" />
-                      </Sequence.Variables>
-                      <Assign DisplayName="Assign index of seperator" sap2010:WorkflowViewState.IdRef="Assign_4">
-                        <Assign.To>
-                          <OutArgument x:TypeArguments="ui:GenericValue">[index]</OutArgument>
-                        </Assign.To>
-                        <Assign.Value>
-                          <InArgument x:TypeArguments="ui:GenericValue">[item.IndexOf("\")]</InArgument>
-                        </Assign.Value>
-                      </Assign>
-                      <Assign DisplayName="Assign shared mailbox" sap2010:WorkflowViewState.IdRef="Assign_1">
-                        <Assign.To>
-                          <OutArgument x:TypeArguments="x:String">[mailbox]</OutArgument>
-                        </Assign.To>
-                        <Assign.Value>
-                          <InArgument x:TypeArguments="x:String">[item.Substring(0, index)]</InArgument>
-                        </Assign.Value>
-                      </Assign>
-                      <Assign DisplayName="Assign mail folder" sap2010:WorkflowViewState.IdRef="Assign_2">
-                        <Assign.To>
-                          <OutArgument x:TypeArguments="x:String">[folder]</OutArgument>
-                        </Assign.To>
-                        <Assign.Value>
-                          <InArgument x:TypeArguments="x:String">[item.Substring(index).Trim("\"c)]</InArgument>
-                        </Assign.Value>
-                      </Assign>
-                    </Sequence>
-                  </If.Then>
-                  <If.Else>
-                    <Sequence sap2010:WorkflowViewState.IdRef="Sequence_5">
-                      <Assign DisplayName="Assign mail folder" sap2010:WorkflowViewState.IdRef="Assign_3">
-                        <Assign.To>
-                          <OutArgument x:TypeArguments="x:String">[folder]</OutArgument>
-                        </Assign.To>
-                        <Assign.Value>
-                          <InArgument x:TypeArguments="x:String">[item]</InArgument>
-                        </Assign.Value>
-                      </Assign>
-                      <Assign DisplayName="Reset mailbox" sap2010:WorkflowViewState.IdRef="Assign_5">
-                        <Assign.To>
-                          <OutArgument x:TypeArguments="x:String">[mailbox]</OutArgument>
-                        </Assign.To>
-                        <Assign.Value>
-                          <InArgument x:TypeArguments="x:String">[Nothing]</InArgument>
-                        </Assign.Value>
-                      </Assign>
-                    </Sequence>
-                  </If.Else>
-                </If>
-                <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_7" Level="Trace" Message="[String.Format(&quot;Checking if {0}{1} can access {2} at {3}&quot;,&#xA;username,&#xA;If(mailbox Is Nothing, &quot;&quot;, &quot; as &quot; + mailbox),&#xA;folder, in_ServerName)]" />
-                <ui:GetExchangeMailMessages Domain="{x:Null}" EmailAutodiscover="{x:Null}" TimeoutMS="{x:Null}" CustomFolder="[folder]" DisplayName="Get Exchange Mail Messages" ExchangeVersion="Exchange2007_SP1" GetAttachements="True" sap2010:WorkflowViewState.IdRef="GetExchangeMailMessages_6" IsBodyHtml="True" MailFolder="Calendar" MarkAsRead="False" Messages="[out_Messages]" OnlyUnreadMessages="False" Password="[password]" Server="[in_ServerName]" SharedMailbox="[mailbox]" Top="1" User="[username]" />
-                <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_6" Level="Trace" Message="[&quot;Got &quot; &amp; out_Messages.Count &amp; &quot; from &quot; + item]" />
+                <Assign DisplayName="Assign index of seperator" sap2010:WorkflowViewState.IdRef="Assign_4">
+                  <Assign.To>
+                    <OutArgument x:TypeArguments="ui:GenericValue">[index]</OutArgument>
+                  </Assign.To>
+                  <Assign.Value>
+                    <InArgument x:TypeArguments="ui:GenericValue">[in_MailboxPath.IndexOf("\")]</InArgument>
+                  </Assign.Value>
+                </Assign>
+                <Assign DisplayName="Assign shared mailbox" sap2010:WorkflowViewState.IdRef="Assign_1">
+                  <Assign.To>
+                    <OutArgument x:TypeArguments="x:String">[mailbox]</OutArgument>
+                  </Assign.To>
+                  <Assign.Value>
+                    <InArgument x:TypeArguments="x:String">[in_MailboxPath.Substring(0, index)]</InArgument>
+                  </Assign.Value>
+                </Assign>
+                <Assign DisplayName="Assign mail folder" sap2010:WorkflowViewState.IdRef="Assign_2">
+                  <Assign.To>
+                    <OutArgument x:TypeArguments="x:String">[folder]</OutArgument>
+                  </Assign.To>
+                  <Assign.Value>
+                    <InArgument x:TypeArguments="x:String">[in_MailboxPath.Substring(index).Trim("\"c)]</InArgument>
+                  </Assign.Value>
+                </Assign>
               </Sequence>
-            </TryCatch.Try>
-            <TryCatch.Catches>
-              <Catch x:TypeArguments="um:ExchangeException" sap2010:WorkflowViewState.IdRef="Catch`1_4">
-                <ActivityAction x:TypeArguments="um:ExchangeException">
-                  <ActivityAction.Argument>
-                    <DelegateInArgument x:TypeArguments="um:ExchangeException" Name="exception" />
-                  </ActivityAction.Argument>
-                  <Throw DisplayName="Throw exchange exception" Exception="[New ApplicationException(item, exception)]" sap2010:WorkflowViewState.IdRef="Throw_1" />
-                </ActivityAction>
-              </Catch>
-            </TryCatch.Catches>
-          </TryCatch>
-        </ActivityAction>
-      </ui:ForEach.Body>
-    </ui:ForEach>
-    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;End GetExchangeMail.xaml, can acccess &quot; + String.Join(&quot;, &quot;, in_RobotFolders)]" />
-    <sads:DebugSymbol.Symbol>d2VDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUlBBVGFzazEtQ2hhcnRTdHJpbmdQcm9mb3JtYURldGFpbFxFeGNoYW5nZVxHZXRFeGNoYW5nZU1haWwueGFtbDBQA7cBDgIBAVYFXx0CAUNgBWDCAQIBQGEFtAESAgEFtQEFtQHaAQIBAlpGWlsCAUpbRltQAgFIWUBZSQIBR11HXVECAUVWvgFW4AECAURghQFgvwECAUFhlwFhqgECAT5nC7EBFgIBBrUBcrUB1wECAQNpD6UBGgIBCa0BE60BpQECAQdtEaEBFgIBI6IBEaIBuAICARyjARGjAf0DAgEOpAERpAHPAQIBCq0BS60BeAIBCG0fbT8CASRvFYsBIAIBMI4BFZ8BIAIBJqIBf6IBtQICAR2jAeUDowHoAwIBG6MBfqMBiAECARmjAe4DowH6AwIBF6MB1QOjAeADAgEVowHsAqMB/AICAROjAbUDowHGAwIBEaMBoQOjAa0DAgEPpAF/pAHMAQIBC3MXeiACATl7F4IBIAIBNYMBF4oBIAIBMY8BF5YBIAIBK5cBF54BIAIBJ3hJeFwCATx1SnVRAgE6gAFCgAFcAgE4fUN9TAIBNogBQogBZAIBNIUBQ4UBSwIBMpQBQpQBSAIBLpEBQ5EBSwIBLJwBQpwBSwIBKpkBQ5kBTAIBKA==</sads:DebugSymbol.Symbol>
+            </If.Then>
+            <If.Else>
+              <Sequence sap2010:WorkflowViewState.IdRef="Sequence_5">
+                <Assign DisplayName="Assign mail folder" sap2010:WorkflowViewState.IdRef="Assign_3">
+                  <Assign.To>
+                    <OutArgument x:TypeArguments="x:String">[folder]</OutArgument>
+                  </Assign.To>
+                  <Assign.Value>
+                    <InArgument x:TypeArguments="x:String">[in_MailboxPath]</InArgument>
+                  </Assign.Value>
+                </Assign>
+                <Assign DisplayName="Reset mailbox" sap2010:WorkflowViewState.IdRef="Assign_5">
+                  <Assign.To>
+                    <OutArgument x:TypeArguments="x:String">[mailbox]</OutArgument>
+                  </Assign.To>
+                  <Assign.Value>
+                    <InArgument x:TypeArguments="x:String">[Nothing]</InArgument>
+                  </Assign.Value>
+                </Assign>
+              </Sequence>
+            </If.Else>
+          </If>
+          <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_7" Level="Trace" Message="[String.Format(&quot;Checking if {0}{1} can access {2} at {3}&quot;,&#xA;username,&#xA;If(mailbox Is Nothing, &quot;&quot;, &quot; as &quot; + mailbox),&#xA;folder, in_ServerName)]" />
+          <ui:GetExchangeMailMessages Domain="{x:Null}" EmailAutodiscover="{x:Null}" TimeoutMS="{x:Null}" CustomFolder="[folder]" DisplayName="Get Exchange Mail Messages" ExchangeVersion="Exchange2007_SP1" GetAttachements="True" sap2010:WorkflowViewState.IdRef="GetExchangeMailMessages_6" IsBodyHtml="True" MailFolder="Calendar" MarkAsRead="False" Messages="[out_Messages]" OnlyUnreadMessages="False" Password="[password]" Server="[in_ServerName]" SharedMailbox="[mailbox]" Top="[in_Number]" User="[username]" />
+          <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_6" Level="Trace" Message="[&quot;Got &quot; &amp; out_Messages.Count &amp; &quot; from &quot; + in_MailboxPath]" />
+        </Sequence>
+      </TryCatch.Try>
+      <TryCatch.Catches>
+        <Catch x:TypeArguments="um:ExchangeException" sap2010:WorkflowViewState.IdRef="Catch`1_4">
+          <ActivityAction x:TypeArguments="um:ExchangeException">
+            <ActivityAction.Argument>
+              <DelegateInArgument x:TypeArguments="um:ExchangeException" Name="exception" />
+            </ActivityAction.Argument>
+            <Throw DisplayName="Throw exchange exception" Exception="[New ApplicationException(in_MailboxPath, exception)]" sap2010:WorkflowViewState.IdRef="Throw_1" />
+          </ActivityAction>
+        </Catch>
+      </TryCatch.Catches>
+    </TryCatch>
+    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;End GetExchangeMail.xaml, can acccess &quot; + in_MailboxPath]" />
+    <sads:DebugSymbol.Symbol>d2VDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUlBBVGFzazEtQ2hhcnRTdHJpbmdQcm9mb3JtYURldGFpbFxFeGNoYW5nZVxHZXRFeGNoYW5nZU1haWwueGFtbDNQA7oBDgIBAVYFYQoCAUpiBWsdAgFBbAVswgECAT5tBbcBEAIBBbgBBbgBvAECAQJWE1YkAgFLWAlfEgIBTWZGZlsCAUhnRmdQAgFGZUBlSQIBRWlHaVECAUNivgFi4AECAUJshQFsvwECAT9vCasBFAIBCLMBDbMBqQECAQa4AXK4AbkBAgEDXTNdNAIBUFo0Wj8CAU5zC6cBEAIBI6gBC6gBsgICARypAQupAYEEAgENqgELqgHTAQIBCbMBRbMBfAIBB3MZc0MCASR1D5EBGgIBMJQBD6UBGgIBJqgBeagBrwICAR2pAd8DqQHsAwIBGqkBeKkBggECARipAfIDqQH+AwIBFqkBzwOpAdoDAgEUqQHmAqkB9gICARKpAa8DqQHAAwIBEKkBmwOpAacDAgEOqgF5qgHQAQIBCnkRgAEaAgE5gQERiAEaAgE1iQERkAEaAgExlQERnAEaAgErnQERpAEaAgEnfkN+YAIBPHtEe0sCATqGATyGAWACATiDAT2DAUYCATaOATyOAWgCATSLAT2LAUUCATKaATyaAUwCAS6XAT2XAUUCASyiATyiAUUCASqfAT2fAUYCASg=</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_1" sap:VirtualizedContainerService.HintSize="609,87" />
-      <sap2010:ViewStateData Id="LogMessage_2" sap:VirtualizedContainerService.HintSize="609,91" />
+      <sap2010:ViewStateData Id="Assign_6" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="If_2" sap:VirtualizedContainerService.HintSize="593,208" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_1" sap:VirtualizedContainerService.HintSize="593,87" />
+      <sap2010:ViewStateData Id="LogMessage_2" sap:VirtualizedContainerService.HintSize="593,91" />
       <sap2010:ViewStateData Id="Assign_4" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="Assign_1" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="Assign_2" sap:VirtualizedContainerService.HintSize="242,60" />
@@ -231,17 +236,23 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="593,1207" />
-      <sap2010:ViewStateData Id="ForEach`1_1" sap:VirtualizedContainerService.HintSize="609,1341" />
-      <sap2010:ViewStateData Id="LogMessage_1" sap:VirtualizedContainerService.HintSize="609,91" />
-      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="631,1854">
+      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="593,1207">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="LogMessage_1" sap:VirtualizedContainerService.HintSize="593,91" />
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="615,1968">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="InitExchange_1" sap:VirtualizedContainerService.HintSize="671,1934" />
+      <sap2010:ViewStateData Id="InitExchange_1" sap:VirtualizedContainerService.HintSize="655,2048" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
