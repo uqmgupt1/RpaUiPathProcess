@@ -12,6 +12,7 @@
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <x:Members>
     <x:Property Name="in_Config" Type="InArgument(scg:Dictionary(x:String, x:String))" />
+    <x:Property Name="in_OperatingEnvironment" Type="InArgument(x:String)" />
   </x:Members>
   <mva:VisualBasic.Settings>
     <x:Null />
@@ -68,20 +69,34 @@
       <AssemblyReference>UiPath.Excel</AssemblyReference>
       <AssemblyReference>UiPath.Mail</AssemblyReference>
       <AssemblyReference>Microsoft.VisualStudio.Services.Common</AssemblyReference>
-      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
       <AssemblyReference>UiPath.Studio.Plugin.Workflow</AssemblyReference>
+      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence sap2010:Annotation.AnnotationText="Description: Open and initialize application as needed.&#xA;&#xA;Pre Condition: N/A&#xA;Post Condtion: Applications opened" DisplayName="Initialization Sequence" sap2010:WorkflowViewState.IdRef="Sequence_9">
-    <ui:LogMessage DisplayName="Log App Initialization message" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;Opening applications...&quot;]" />
+    <ui:LogMessage DisplayName="Log App Initialization message" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;Opening applications to perform IAA Vevo Check&quot;]" />
     <TryCatch DisplayName="Try Catch - Init CRM " sap2010:WorkflowViewState.IdRef="TryCatch_1">
       <TryCatch.Try>
-        <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke Workflow File" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_1" UnSafe="False" WorkflowFileName="CRM\LoginCRM.xaml">
-          <ui:InvokeWorkflowFile.Arguments>
-            <InArgument x:TypeArguments="x:String" x:Key="in_CredentialsAsset" />
-            <InArgument x:TypeArguments="x:String" x:Key="in_OracleCRM_URL_DEV" />
-          </ui:InvokeWorkflowFile.Arguments>
-        </ui:InvokeWorkflowFile>
+        <Sequence sap2010:WorkflowViewState.IdRef="Sequence_13">
+          <Sequence.Variables>
+            <Variable x:TypeArguments="ui:GenericValue" Name="crmURL" />
+          </Sequence.Variables>
+          <Assign sap2010:WorkflowViewState.IdRef="Assign_1">
+            <Assign.To>
+              <OutArgument x:TypeArguments="ui:GenericValue">[crmURL]</OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="ui:GenericValue">[in_Config("OracleCRM_URL_"+in_OperatingEnvironment)]</InArgument>
+            </Assign.Value>
+          </Assign>
+          <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_8" Level="Info" Message="[&quot;..............................&quot; +crmURL]" />
+          <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke Workflow File" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_1" UnSafe="False" WorkflowFileName="CRM\LoginCRM.xaml">
+            <ui:InvokeWorkflowFile.Arguments>
+              <InArgument x:TypeArguments="x:String" x:Key="in_OracleCRM_URL">[crmURL]</InArgument>
+              <InArgument x:TypeArguments="x:String" x:Key="in_CredentialsAsset">[in_Config("Credentials_CRM")]</InArgument>
+            </ui:InvokeWorkflowFile.Arguments>
+          </ui:InvokeWorkflowFile>
+        </Sequence>
       </TryCatch.Try>
       <TryCatch.Catches>
         <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch`1_1">
@@ -100,10 +115,9 @@
     </TryCatch>
     <TryCatch DisplayName="Try Catch - CheckTransaction" sap2010:WorkflowViewState.IdRef="TryCatch_2">
       <TryCatch.Try>
-        <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke Workflow File" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_2" UnSafe="False" WorkflowFileName="CRM\CheckTransaction.xaml">
+        <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke Workflow File" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_2" UnSafe="False" WorkflowFileName="CRM\CheckTransactionCount.xaml">
           <ui:InvokeWorkflowFile.Arguments>
-            <InArgument x:TypeArguments="x:String" x:Key="in_CredentialsAsset" />
-            <InArgument x:TypeArguments="x:String" x:Key="in_OracleCRM_URL_DEV" />
+            <scg:Dictionary x:TypeArguments="x:String, Argument" />
           </ui:InvokeWorkflowFile.Arguments>
         </ui:InvokeWorkflowFile>
       </TryCatch.Try>
@@ -113,9 +127,9 @@
             <ActivityAction.Argument>
               <DelegateInArgument x:TypeArguments="s:Exception" Name="exception" />
             </ActivityAction.Argument>
-            <Sequence sap2010:WorkflowViewState.IdRef="Sequence_11">
-              <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_4" Level="Error" Message="[&quot;Failed to succesfully sign into Oracle CRM&quot;]" />
-              <Throw DisplayName="Throw NoItemToProcess Exception" Exception="[new BusinessRuleException(&quot;No case reference in Vevo Check In category to be processed by Victor, during initialisation step.&quot;)]" sap2010:WorkflowViewState.IdRef="Throw_2" />
+            <Sequence>
+              <Throw DisplayName="Throw NoItemToProcess Exception" Exception="[new BusinessRuleException(&quot;No pending case reference in 'Vevo Check In' category to be processed by Victor, during initialisation step.&quot;)]" sap2010:WorkflowViewState.IdRef="Throw_2" />
+              <sap2010:WorkflowViewState.IdRef>Sequence_15</sap2010:WorkflowViewState.IdRef>
             </Sequence>
           </ActivityAction>
         </Catch>
@@ -125,8 +139,8 @@
       <TryCatch.Try>
         <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke Workflow File" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_3" UnSafe="False" WorkflowFileName="ImmiPortal\LoginImmiPortal.xaml">
           <ui:InvokeWorkflowFile.Arguments>
-            <InArgument x:TypeArguments="x:String" x:Key="in_CredentialsAsset" />
-            <InArgument x:TypeArguments="x:String" x:Key="in_OracleCRM_URL_DEV" />
+            <InArgument x:TypeArguments="x:String" x:Key="in_ImmiPortal_URL">[in_Config("ImmiPortal_URL")]</InArgument>
+            <InArgument x:TypeArguments="x:String" x:Key="in_CredentialsAsset">[in_Config("Credentials_ImmiAccount")]</InArgument>
           </ui:InvokeWorkflowFile.Arguments>
         </ui:InvokeWorkflowFile>
       </TryCatch.Try>
@@ -145,12 +159,21 @@
         </Catch>
       </TryCatch.Catches>
     </TryCatch>
-    <sads:DebugSymbol.Symbol>d4ABQzpcVXNlcnNcdXFtZ3VwdDFcRG9jdW1lbnRzXFVpUGF0aFxScGFVaVBhdGhQcm9jZXNzXFByb2Nlc3Nlc1xJQUFfVmV2b0NoZWNrXzEuMFxJQUFfVmV2b0NoZWNrXEZyYW1ld29ya1xJbml0QWxsQXBwbGljYXRpb25zLnhhbWwfSwOVAQ4CAQFMBUyvAQIBIk0FZBACARZlBXsQAgEOfAWTARACAQJMhQFMrAECASNPCVQhAgEgXA1gGAIBF2cJbCECARR0DXcYAgEPfgmDASECAQyLAQ2PARgCAQNPtQFPyAECASFdD126AQIBHl4PXvEBAgEaXw9f5AECARhntQFn0AECARV1D3W6AQIBEnYPdogCAgEQfrUBftYBAgENjAEPjAGwAQIBCo0BD40B8QECAQaOAQ+OAe4BAgEEXX1dtwECAR9efV7uAQIBG19JX7cBAgEZdX11twECARN2TnbbAQIBEYwBfYwBrQECAQuNAX2NAe4BAgEHjgFKjgHBAQIBBQ==</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d4ABQzpcVXNlcnNcdXFtZ3VwdDFcRG9jdW1lbnRzXFVpUGF0aFxScGFVaVBhdGhQcm9jZXNzXFByb2Nlc3Nlc1xJQUFfVmV2b0NoZWNrXzEuMFxJQUFfVmV2b0NoZWNrXEZyYW1ld29ya1xJbml0QWxsQXBwbGljYXRpb25zLnhhbWwnTAOjAQ4CAQFNBU3GAQIBME4FcxACARh0BYkBEAIBEooBBaEBEAIBAk2FAU3DAQIBMVAJYxQCASJrDW8YAgEZdgl6IQIBFoIBDYUBGAIBE4wBCZEBIQIBDJkBDZ0BGAIBA1QLWxQCASpcC1yxAQIBKF0LYiMCASNsD2y6AQIBIG0PbfEBAgEcbg9u5AECARp2tQF21QECAReDAQ+DAZICAgEUjwFQjwF2AgEQjgFOjgFrAgEOjAG1AYwB1gECAQ2aAQ+aAbABAgEKmwEPmwHxAQIBBpwBD5wB7gECAQRZPVlyAgEtVj5WRgIBK1x4XK4BAgEpX09fVwIBJ2BSYHACASVdtwFdygECASRsfWy3AQIBIW19be4BAgEdbklutwECARuDAU6DAeUBAgEVmgF9mgGtAQIBC5sBfZsB7gECAQecAUqcAcEBAgEF</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
-      <sap2010:ViewStateData Id="LogMessage_1" sap:VirtualizedContainerService.HintSize="414,91" />
+      <sap2010:ViewStateData Id="LogMessage_1" sap:VirtualizedContainerService.HintSize="418,91" />
+      <sap2010:ViewStateData Id="Assign_1" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="LogMessage_8" sap:VirtualizedContainerService.HintSize="314,91" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_1" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="Sequence_13" sap:VirtualizedContainerService.HintSize="336,442">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="LogMessage_2" sap:VirtualizedContainerService.HintSize="314,91" />
       <sap2010:ViewStateData Id="LogMessage_3" sap:VirtualizedContainerService.HintSize="314,91" />
       <sap2010:ViewStateData Id="Throw_1" sap:VirtualizedContainerService.HintSize="314,22" />
@@ -169,25 +192,24 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="414,51">
+      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="418,639">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
             <x:Boolean x:Key="IsPinned">False</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="InvokeWorkflowFile_2" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="LogMessage_4" sap:VirtualizedContainerService.HintSize="314,91" />
-      <sap2010:ViewStateData Id="Throw_2" sap:VirtualizedContainerService.HintSize="314,22" />
-      <sap2010:ViewStateData Id="Sequence_11" sap:VirtualizedContainerService.HintSize="336,277">
+      <sap2010:ViewStateData Id="Throw_2" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="Sequence_15" sap:VirtualizedContainerService.HintSize="222,146">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Catch`1_2" sap:VirtualizedContainerService.HintSize="400,346">
+      <sap2010:ViewStateData Id="Catch`1_2" sap:VirtualizedContainerService.HintSize="400,215">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -195,7 +217,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_2" sap:VirtualizedContainerService.HintSize="414,508">
+      <sap2010:ViewStateData Id="TryCatch_2" sap:VirtualizedContainerService.HintSize="418,377">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -214,15 +236,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Catch`1_3" sap:VirtualizedContainerService.HintSize="400,477">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-            <x:Boolean x:Key="IsPinned">False</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_3" sap:VirtualizedContainerService.HintSize="414,51">
+      <sap2010:ViewStateData Id="Catch`1_3" sap:VirtualizedContainerService.HintSize="404,21">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">False</x:Boolean>
@@ -230,7 +244,15 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_9" sap:VirtualizedContainerService.HintSize="436,1017">
+      <sap2010:ViewStateData Id="TryCatch_3" sap:VirtualizedContainerService.HintSize="418,314">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Sequence_9" sap:VirtualizedContainerService.HintSize="440,1737">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -238,7 +260,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Initialization_1" sap:VirtualizedContainerService.HintSize="476,1097" />
+      <sap2010:ViewStateData Id="Initialization_1" sap:VirtualizedContainerService.HintSize="480,1817" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
