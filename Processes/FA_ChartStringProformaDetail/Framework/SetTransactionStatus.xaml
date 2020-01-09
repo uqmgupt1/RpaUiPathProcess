@@ -79,7 +79,6 @@
       <AssemblyReference>System.ValueTuple</AssemblyReference>
       <AssemblyReference>UiPath.Studio.Plugin.Workflow</AssemblyReference>
       <AssemblyReference>Newtonsoft.Json</AssemblyReference>
-      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence sap2010:Annotation.AnnotationText="This workflow sets the TransactionStatus and Logs that status and details in extra Logging Fields. &#xA;The flowchart branches out into the three possible Transaction Statuses: Success, Business Exception and Application Exception. &#xA;&#xA;Each branch analyzes the type of content of TransactionItem. If its not empty and is a QueueItem, then it means we are using a Orchestrator queue, so we must call the “Set Transaction Status” activity to inform Orchestrator about the outcome of our transaction. If TransactionItem is not a QueueItem, we can skip passing it and the “Set Transaction Status” activity will not be triggered. &#xA;&#xA;After that we log the result of the transaction within custom log fields to make it easier to search for within results. &#xA;&#xA;This workflow is also where incrementing of the io_TransactionNumber variable takes place. If we have an application exception and our MaxRetryNumber has not been reached, we increment the io_RetryNumber variable and not the io_TransactionNumber variables. This is done in the Robot Retry flowchart, which manages the retry mechanism of the framework and which is part of the &quot;Handle System Error&quot; sequence." DisplayName="SetTransactionStatus" sap2010:WorkflowViewState.IdRef="Sequence_11">
@@ -116,6 +115,15 @@
                       </ui:InvokeWorkflowFile.Arguments>
                     </ui:InvokeWorkflowFile>
                     <ui:DeleteMail Domain="{x:Null}" EmailAutodiscover="{x:Null}" TimeoutMS="{x:Null}" DeleteMode="MoveToDeletedItems" DisplayName="Delete Exchange Mail Message" ExchangeVersion="Exchange2007_SP1" sap2010:WorkflowViewState.IdRef="DeleteMail_1" MailMessage="[in_TransactionMessage]" Password="[password]" Server="[in_Config(&quot;Exchange_ServerName&quot;)]" User="[username]" />
+                    <Assign DisplayName="Reset password">
+                      <Assign.To>
+                        <OutArgument x:TypeArguments="x:String">[password]</OutArgument>
+                      </Assign.To>
+                      <Assign.Value>
+                        <InArgument x:TypeArguments="x:String">[Nothing]</InArgument>
+                      </Assign.Value>
+                      <sap2010:WorkflowViewState.IdRef>Assign_22</sap2010:WorkflowViewState.IdRef>
+                    </Assign>
                   </Sequence>
                 </If.Else>
               </If>
@@ -365,21 +373,22 @@
         </If>
       </If.Else>
     </If>
-    <sads:DebugSymbol.Symbol>d2VDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQ2hhcnRTdHJpbmdQcm9mb3JtYURldGFpbFxGcmFtZXdvcmtcU2V0VHJhbnNhY3Rpb25TdGF0dXMueGFtbIABAXcBgQEBAlUD8QIOAgEBVgXvAgoCAQJWE1ZQAgEDWAmqARQCAX6tAQntAg4CAQZZC44BFgMBkwGPAQuWAR0DAYwBlwELlwGxAQMBiQGYAQuhASADAYQBogELqQEUAgF/rQEXrQE5AgEHrwEN6AEYAgFT6wEN6wIYAgEJWw95FAMBoAGGAQ+MASkDAZcBgQETgQGbAQMBlAGUAVGUAWMDAZEBkgFVkgF0AwGPAZMBUZMBbwMBjgGRAVWRAVwDAY0BlwF4lwGuAQMBigGbATibAU4DAYgBnAE4nAFOAwGHAZ0BOJ0BSgMBhgGeATieAUoDAYUBpwE1pwFNAwGCAaQBNqQBTAMBgAGwAQ/MARoCAWjNAQ/UASECAWHVAQ/VAZsBAgFe1gEP3wEkAgFZ4AEP5wEYAgFU7wEPiwIaAgE9jAIPkwIYAgE5lAIPmwIhAgEynAIPnALYAgIBLJ0CD6QCGAIBJ6UCD64CJAIBIq8CD8ICGgIBGcMCD+oCGgIBClsdW2UDAaEBXRNkKwMBtgFnE3ceAwGjAYkBU4kBcwMBngGIAUyIAV4DAZwBhgHnAYYB/QEDAZoBigFTigFzAwGYAYEBggGBAZgBAwGVAbIBE7kBKwIBc8YBE8oBLQIBbMEBF8EBnwECAWnSAVXSAWcCAWbQAVnQAXgCAWTRAVXRAXMCAWPPAVnPAWACAWLVAXzVAZgBAgFf2QE82QFSAgFd2gE82gFSAgFc2wE82wFOAgFb3AE83AFOAgFa5QE55QFRAgFX4gE64gFQAgFV8QET+AErAgFIhQITiQItAgFBgAIXgAKfAQIBPpECOZECVQIBPI4COo4CQQIBOpkCVZkCZwIBN5cCWZcCeAIBNZgCVZgCcwIBNJYCWZYCYAIBM5wCjgGcAtUCAgEtogI5ogJRAgEqnwI6nwJQAgEoqAI8qAJSAgEmqQI8qQJSAgElqgI8qgJOAgEkqwI8qwJOAgEjsQITtgIrAgEevgIXvgL2AQIBGsUCE8kCKwIBF9ECF+YCIgIBC2JUYnYDAb8BYFVgkgEDAbwBX2NfegMBugFhXWGAAQMBuAFdzgFd8QEDAbcBbBV1LQMBrQF2FXaLAwMBpAG3AVS3AXYCAXy1AVW1AZYBAgF5tAFjtAF6AgF3tgFdtgGAAQIBdbIBzgGyAfEBAgF0xgGiAsYBvgICAXHGAYIBxgGfAQIBb8YB3wLGAfUCAgFtwQGGAcEBnAECAWr2AVT2AXYCAVH0AVX0AZYBAgFO8wFj8wF6AgFM9QFd9QGAAQIBSvEBzgHxAfEBAgFJhQKhAoUCuwICAUaFAoIBhQKdAQIBRIUC3AKFAvICAgFCgAKGAYACnAECAT+zAlCzAn8CASCxAskBsQLoAQIBH74ChAG+AvMBAgEbxQLPAcUC9AECARjSAhnSAvIBAgET0wIZ5QIkAgEMcFZweQMBtAFxVnFgAwGyAW9Qb1kDAbEBc1dzYQMBrwFszgFs8AEDAa4BdvwCdogDAwGrAXbIAnb2AgMBqQF2tAJ2wAIDAacBdpECdqoCAwGlAdIChgHSAu8BAgEU1QId2QI1AgER4QIh4QL2AQIBDdUC1QHVAvYBAgES4QKOAeEC8wECAQ4=</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d2VDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQ2hhcnRTdHJpbmdQcm9mb3JtYURldGFpbFxGcmFtZXdvcmtcU2V0VHJhbnNhY3Rpb25TdGF0dXMueGFtbIMBAXcBgQEBAlQD+QIOAgEBVQX3AgoCAQJVE1VQAgEDVwmyARQCAX61AQn1Ag4CAQZYC5YBFgMBkwGXAQueAR0DAYwBnwELnwGxAQMBiQGgAQupASADAYQBqgELsQEUAgF/tQEXtQE5AgEHtwEN8AEYAgFT8wEN8wIYAgEJWg+BARQDAaABjgEPlAEpAwGXAYkBE4kBmwEDAZQBnAFRnAFjAwGRAZoBVZoBdAMBjwGbAVGbAW8DAY4BmQFVmQFcAwGNAZ8BeJ8BrgEDAYoBowE4owFOAwGIAaQBOKQBTgMBhwGlATilAUoDAYYBpgE4pgFKAwGFAa8BNa8BTQMBggGsATasAUwDAYABuAEP1AEaAgFo1QEP3AEhAgFh3QEP3QGbAQIBXt4BD+cBJAIBWegBD+8BGAIBVPcBD5MCGgIBPZQCD5sCGAIBOZwCD6MCIQIBMqQCD6QC2AICASylAg+sAhgCASetAg+2AiQCASK3Ag/KAhoCARnLAg/yAhoCAQpaHVplAwGhAVwTYysDAboBZhN/HgMBowGRAVORAXMDAZ4BkAFMkAFeAwGcAY4B5wGOAf0BAwGaAZIBU5IBcwMBmAGJAYIBiQGYAQMBlQG6ARPBASsCAXPOARPSAS0CAWzJARfJAZ8BAgFp2gFV2gFnAgFm2AFZ2AF4AgFk2QFV2QFzAgFj1wFZ1wFgAgFi3QF83QGYAQIBX+EBPOEBUgIBXeIBPOIBUgIBXOMBPOMBTgIBW+QBPOQBTgIBWu0BOe0BUQIBV+oBOuoBUAIBVfkBE4ACKwIBSI0CE5ECLQIBQYgCF4gCnwECAT6ZAjmZAlUCATyWAjqWAkECATqhAlWhAmcCATefAlmfAngCATWgAlWgAnMCATSeAlmeAmACATOkAo4BpALVAgIBLaoCOaoCUQIBKqcCOqcCUAIBKLACPLACUgIBJrECPLECUgIBJbICPLICTgIBJLMCPLMCTgIBI7kCE74CKwIBHsYCF8YC9gECARrNAhPRAisCARfZAhfuAiICAQthVGF2AwHDAV9VX5IBAwHAAV5jXnoDAb4BYF1ggAEDAbwBXM4BXPEBAwG7AWsVdC0DAbEBdRV1iwMDAagBdhV+HgMBpAG/AVS/AXYCAXy9AVW9AZYBAgF5vAFjvAF6AgF3vgFdvgGAAQIBdboBzgG6AfEBAgF0zgGiAs4BvgICAXHOAYIBzgGfAQIBb84B3wLOAfUCAgFtyQGGAckBnAECAWr+AVT+AXYCAVH8AVX8AZYBAgFO+wFj+wF6AgFM/QFd/QGAAQIBSvkBzgH5AfEBAgFJjQKhAo0CuwICAUaNAoIBjQKdAQIBRI0C3AKNAvICAgFCiAKGAYgCnAECAT+7AlC7An8CASC5AskBuQLoAQIBH8YChAHGAvMBAgEbzQLPAc0C9AECARjaAhnaAvIBAgET2wIZ7QIkAgEMb1ZveQMBuAFwVnBgAwG2AW5QblkDAbUBcldyYQMBswFrzgFr8AEDAbIBdfwCdYgDAwGvAXXIAnX2AgMBrQF1tAJ1wAIDAasBdZECdaoCAwGpAXtAe0kDAacBeEF4SwMBpQHaAoYB2gLvAQIBFN0CHeECNQIBEekCIekC9gECAQ3dAtUB3QL2AQIBEukCjgHpAvMBAgEO</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
       <sap2010:ViewStateData Id="InvokeWorkflowFile_5" sap:VirtualizedContainerService.HintSize="314,87" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_8" sap:VirtualizedContainerService.HintSize="314,87" />
       <sap2010:ViewStateData Id="DeleteMail_1" sap:VirtualizedContainerService.HintSize="314,59" />
-      <sap2010:ViewStateData Id="Sequence_12" sap:VirtualizedContainerService.HintSize="336,310">
+      <sap2010:ViewStateData Id="Assign_22" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="Sequence_12" sap:VirtualizedContainerService.HintSize="336,410">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_7" sap:VirtualizedContainerService.HintSize="675,458" />
+      <sap2010:ViewStateData Id="If_7" sap:VirtualizedContainerService.HintSize="675,558" />
       <sap2010:ViewStateData Id="LogMessage_15" sap:VirtualizedContainerService.HintSize="314,91" />
       <sap2010:ViewStateData Id="Catch`1_4" sap:VirtualizedContainerService.HintSize="679,21">
         <sap:WorkflowViewStateService.ViewState>
@@ -389,12 +398,12 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_4" sap:VirtualizedContainerService.HintSize="693,685" />
+      <sap2010:ViewStateData Id="TryCatch_4" sap:VirtualizedContainerService.HintSize="693,785" />
       <sap2010:ViewStateData Id="AddLogFields_3" sap:VirtualizedContainerService.HintSize="693,22" />
       <sap2010:ViewStateData Id="LogMessage_8" sap:VirtualizedContainerService.HintSize="693,91" />
       <sap2010:ViewStateData Id="RemoveLogFields_3" sap:VirtualizedContainerService.HintSize="693,22" />
       <sap2010:ViewStateData Id="Assign_7" sap:VirtualizedContainerService.HintSize="693,60" />
-      <sap2010:ViewStateData Id="Sequence_6" sap:VirtualizedContainerService.HintSize="715,1206">
+      <sap2010:ViewStateData Id="Sequence_6" sap:VirtualizedContainerService.HintSize="715,1306">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
