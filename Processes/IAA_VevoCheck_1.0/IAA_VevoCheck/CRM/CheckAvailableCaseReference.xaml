@@ -10,7 +10,7 @@
  xmlns:ui="http://schemas.uipath.com/workflow/activities"
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <x:Members>
-    <x:Property Name="out_FirstTicketReference" Type="OutArgument(x:String)" />
+    <x:Property Name="out_CaseReference" Type="OutArgument(x:String)" />
   </x:Members>
   <mva:VisualBasic.Settings>
     <x:Null />
@@ -70,63 +70,54 @@
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence DisplayName="CheckTransactionCount" sap2010:WorkflowViewState.IdRef="Sequence_3">
-    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;Starting CheckTransactionCount.xaml&quot;]" />
+    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;Starting CheckAvailableCaseReference.xaml&quot;]" />
     <ui:BrowserScope Browser="{x:Null}" SearchScope="{x:Null}" TimeoutMS="{x:Null}" UiBrowser="{x:Null}" BrowserType="Chrome" DisplayName="Attach Browser Oracle CRM" sap2010:WorkflowViewState.IdRef="BrowserScope_1" InformativeScreenshot="f125ecb9adb1367b13ba6c9d1c8a607d" Selector="&lt;html app='chrome.exe' title='Oracle ® Service Cloud*' /&gt;">
       <ui:BrowserScope.Body>
         <ActivityAction x:TypeArguments="x:Object">
           <ActivityAction.Argument>
             <DelegateInArgument x:TypeArguments="x:Object" Name="ContextTarget" />
           </ActivityAction.Argument>
-          <Sequence DisplayName="Do" sap2010:WorkflowViewState.IdRef="Sequence_2">
+          <Sequence DisplayName="Check No item to display on CRM" sap2010:WorkflowViewState.IdRef="Sequence_2">
             <Sequence.Variables>
-              <Variable x:TypeArguments="x:Int32" Name="ticketCount" />
-              <Variable x:TypeArguments="scg:List(x:String)" Name="crmTicketCount" />
               <Variable x:TypeArguments="x:Boolean" Name="isNoItemToDisplay" />
-              <Variable x:TypeArguments="x:String" Name="firstTicketReference" />
             </Sequence.Variables>
             <ui:UiElementExists DisplayName="Check if No tickets in 'Vevo Check In' category" Exists="[isNoItemToDisplay]" sap2010:WorkflowViewState.IdRef="UiElementExists_1">
               <ui:UiElementExists.Target>
                 <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" InformativeScreenshot="4a8bb1c5be061a447ead9502cb367594" Selector="&lt;webctrl tag='DIV' aaname='No items to display.' /&gt;" TimeoutMS="3000" WaitForReady="INTERACTIVE" />
               </ui:UiElementExists.Target>
             </ui:UiElementExists>
-            <If Condition="[isNoItemToDisplay]" sap2010:WorkflowViewState.IdRef="If_2">
+            <If Condition="[isNoItemToDisplay]" DisplayName="If No item to display message exists " sap2010:WorkflowViewState.IdRef="If_2">
               <If.Then>
-                <Sequence sap2010:WorkflowViewState.IdRef="Sequence_5">
-                  <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_4" Level="Info" Message="[&quot;There is no item in Vevo Check In category&quot;]" />
+                <Sequence DisplayName="No CRM ticket to process" sap2010:WorkflowViewState.IdRef="Sequence_5">
+                  <ui:LogMessage DisplayName="Log Message - No pending ticket" sap2010:WorkflowViewState.IdRef="LogMessage_4" Level="Info" Message="[&quot;There is no item in Vevo Check In category&quot;]" />
                   <Throw DisplayName="Throw NoItemToProcess" Exception="[new BusinessRuleException(&quot;No transcation to process in CRM&quot;)]" sap2010:WorkflowViewState.IdRef="Throw_1" />
                 </Sequence>
               </If.Then>
               <If.Else>
-                <ui:GetValue ContinueOnError="True" DisplayName="Get first ticket reference" sap2010:WorkflowViewState.IdRef="GetValue_1">
-                  <ui:GetValue.Target>
-                    <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="4873e8febb61d0bffa4f89e85aff2b36" Selector="&lt;webctrl parentid='datagrid_AC*' tag='SPAN' parentclass='oj-form-control-inherit oj-datagrid-cell' idx='4' /&gt;" WaitForReady="INTERACTIVE" />
-                  </ui:GetValue.Target>
-                  <ui:GetValue.Value>
-                    <OutArgument x:TypeArguments="x:String">[firstTicketReference]</OutArgument>
-                  </ui:GetValue.Value>
-                </ui:GetValue>
+                <Sequence DisplayName="CRM ticket to process " sap2010:WorkflowViewState.IdRef="Sequence_6">
+                  <ui:GetValue ContinueOnError="True" DisplayName="Get ticket reference" sap2010:WorkflowViewState.IdRef="GetValue_1">
+                    <ui:GetValue.Target>
+                      <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="4873e8febb61d0bffa4f89e85aff2b36" Selector="&lt;webctrl tag='SPAN' class='oj-datagrid-cell-text oj-flex' idx='4' /&gt;" WaitForReady="INTERACTIVE" />
+                    </ui:GetValue.Target>
+                    <ui:GetValue.Value>
+                      <OutArgument x:TypeArguments="x:String">[out_CaseReference]</OutArgument>
+                    </ui:GetValue.Value>
+                  </ui:GetValue>
+                  <ui:LogMessage DisplayName="Log Message - Case ref" sap2010:WorkflowViewState.IdRef="LogMessage_3" Level="Info" Message="[&quot;Oracle CRM Case Reference to be processed by Victor is : &quot; +out_CaseReference]" />
+                </Sequence>
               </If.Else>
             </If>
-            <Assign>
-              <Assign.To>
-                <OutArgument x:TypeArguments="x:String">[out_FirstTicketReference]</OutArgument>
-              </Assign.To>
-              <Assign.Value>
-                <InArgument x:TypeArguments="x:String">[firstTicketReference]</InArgument>
-              </Assign.Value>
-              <sap2010:WorkflowViewState.IdRef>Assign_1</sap2010:WorkflowViewState.IdRef>
-            </Assign>
-            <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_3" Level="Info" Message="[&quot;The first case ref is  :&quot; +firstTicketReference]" />
           </Sequence>
         </ActivityAction>
       </ui:BrowserScope.Body>
     </ui:BrowserScope>
-    <sads:DebugSymbol.Symbol>d3xDOlxVc2Vyc1x1cW1ndXB0MVxEb2N1bWVudHNcVWlQYXRoXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXElBQV9WZXZvQ2hlY2tfMS4wXElBQV9WZXZvQ2hlY2tcQ1JNXENoZWNrVHJhbnNhY3Rpb25Db3VudC54YW1sGkgDfQ4CAQFJBUmoAQIBH0oFexcCAQJJckmlAQIBIEqaAkrbAgIBHlALeBYCAQNXDVsiAgEZXA1tEgIBDG4NdhYCAQd3DXe7AQIBBFmLAVnGAQIBHVnRAVnXAQIBHFdmV3sCARpcG1wwAgENXhFhHAIBFGQRax8CAQ9zOHNOAgEKcDlwUwIBCHd6d7gBAgEFXxNfvQECARdgE2DAAQIBFWk9aVMCARFkLmQ0AgEQZqQBZpkCAgETX4ABX7oBAgEYYEhgkwECARY=</sads:DebugSymbol.Symbol>
+    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_5" Level="Info" Message="[&quot;End CheckAvailableCaseReference.xaml&quot;]" />
+    <sads:DebugSymbol.Symbol>d4IBQzpcVXNlcnNcdXFtZ3VwdDFcRG9jdW1lbnRzXFVpUGF0aFxScGFVaVBhdGhQcm9jZXNzXFByb2Nlc3Nlc1xJQUFfVmV2b0NoZWNrXzEuMFxJQUFfVmV2b0NoZWNrXENSTVxDaGVja0F2YWlsYWJsZUNhc2VSZWZlcmVuY2UueGFtbBpIA3QOAgEBSQVJrgECAR1KBXEXAgEEcgVyqQECAQJJckmrAQIBHkqaAkrbAgIBHFALbhYCAQVycnKmAQIBA1QNWCICARdZDW0SAgEGVosBVsYBAgEbVtEBVtcBAgEaVGZUewIBGFkbWTACAQdbEV4cAgESYRFrHAIBCVwTXNEBAgEVXRNdwAECARNiE2khAgENahNq6gECAQpclAFczgECARZdSF2TAQIBFGc/Z1ICAQ9iMGI2AgEOZKYBZPIBAgERaosBaucBAgEL</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
-      <sap2010:ViewStateData Id="LogMessage_1" sap:VirtualizedContainerService.HintSize="711,91" />
-      <sap2010:ViewStateData Id="UiElementExists_1" sap:VirtualizedContainerService.HintSize="675,106" />
+      <sap2010:ViewStateData Id="LogMessage_1" sap:VirtualizedContainerService.HintSize="733,91" />
+      <sap2010:ViewStateData Id="UiElementExists_1" sap:VirtualizedContainerService.HintSize="697,106" />
       <sap2010:ViewStateData Id="LogMessage_4" sap:VirtualizedContainerService.HintSize="314,91" />
       <sap2010:ViewStateData Id="Throw_1" sap:VirtualizedContainerService.HintSize="314,22" />
       <sap2010:ViewStateData Id="Sequence_5" sap:VirtualizedContainerService.HintSize="336,277">
@@ -137,17 +128,23 @@
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="GetValue_1" sap:VirtualizedContainerService.HintSize="314,106" />
-      <sap2010:ViewStateData Id="If_2" sap:VirtualizedContainerService.HintSize="675,424" />
-      <sap2010:ViewStateData Id="Assign_1" sap:VirtualizedContainerService.HintSize="675,60" />
-      <sap2010:ViewStateData Id="LogMessage_3" sap:VirtualizedContainerService.HintSize="675,91" />
-      <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="697,925">
+      <sap2010:ViewStateData Id="LogMessage_3" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="Sequence_6" sap:VirtualizedContainerService.HintSize="336,361">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="BrowserScope_1" sap:VirtualizedContainerService.HintSize="711,1071">
+      <sap2010:ViewStateData Id="If_2" sap:VirtualizedContainerService.HintSize="697,508" />
+      <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="719,778">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="BrowserScope_1" sap:VirtualizedContainerService.HintSize="733,924">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -155,14 +152,15 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_3" sap:VirtualizedContainerService.HintSize="733,1326">
+      <sap2010:ViewStateData Id="LogMessage_5" sap:VirtualizedContainerService.HintSize="733,91" />
+      <sap2010:ViewStateData Id="Sequence_3" sap:VirtualizedContainerService.HintSize="755,1310">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="CheckTransactionCount_1" sap:VirtualizedContainerService.HintSize="773,1406" />
+      <sap2010:ViewStateData Id="CheckTransactionCount_1" sap:VirtualizedContainerService.HintSize="795,1390" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
