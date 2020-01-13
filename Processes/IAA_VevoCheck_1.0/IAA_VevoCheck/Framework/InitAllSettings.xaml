@@ -78,7 +78,6 @@
       <AssemblyReference>UiPath.Studio.Plugin.Workflow</AssemblyReference>
       <AssemblyReference>System.Data.Entity</AssemblyReference>
       <AssemblyReference>System.Collections.Immutable</AssemblyReference>
-      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence sap2010:Annotation.AnnotationText="This workflow outputs a settings Dictionary with key/value pairs to be used in the project. Settings are read from local config file then fetched from Orchestrator assets.&#xA;Assets will overwrite the config file settings&#xA;&#xA;Uses a single config for DEV, UAT and PRD environments, specified by the Operating Environment argument." DisplayName="Get All Settings" sap2010:WorkflowViewState.IdRef="Sequence_2">
@@ -151,156 +150,168 @@
         </ActivityAction>
       </ui:ForEach.Body>
     </ui:ForEach>
-    <Sequence DisplayName="Loading Assets">
+    <Sequence DisplayName="Loading Messages">
       <Sequence.Variables>
-        <Variable x:TypeArguments="sd:DataTable" Name="assets" />
+        <Variable x:TypeArguments="sd:DataTable" Name="messages" />
       </Sequence.Variables>
-      <ui:ReadRange Range="{x:Null}" AddHeaders="True" DataTable="[assets]" DisplayName="Read range Assets" SheetName="Assets" WorkbookPath="[in_configFile]" sap2010:WorkflowViewState.IdRef="ReadRange_7" />
-      <ui:ForEachRow CurrentIndex="{x:Null}" DataTable="[assets]" DisplayName="For each row">
+      <ui:ReadRange Range="{x:Null}" AddHeaders="True" DataTable="[messages]" DisplayName="Read range Assets" SheetName="Messages" WorkbookPath="[in_configFile]" sap2010:WorkflowViewState.IdRef="ReadRange_8" />
+      <ui:ForEachRow CurrentIndex="{x:Null}" DataTable="[messages]" DisplayName="For each row">
         <ui:ForEachRow.Body>
           <ActivityAction x:TypeArguments="sd:DataRow">
             <ActivityAction.Argument>
               <DelegateInArgument x:TypeArguments="sd:DataRow" Name="row" />
             </ActivityAction.Argument>
-            <Sequence>
+            <If Condition="[NOT String.IsNullOrEmpty(row(&quot;Name&quot;).ToString.Trim)]">
+              <If.Then>
+                <Assign DisplayName="Add key/value pair">
+                  <Assign.To>
+                    <OutArgument x:TypeArguments="x:String">[out_Config(row("Name").ToString.Trim)]</OutArgument>
+                  </Assign.To>
+                  <Assign.Value>
+                    <InArgument x:TypeArguments="x:String">[row("Value").ToString]</InArgument>
+                  </Assign.Value>
+                  <sap2010:WorkflowViewState.IdRef>Assign_49</sap2010:WorkflowViewState.IdRef>
+                </Assign>
+              </If.Then>
+              <sap2010:WorkflowViewState.IdRef>If_30</sap2010:WorkflowViewState.IdRef>
+            </If>
+          </ActivityAction>
+        </ui:ForEachRow.Body>
+        <sap2010:WorkflowViewState.IdRef>ForEachRow_9</sap2010:WorkflowViewState.IdRef>
+      </ui:ForEachRow>
+      <sap2010:WorkflowViewState.IdRef>Sequence_31</sap2010:WorkflowViewState.IdRef>
+    </Sequence>
+    <Sequence DisplayName="Loading Assets" sap2010:WorkflowViewState.IdRef="Sequence_30">
+      <Sequence.Variables>
+        <Variable x:TypeArguments="sd:DataTable" Name="assets" />
+      </Sequence.Variables>
+      <ui:ReadRange Range="{x:Null}" AddHeaders="True" DataTable="[assets]" DisplayName="Read range Assets" sap2010:WorkflowViewState.IdRef="ReadRange_7" SheetName="Assets" WorkbookPath="[in_configFile]" />
+      <ui:ForEachRow CurrentIndex="{x:Null}" DataTable="[assets]" DisplayName="For each row" sap2010:WorkflowViewState.IdRef="ForEachRow_8">
+        <ui:ForEachRow.Body>
+          <ActivityAction x:TypeArguments="sd:DataRow">
+            <ActivityAction.Argument>
+              <DelegateInArgument x:TypeArguments="sd:DataRow" Name="row" />
+            </ActivityAction.Argument>
+            <Sequence sap2010:WorkflowViewState.IdRef="Sequence_29">
               <Sequence.Variables>
                 <Variable x:TypeArguments="x:String" Name="credentialName" />
                 <Variable x:TypeArguments="x:String" Name="assetValue" />
                 <Variable x:TypeArguments="scg:List(s:Exception)" Default="[New List(Of Exception)]" Name="exceptions" />
               </Sequence.Variables>
-              <If Condition="[String.IsNullOrEmpty(row(&quot;Name&quot;).ToString.Trim)]" DisplayName="If empty row, skip warning">
+              <If Condition="[String.IsNullOrEmpty(row(&quot;Name&quot;).ToString.Trim)]" DisplayName="If empty row, skip warning" sap2010:WorkflowViewState.IdRef="If_27">
                 <If.Then>
                   <ui:Continue DisplayName="Skip Asset" sap2010:WorkflowViewState.IdRef="Continue_1" />
                 </If.Then>
-                <sap2010:WorkflowViewState.IdRef>If_27</sap2010:WorkflowViewState.IdRef>
               </If>
-              <ui:LogMessage DisplayName="Log Message" Level="Trace" Message="[&quot;Retrieving &quot; + row(&quot;Name&quot;).ToString.Trim]" sap2010:WorkflowViewState.IdRef="LogMessage_8" />
-              <TryCatch DisplayName="Try Get Asset">
+              <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_8" Level="Trace" Message="[&quot;Retrieving &quot; + row(&quot;Name&quot;).ToString.Trim]" />
+              <TryCatch DisplayName="Try Get Asset" sap2010:WorkflowViewState.IdRef="TryCatch_1">
                 <TryCatch.Try>
-                  <ui:GetRobotAsset TimeoutMS="{x:Null}" AssetName="[row(&quot;Asset&quot;).ToString]" DisplayName="Get Asset Value">
+                  <ui:GetRobotAsset TimeoutMS="{x:Null}" AssetName="[row(&quot;Asset&quot;).ToString]" DisplayName="Get Asset Value" sap2010:WorkflowViewState.IdRef="GetRobotAsset_1">
                     <ui:GetRobotAsset.Value>
                       <OutArgument x:TypeArguments="x:String">[assetValue]</OutArgument>
                     </ui:GetRobotAsset.Value>
-                    <sap2010:WorkflowViewState.IdRef>GetRobotAsset_1</sap2010:WorkflowViewState.IdRef>
                   </ui:GetRobotAsset>
                 </TryCatch.Try>
                 <TryCatch.Catches>
-                  <Catch x:TypeArguments="s:Exception">
+                  <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch`1_1">
                     <ActivityAction x:TypeArguments="s:Exception">
                       <ActivityAction.Argument>
                         <DelegateInArgument x:TypeArguments="s:Exception" Name="exception" />
                       </ActivityAction.Argument>
-                      <Sequence DisplayName="Couldn't get asset">
-                        <AddToCollection x:TypeArguments="s:Exception" Collection="[exceptions]" DisplayName="Add To Exceptions" Item="[exception]" sap2010:WorkflowViewState.IdRef="AddToCollection`1_1" />
-                        <Assign DisplayName="Assign asset error">
+                      <Sequence DisplayName="Couldn't get asset" sap2010:WorkflowViewState.IdRef="Sequence_26">
+                        <AddToCollection x:TypeArguments="s:Exception" Collection="[exceptions]" DisplayName="Add To Exceptions" sap2010:WorkflowViewState.IdRef="AddToCollection`1_1" Item="[exception]" />
+                        <Assign DisplayName="Assign asset error" sap2010:WorkflowViewState.IdRef="Assign_44">
                           <Assign.To>
                             <OutArgument x:TypeArguments="x:String">[assetValue]</OutArgument>
                           </Assign.To>
                           <Assign.Value>
                             <InArgument x:TypeArguments="x:String">[Nothing]</InArgument>
                           </Assign.Value>
-                          <sap2010:WorkflowViewState.IdRef>Assign_44</sap2010:WorkflowViewState.IdRef>
                         </Assign>
-                        <sap2010:WorkflowViewState.IdRef>Sequence_26</sap2010:WorkflowViewState.IdRef>
                       </Sequence>
                     </ActivityAction>
-                    <sap2010:WorkflowViewState.IdRef>Catch`1_1</sap2010:WorkflowViewState.IdRef>
                   </Catch>
                 </TryCatch.Catches>
-                <sap2010:WorkflowViewState.IdRef>TryCatch_1</sap2010:WorkflowViewState.IdRef>
               </TryCatch>
-              <TryCatch DisplayName="Try Get Asset">
+              <TryCatch DisplayName="Try Get Asset" sap2010:WorkflowViewState.IdRef="TryCatch_2">
                 <TryCatch.Try>
-                  <Sequence DisplayName="Validate credential name">
+                  <Sequence DisplayName="Validate credential name" sap2010:WorkflowViewState.IdRef="Sequence_27">
                     <ui:GetRobotCredential Password="{x:Null}" TimeoutMS="{x:Null}" Username="{x:Null}" AssetName="[row(&quot;Asset&quot;).ToString]" DisplayName="Get Credential Name" sap2010:WorkflowViewState.IdRef="GetRobotCredential_1" />
-                    <Assign DisplayName="Assign credential name">
+                    <Assign DisplayName="Assign credential name" sap2010:WorkflowViewState.IdRef="Assign_45">
                       <Assign.To>
                         <OutArgument x:TypeArguments="x:String">[credentialName]</OutArgument>
                       </Assign.To>
                       <Assign.Value>
                         <InArgument x:TypeArguments="x:String">[row("Asset").ToString]</InArgument>
                       </Assign.Value>
-                      <sap2010:WorkflowViewState.IdRef>Assign_45</sap2010:WorkflowViewState.IdRef>
                     </Assign>
-                    <sap2010:WorkflowViewState.IdRef>Sequence_27</sap2010:WorkflowViewState.IdRef>
                   </Sequence>
                 </TryCatch.Try>
                 <TryCatch.Catches>
-                  <Catch x:TypeArguments="s:Exception">
+                  <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch`1_2">
                     <ActivityAction x:TypeArguments="s:Exception">
                       <ActivityAction.Argument>
                         <DelegateInArgument x:TypeArguments="s:Exception" Name="exception" />
                       </ActivityAction.Argument>
-                      <Sequence DisplayName="Couldn't get credential">
-                        <AddToCollection x:TypeArguments="s:Exception" Collection="[exceptions]" DisplayName="Add To Exceptions" Item="[exception]" sap2010:WorkflowViewState.IdRef="AddToCollection`1_2" />
-                        <Assign DisplayName="Assign credential error">
+                      <Sequence DisplayName="Couldn't get credential" sap2010:WorkflowViewState.IdRef="Sequence_28">
+                        <AddToCollection x:TypeArguments="s:Exception" Collection="[exceptions]" DisplayName="Add To Exceptions" sap2010:WorkflowViewState.IdRef="AddToCollection`1_2" Item="[exception]" />
+                        <Assign DisplayName="Assign credential error" sap2010:WorkflowViewState.IdRef="Assign_46">
                           <Assign.To>
                             <OutArgument x:TypeArguments="x:String">[credentialName]</OutArgument>
                           </Assign.To>
                           <Assign.Value>
                             <InArgument x:TypeArguments="x:String">[Nothing]</InArgument>
                           </Assign.Value>
-                          <sap2010:WorkflowViewState.IdRef>Assign_46</sap2010:WorkflowViewState.IdRef>
                         </Assign>
-                        <sap2010:WorkflowViewState.IdRef>Sequence_28</sap2010:WorkflowViewState.IdRef>
                       </Sequence>
                     </ActivityAction>
-                    <sap2010:WorkflowViewState.IdRef>Catch`1_2</sap2010:WorkflowViewState.IdRef>
                   </Catch>
                 </TryCatch.Catches>
-                <sap2010:WorkflowViewState.IdRef>TryCatch_2</sap2010:WorkflowViewState.IdRef>
               </TryCatch>
-              <If Condition="[assetValue IsNot Nothing]" DisplayName="If setting asset">
+              <If Condition="[assetValue IsNot Nothing]" DisplayName="If setting asset" sap2010:WorkflowViewState.IdRef="If_29">
                 <If.Then>
-                  <Assign DisplayName="Set Asset Value">
+                  <Assign DisplayName="Set Asset Value" sap2010:WorkflowViewState.IdRef="Assign_47">
                     <Assign.To>
                       <OutArgument x:TypeArguments="x:String">[out_Config(row("Name").ToString)]</OutArgument>
                     </Assign.To>
                     <Assign.Value>
                       <InArgument x:TypeArguments="x:String">[assetValue]</InArgument>
                     </Assign.Value>
-                    <sap2010:WorkflowViewState.IdRef>Assign_47</sap2010:WorkflowViewState.IdRef>
                   </Assign>
                 </If.Then>
                 <If.Else>
-                  <If Condition="[credentialName IsNot Nothing]" DisplayName="If setting credential">
+                  <If Condition="[credentialName IsNot Nothing]" DisplayName="If setting credential" sap2010:WorkflowViewState.IdRef="If_28">
                     <If.Then>
-                      <Assign DisplayName="Set Credential Name">
+                      <Assign DisplayName="Set Credential Name" sap2010:WorkflowViewState.IdRef="Assign_48">
                         <Assign.To>
                           <OutArgument x:TypeArguments="x:String">[out_Config(row("Name").ToString)]</OutArgument>
                         </Assign.To>
                         <Assign.Value>
                           <InArgument x:TypeArguments="x:String">[credentialName]</InArgument>
                         </Assign.Value>
-                        <sap2010:WorkflowViewState.IdRef>Assign_48</sap2010:WorkflowViewState.IdRef>
                       </Assign>
                     </If.Then>
                     <If.Else>
                       <Throw DisplayName="Throw orchestrator exception" Exception="[New Exception(&quot;Loading asset &quot; + row(&quot;Asset&quot;).ToString, exceptions.FirstOrDefault)]" sap2010:WorkflowViewState.IdRef="Throw_1" />
                     </If.Else>
-                    <sap2010:WorkflowViewState.IdRef>If_28</sap2010:WorkflowViewState.IdRef>
                   </If>
                 </If.Else>
-                <sap2010:WorkflowViewState.IdRef>If_29</sap2010:WorkflowViewState.IdRef>
               </If>
-              <sap2010:WorkflowViewState.IdRef>Sequence_29</sap2010:WorkflowViewState.IdRef>
             </Sequence>
           </ActivityAction>
         </ui:ForEachRow.Body>
-        <sap2010:WorkflowViewState.IdRef>ForEachRow_8</sap2010:WorkflowViewState.IdRef>
       </ui:ForEachRow>
-      <sap2010:WorkflowViewState.IdRef>Sequence_30</sap2010:WorkflowViewState.IdRef>
     </Sequence>
     <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_7" Level="Info" Message="[&quot;End InitAllSettings.xaml, running with &quot; &amp; out_Config.Count &amp; &quot; settings&quot;]" />
-    <sads:DebugSymbol.Symbol>d3xDOlxVc2Vyc1x1cW1ndXB0MVxEb2N1bWVudHNcVWlQYXRoXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXElBQV9WZXZvQ2hlY2tfMS4wXElBQV9WZXZvQ2hlY2tcRnJhbWV3b3JrXEluaXRBbGxTZXR0aW5ncy54YW1sVAGjAQHSAQEDAWoBewECVAOoAg4CAQFVBVXOAQIBbFYFXQ4CAWheBWUOAgFjZgVtDgIBX24FdQ4CAVp2BZkBEgIBR5oBBaUCEAIBBaYCBaYC3wECAQJVclXLAQIBbVtKW20CAWtYS1hXAgFpYzBjSQIBZmAxYFUCAWRrMGufAQIBYmgxaE8CAWBzMHNMAgFdcDFwTwIBW3alAXa4AQIBWHwLlgEWAgFIngEHngHPAQIBQZ8BB6MCFwIBBqYCcqYC3AECAQOAAQ2AAd0BAgFRgQENlQEdAgFJngFCngFMAgFFngF3ngF/AgFEngGNAZ4BngECAUKfATifAUICAT+lAQ2fAhgCAQeAAUiAAVcCAVaAAbIBgAG7AQIBVIAByQGAAdoBAgFSgQE+gQFNAgFPhwETkgEYAgFKqQFLqQFlAgEIqwEPsAEUAgE8sQEPsQHBAQIBOrIBD9MBGgIBK9QBD/wBGgIBGf0BD50CFAIBCYcBIYcBYgIBS4kBF5ABIAIBTKsBHasBWgIBPa0BE60BaAIBPrEBTrEBjwECATu0ARO5ASYCATbBARfNASICASzWARPiAR4CASTqARf2ASICARr9AR39ATkCAQr/AROHAhwCARWKAhOaAhgCAQyOAUKOAVkCAU6LAUOLAWoCAU22AT+2AUsCATi0AUS0AWcCATfCARnCAc0BAgExwwEZywEiAgEt1wEV1wHyAQIBKdgBFeABHgIBJesBGesBzQECAR/sARn0ASICARuEAj6EAkoCAReBAj+BAmECARaKAiGKAkECAQ2MAheUAiACARGXAheXAuoBAgEPwgFTwgFhAgE0wgGHAcIBlAECATLIAUTIAU0CATDFAUXFAVECAS7XAXPXAZYBAgEq3QFA3QFXAgEo2gFB2gFRAgEm6wFT6wFhAgEi6wGHAesBlAECASDxAUTxAU0CAR7uAUXuAVUCARyRAkKRAlICAROOAkOOAmUCARKXAlOXAr0BAgEQ</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d3xDOlxVc2Vyc1x1cW1ndXB0MVxEb2N1bWVudHNcVWlQYXRoXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXElBQV9WZXZvQ2hlY2tfMS4wXElBQV9WZXZvQ2hlY2tcRnJhbWV3b3JrXEluaXRBbGxTZXR0aW5ncy54YW1sYAGjAQHSAQEDAWoBewECUwOzAg4CAQFUBVTOAQIBe1UFXA4CAXddBWQOAgFyZQVsDgIBbm0FdA4CAWl1BZgBEgIBVpkBBbcBEAIBR7gBBbACEAIBBbECBbEC3wECAQJUclTLAQIBfFpKWm0CAXpXS1dXAgF4YjBiSQIBdV8xX1UCAXNqMGqfAQIBcWcxZ08CAW9yMHJMAgFsbzFvTwIBanWlAXW4AQIBZ3sLlQEWAgFXnQEHnQHTAQIBUJ4BB7UBFwIBSLwBB7wBzwECAUG9AQevAhcCAQaxAnKxAtwBAgEDfw1/3QECAWCAAQ2UAR0CAVidAUKdAU4CAVSdAXmdAYMBAgFTnQGRAZ0BogECAVGeATieAUQCAU6kAQ2xARICAUm8AUK8AUwCAUW8AaUBvAGtAQIBRLwBuwG8AcwBAgFCvQE4vQFCAgE/wwENrAIYAgEHf0h/VwIBZX+yAX+7AQIBY3/JAX/aAQIBYYABPoABTQIBXoYBE5EBGAIBWaQBG6QBXAIBSqYBEa4BGgIBS8cBS8cBZQIBCMkBD80BFAIBPM4BD84BwQECATrPAQ/rARoCASvsAQ+OAhoCARmPAg+rAhQCAQmGASGGAWICAVqIARePASACAVurATyrAVMCAU2oAT2oAWQCAUzJAR3JAVoCAT3LARPLAWgCAT7OAX3OAb4BAgE70QET1QEmAgE23QEX5wEiAgEs7gET+AEeAgEkgAIXigIiAgEajwIdjwI5AgEKkQITmAIcAgEVmwITqQIYAgEMjQFCjQFZAgFdigFDigFqAgFc0wE/0wFLAgE40QFE0QFnAgE33gEZ3gHNAQIBMd8BGeYBIgIBLe8BFe8B8gECASnwARX3AR4CASWBAhmBAs0BAgEfggIZiQIiAgEblgI+lgJKAgEXkwI/kwJhAgEWmwIhmwJBAgENnQIXpAIgAgERpwIXpwLqAQIBD94BU94BYQIBNN4BvQHeAcoBAgEy5AFE5AFNAgEw4QFF4QFRAgEu7wFz7wGWAQIBKvUBQPUBVwIBKPIBQfIBUQIBJoECU4ECYQIBIoECvQGBAsoBAgEghwJEhwJNAgEehAJFhAJVAgEcogJCogJSAgETnwJDnwJlAgESpwJTpwK9AQIBEA==</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
-      <sap2010:ViewStateData Id="LogMessage_4" sap:VirtualizedContainerService.HintSize="314,91" />
-      <sap2010:ViewStateData Id="Assign_1" sap:VirtualizedContainerService.HintSize="314,60" />
-      <sap2010:ViewStateData Id="Assign_31" sap:VirtualizedContainerService.HintSize="314,60" />
-      <sap2010:ViewStateData Id="Assign_30" sap:VirtualizedContainerService.HintSize="314,60" />
-      <sap2010:ViewStateData Id="Assign_29" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="LogMessage_4" sap:VirtualizedContainerService.HintSize="808,91" />
+      <sap2010:ViewStateData Id="Assign_1" sap:VirtualizedContainerService.HintSize="808,60" />
+      <sap2010:ViewStateData Id="Assign_31" sap:VirtualizedContainerService.HintSize="808,60" />
+      <sap2010:ViewStateData Id="Assign_30" sap:VirtualizedContainerService.HintSize="808,60" />
+      <sap2010:ViewStateData Id="Assign_29" sap:VirtualizedContainerService.HintSize="808,60" />
       <sap2010:ViewStateData Id="ReadRange_5" sap:VirtualizedContainerService.HintSize="494,87" />
       <sap2010:ViewStateData Id="Assign_42" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="If_25" sap:VirtualizedContainerService.HintSize="464,208" />
@@ -313,7 +324,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="ForEach`1_1" sap:VirtualizedContainerService.HintSize="314,51">
+      <sap2010:ViewStateData Id="ForEach`1_1" sap:VirtualizedContainerService.HintSize="808,51">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">False</x:Boolean>
@@ -321,7 +332,26 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="ReadRange_7" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="ReadRange_8" sap:VirtualizedContainerService.HintSize="494,87" />
+      <sap2010:ViewStateData Id="Assign_49" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="If_30" sap:VirtualizedContainerService.HintSize="464,208" />
+      <sap2010:ViewStateData Id="ForEachRow_9" sap:VirtualizedContainerService.HintSize="494,356">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Sequence_31" sap:VirtualizedContainerService.HintSize="808,607">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="ReadRange_7" sap:VirtualizedContainerService.HintSize="786,87" />
       <sap2010:ViewStateData Id="Continue_1" sap:VirtualizedContainerService.HintSize="200,22" />
       <sap2010:ViewStateData Id="If_27" sap:VirtualizedContainerService.HintSize="734,208">
         <sap:WorkflowViewStateService.ViewState>
@@ -418,24 +448,24 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="ForEachRow_8" sap:VirtualizedContainerService.HintSize="314,51">
+      <sap2010:ViewStateData Id="ForEachRow_8" sap:VirtualizedContainerService.HintSize="786,1847">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
             <x:Boolean x:Key="IsPinned">False</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_30" sap:VirtualizedContainerService.HintSize="314,51">
+      <sap2010:ViewStateData Id="Sequence_30" sap:VirtualizedContainerService.HintSize="808,2098">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
             <x:Boolean x:Key="IsPinned">False</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="LogMessage_7" sap:VirtualizedContainerService.HintSize="314,91" />
-      <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="336,1075">
+      <sap2010:ViewStateData Id="LogMessage_7" sap:VirtualizedContainerService.HintSize="808,91" />
+      <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="830,3709">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -443,7 +473,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="GetAllSettings_1" sap:VirtualizedContainerService.HintSize="376,1155" />
+      <sap2010:ViewStateData Id="GetAllSettings_1" sap:VirtualizedContainerService.HintSize="870,3789" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
