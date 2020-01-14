@@ -79,6 +79,7 @@
       <AssemblyReference>Microsoft.VisualStudio.Services.Common</AssemblyReference>
       <AssemblyReference>System.ValueTuple</AssemblyReference>
       <AssemblyReference>System.ComponentModel.Composition</AssemblyReference>
+      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence sap2010:Annotation.AnnotationText="This file will attempt to update UniTask through a HTTP request. First we read credentials from Orchestrator and convert them to Base64, any failures at this point will throw an application exception.&#xA;If we were succesfull in converting the credentials we attempt the API call in a retry block untill we are returned a status code of 200, all others are considered a failure.&#xA;Inputs:&#xA;caseID&#xA;status - 'failed'or 'completed&#xA;failedReason - BRE message&#xA;Config&#xA;Outputs:&#xA;statusCode&#xA;result" DisplayName="UpdateUniTaskAPI" sap2010:WorkflowViewState.IdRef="Sequence_1">
@@ -91,8 +92,17 @@
       <Variable x:TypeArguments="x:String" Name="uniTaskPasswordStr" />
       <Variable x:TypeArguments="x:String" Name="uniTaskBase64" />
       <Variable x:TypeArguments="x:String" Name="cipBase64" />
-      <Variable x:TypeArguments="x:String" Default="[in_Config(&quot;Environment&quot;).ToString]" Name="environment" />
+      <Variable x:TypeArguments="x:String" Name="environment" />
     </Sequence.Variables>
+    <Assign DisplayName="Assign environment">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">[environment]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">[in_Config("Environment").ToString]</InArgument>
+      </Assign.Value>
+      <sap2010:WorkflowViewState.IdRef>Assign_5</sap2010:WorkflowViewState.IdRef>
+    </Assign>
     <ui:LogMessage DisplayName="Log Message - updating UniTask API" sap2010:WorkflowViewState.IdRef="LogMessage_3" Level="Info" Message="[&quot;Updating UniTask API for case ID: '&quot; + in_caseID + &quot;'&quot;]" />
     <TryCatch DisplayName="Try and get credentials from Orchestrator" sap2010:WorkflowViewState.IdRef="TryCatch_1">
       <TryCatch.Try>
@@ -197,10 +207,11 @@
         </Catch>
       </TryCatch.Catches>
     </TryCatch>
-    <sads:DebugSymbol.Symbol>d2dDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcVVFHU19FT01fcHJvY19TSW5ldER1ZURhdGVVcGRhdGVfMS4wXFN1cHBvcnRcVXBkYXRlVW5pVGFza0FQSS54YW1sO1QDyQEOAgEBXjReYwIBAmAFYNsBAgFVYQWVARACAS2WAQXHARACAQRgiQFg2AECAVZjCYYBFAIBNI4BDZEBGAIBLpgBCbgBFAIBDMABDcMBGAIBBWQLZKMCAgFOZQtlkwICAUdmC20UAgFCbgt1FAIBPXYLfRQCATl+C4UBFAIBNY8BD48B+wECATGQAQ+QAcwBAgEvmQELtgEbAgEQtwELtwHtAQIBDcEBD8EBogICAQjCAQ/CAbIBAgEGZEFkegIBU2SNAmSgAgIBUWTwAWSDAgIBT2VBZXYCAUxlgQJlkAICAUpl6AFl9wECAUhrNmuAAQIBRWg3aEsCAUNzNnN8AgFAcDdwRwIBPns2e54BAgE8eDd4RgIBOoMBNoMBlgECATiAATeAAUICATaPAYYBjwH4AQIBMpABPpABnwECATCZAZYBmQGgAQIBLJkBhAGZAYcBAgErnAERrgEcAgEUswERswF9AgERtwGFAbcB6gECAQ7BAYYBwQGfAgIBCcIBPsIBhQECAQedAROdAb0BAgEpngETrQEjAgEVswFiswF6AgESnQGXAZ0BugECASqkAVykAXYCASeeAYcFngGSBQIBJp4B8QaeAfcGAgElngGSAp4BsAQCASGlAVSlAWoCAR+eAboGngHIBgIBHZ4BtwWeAfYFAgEangHhBJ4B7AQCARmeAdQGngHmBgIBF6MBU6MBYwIBFg==</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d2dDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcVVFHU19FT01fcHJvY19TSW5ldER1ZURhdGVVcGRhdGVfMS4wXFN1cHBvcnRcVXBkYXRlVW5pVGFza0FQSS54YW1sPVUD0wEOAgEBYQVpDgIBVmoFatsBAgFTawWfARACASugAQXRARACAQJmMGZTAgFZYzFjPgIBV2qJAWrYAQIBVG0JkAEUAgEymAENmwEYAgEsogEJwgEUAgEKygENzQEYAgEDbgtuowICAUxvC2+TAgIBRXALdxQCAUB4C38UAgE7gAELhwEUAgE3iAELjwEUAgEzmQEPmQH7AQIBL5oBD5oBzAECAS2jAQvAARsCAQ7BAQvBAe0BAgELywEPywGiAgIBBswBD8wBsgECAQRuQW56AgFRbo0CbqACAgFPbvABboMCAgFNb0FvdgIBSm+BAm+QAgIBSG/oAW/3AQIBRnU2dYABAgFDcjdySwIBQX02fXwCAT56N3pHAgE8hQE2hQGeAQIBOoIBN4IBRgIBOI0BNo0BlgECATaKATeKAUICATSZAYYBmQH4AQIBMJoBPpoBnwECAS6jAZYBowGgAQIBKqMBhAGjAYcBAgEppgERuAEcAgESvQERvQF9AgEPwQGFAcEB6gECAQzLAYYBywGfAgIBB8wBPswBhQECAQWnAROnAb0BAgEnqAETtwEjAgETvQFivQF6AgEQpwGXAacBugECASiuAVyuAXYCASWoAYcFqAGSBQIBJKgB8QaoAfcGAgEjqAGSAqgBsAQCAR+vAVSvAWoCAR2oAboGqAHIBgIBG6gBtwWoAfYFAgEYqAHhBKgB7AQCAReoAdQGqAHmBgIBFa0BU60BYwIBFA==</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
+      <sap2010:ViewStateData Id="Assign_5" sap:VirtualizedContainerService.HintSize="418,60" />
       <sap2010:ViewStateData Id="LogMessage_3" sap:VirtualizedContainerService.HintSize="418,91" />
       <sap2010:ViewStateData Id="GetRobotCredential_1" sap:VirtualizedContainerService.HintSize="242,22" />
       <sap2010:ViewStateData Id="GetRobotCredential_2" sap:VirtualizedContainerService.HintSize="242,22" />
@@ -277,7 +288,7 @@
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="TryCatch_2" sap:VirtualizedContainerService.HintSize="418,1369" />
-      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="440,3150">
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="440,3250">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -285,7 +296,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="UpdateUniTaskAPI_1" sap:VirtualizedContainerService.HintSize="480,3230">
+      <sap2010:ViewStateData Id="UpdateUniTaskAPI_1" sap:VirtualizedContainerService.HintSize="480,3330">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="ShouldExpandAll">True</x:Boolean>
