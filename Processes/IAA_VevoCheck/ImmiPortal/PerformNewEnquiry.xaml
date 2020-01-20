@@ -1,4 +1,4 @@
-﻿<Activity mc:Ignorable="sap sap2010 sads" x:Class="PerformNewEnquiry" this:PerformNewEnquiry.in_FamilyName="LI" this:PerformNewEnquiry.in_DateOfBirth="07/02/1998" this:PerformNewEnquiry.in_PassportNumber="EC4154018" this:PerformNewEnquiry.in_CountryOfDocument="CHINA" this:PerformNewEnquiry.in_CaseReference="191129-000013"
+﻿<Activity mc:Ignorable="sap sap2010 sads" x:Class="PerformNewEnquiry"
  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
  xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities"
@@ -8,7 +8,6 @@
  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
  xmlns:scg="clr-namespace:System.Collections.Generic;assembly=mscorlib"
  xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=mscorlib"
- xmlns:this="clr-namespace:"
  xmlns:ui="http://schemas.uipath.com/workflow/activities"
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <x:Members>
@@ -18,6 +17,9 @@
     <x:Property Name="in_PassportNumber" Type="InArgument(x:String)" />
     <x:Property Name="in_CountryOfDocument" Type="InArgument(x:String)" />
     <x:Property Name="in_CaseReference" Type="InArgument(x:String)" />
+    <x:Property Name="in_FolderLocation" Type="InArgument(x:String)" />
+    <x:Property Name="in_Username" Type="InArgument(x:String)" />
+    <x:Property Name="in_VevoFileNamePrefix" Type="InArgument(x:String)" />
   </x:Members>
   <mva:VisualBasic.Settings>
     <x:Null />
@@ -122,7 +124,6 @@
                     <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="962fd107e80e8ce6806317ea83fea9c0" Selector="&lt;html app='chrome.exe' title='Visa*' /&gt;&lt;webctrl tag='INPUT' aaname='Document number' /&gt;" WaitForReady="INTERACTIVE" />
                   </ui:TypeInto.Target>
                 </ui:TypeInto>
-                <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_7" Level="Info" Message="[&quot;Value of In_Country :&quot; +in_CountryOfDocument]" />
                 <ui:SelectItem ContinueOnError="{x:Null}" DelayAfter="{x:Null}" DelayBefore="{x:Null}" DisplayName="Select Country from drop down " sap2010:WorkflowViewState.IdRef="SelectItem_1" Item="[in_CountryOfDocument]">
                   <ui:SelectItem.Items>
                     <scg:List x:TypeArguments="x:String" Capacity="50">
@@ -236,7 +237,7 @@
           </Sequence.Variables>
           <ui:UiElementExists DisplayName="Check result if View as PDF appears " Exists="[vevoCheckSuccessful]" sap2010:WorkflowViewState.IdRef="UiElementExists_1">
             <ui:UiElementExists.Target>
-              <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" InformativeScreenshot="95c7be5e18f3ff26daf457ab0b5dd2f1" Selector="&lt;html app='chrome.exe' title='Visa Entitlement Verification Online: Visa details' /&gt;&lt;webctrl aaname='View as PDF' tag='BUTTON' /&gt;" TimeoutMS="60000" WaitForReady="INTERACTIVE" />
+              <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" InformativeScreenshot="95c7be5e18f3ff26daf457ab0b5dd2f1" Selector="&lt;html app='chrome.exe' title='Visa Entitlement Verification Online: Visa details' /&gt;&lt;webctrl aaname='View as PDF' tag='BUTTON' /&gt;" TimeoutMS="45000" WaitForReady="COMPLETE" />
             </ui:UiElementExists.Target>
           </ui:UiElementExists>
           <If Condition="[vevoCheckSuccessful]" DisplayName="If Vevo search successful" sap2010:WorkflowViewState.IdRef="If_1">
@@ -273,13 +274,32 @@
                 <Sequence.Variables>
                   <Variable x:TypeArguments="ui:Image" Name="S" />
                   <Variable x:TypeArguments="ui:Image" Name="vevoScreenShot" />
+                  <Variable x:TypeArguments="x:String" Name="filePath" />
+                  <Variable x:TypeArguments="x:String" Name="fileName_Path" />
                 </Sequence.Variables>
                 <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_4" Level="Info" Message="[&quot;Vevo search unsuccessful for Case Reference:&quot; +&quot;downloading error screenshot&quot;]" />
+                <Assign sap2010:WorkflowViewState.IdRef="Assign_3">
+                  <Assign.To>
+                    <OutArgument x:TypeArguments="x:String">[filePath]</OutArgument>
+                  </Assign.To>
+                  <Assign.Value>
+                    <InArgument x:TypeArguments="x:String">[String.Format(in_FolderLocation, in_Username)]</InArgument>
+                  </Assign.Value>
+                </Assign>
+                <Assign sap2010:WorkflowViewState.IdRef="Assign_4">
+                  <Assign.To>
+                    <OutArgument x:TypeArguments="x:String">[fileName_Path]</OutArgument>
+                  </Assign.To>
+                  <Assign.Value>
+                    <InArgument x:TypeArguments="x:String">[Path.Combine(filePath,in_VevoFileNamePrefix+"_"+in_CaseReference+".png")]</InArgument>
+                  </Assign.Value>
+                </Assign>
                 <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke TakeScreenshot workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_1" UnSafe="False" WorkflowFileName="Framework\TakeScreenshot.xaml">
                   <ui:InvokeWorkflowFile.Arguments>
-                    <InArgument x:TypeArguments="x:String" x:Key="in_Folder">VevoDocument</InArgument>
-                    <InOutArgument x:TypeArguments="x:String" x:Key="io_FilePath" />
-                    <InArgument x:TypeArguments="x:String" x:Key="in_CaseReference">[in_CaseReference]</InArgument>
+                    <InArgument x:TypeArguments="x:String" x:Key="in_Folder" />
+                    <InOutArgument x:TypeArguments="x:String" x:Key="io_FilePath">[fileName_Path]</InOutArgument>
+                    <InArgument x:TypeArguments="x:String" x:Key="in_CaseReference" />
+                    <InArgument x:TypeArguments="x:String" x:Key="argument1" />
                   </ui:InvokeWorkflowFile.Arguments>
                 </ui:InvokeWorkflowFile>
               </Sequence>
@@ -314,7 +334,7 @@
       </TryCatch.Catches>
     </TryCatch>
     <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_8" Level="Info" Message="[&quot;End PerformNewEnquiry.xaml on Immi Portal for case reference :&quot; +in_CaseReference]" />
-    <sads:DebugSymbol.Symbol>d21DOlxVc2Vyc1x1cW1ndXB0MVxEb2N1bWVudHNcVWlQYXRoXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXElBQV9WZXZvQ2hlY2tcSW1taVBvcnRhbFxQZXJmb3JtTmV3RW5xdWlyeS54YW1sRgGFAgGLAgEGAc0BAdcBAQUBbAFvAQQBlwEBogEBAwG1AgHDAgECTAO+Ag4CAQFNBU3YAQIBSk4F5gEQAgEl5wEFuwIQAgEFvAIFvALVAQIBAk1yTdUBAgFLUAnaARsCASniAQ3iAZACAgEm6QEJrwIUAgEJtwINtwKaAgIBBrwCcrwC0gECAQNQkQJQ4AICAUlQ6wJQ8gICAUhWD9cBGgIBKuIBxQHiAY0CAgEo4gFL4gGHAQIBJ+0BC/EBIAIBIPIBC58CEAIBDKACC64CFgIBCrcCxQG3ApcCAgEItwJLtwKHAQIBB1oRaBwCAUZpEW0fAgFCbhFyHwIBP3MRdx8CATp4EXwfAgE2fRF9vAECATN+EbgBIQIBL7kBEccBHAIBLcgBEdYBHAIBK+8BiQHvAZgCAgEk7wGjAu8BqgICASPtAVntAXACASHyARnyATACAQ30AQ+NAhoCAReQAg+dAhoCAQ+sAp4BrAKgAgIBC2akAWbZAQIBR2ukAWuFAgIBRWmfAmmwAgIBQ3CkAXCkAgIBQW6+Am7SAgIBQHWPAXXyAQIBPnX9AXWEAgIBPXOkAnO2AgIBO3qkAXqJAgIBOXilAni6AgIBN31+fbkBAgE0fskBfuEBAgEwtgGkAbYBwQICATLFAaQBxQHkAgIBLtQBpAHUAYECAgEs9QER9QHVAQIBHvYBEYQCHAIBHIUCEYwCGgIBGJUCEZUC5wECARWWAhGcAikCARD1AX71AdIBAgEfggKkAYIChgICAR2KAj2KAkECARuHAj6HAlQCARmVAn6VAuQBAgEWmAJOmAJaAgEUmgJVmgJnAgESlgLHAZYC5gECARE=</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d21DOlxVc2Vyc1x1cW1ndXB0MVxEb2N1bWVudHNcVWlQYXRoXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXElBQV9WZXZvQ2hlY2tcSW1taVBvcnRhbFxQZXJmb3JtTmV3RW5xdWlyeS54YW1sRE4D0gIOAgEBTwVP2AECAVBQBecBEAIBLugBBc8CEAIBBdACBdAC1QECAQJPck/VAQIBUVIJ2wEbAgEy4wEN4wGQAgIBL+oBCcMCFAIBCcsCDcsCmgICAQbQAnLQAtIBAgEDUpECUuACAgFPUusCUvICAgFOWA/YARoCATPjAcUB4wGNAgIBMeMBS+MBhwECATDuAQvyASACASnzAQuzAhACAQy0AgvCAhYCAQrLAsUBywKXAgIBCMsCS8sChwECAQdcEWocAgFMaxFvHwIBSHARdB8CAUV1EXkfAgFAehF+HwIBPH8RuQEhAgE4ugERyAEcAgE2yQER1wEcAgE08AGJAfABmAICAS3wAaMC8AGqAgIBLO4BWe4BcAIBKvMBGfMBMAIBDfUBD44CGgIBIJECD7ECGgIBD8ACngHAAqACAgELaKQBaNkBAgFNbaQBbYUCAgFLa58Ca7ACAgFJcqQBcqQCAgFHcL4CcNICAgFGd48Bd/IBAgFEd/0Bd4QCAgFDdaQCdbYCAgFBfKQBfIkCAgE/eqUCeroCAgE9f8kBf+EBAgE5twGkAbcBwQICATvGAaQBxgHkAgIBN9UBpAHVAYECAgE19gER9gHVAQIBJ/cBEYUCHAIBJYYCEY0CGgIBIZgCEZgC5wECAR6ZAhGgAhoCARihAhGoAhoCARSpAhGwAikCARD2AX72AdIBAgEogwKkAYMChgICASaLAj2LAkECASSIAj6IAlQCASKYAn6YAuQBAgEfngI8ngJrAgEbmwI9mwJHAgEZpgI8pgKGAQIBF6MCPaMCTAIBFawCU6wCYgIBEqkCxwGpAuYBAgER</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -366,7 +386,6 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="LogMessage_7" sap:VirtualizedContainerService.HintSize="314,91" />
       <sap2010:ViewStateData Id="SelectItem_1" sap:VirtualizedContainerService.HintSize="314,134">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
@@ -391,7 +410,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_3" sap:VirtualizedContainerService.HintSize="336,1413">
+      <sap2010:ViewStateData Id="Sequence_3" sap:VirtualizedContainerService.HintSize="336,1282">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -399,7 +418,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="BrowserScope_1" sap:VirtualizedContainerService.HintSize="414,1559">
+      <sap2010:ViewStateData Id="BrowserScope_1" sap:VirtualizedContainerService.HintSize="414,1428">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -416,7 +435,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="737,1786" />
+      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="737,1655" />
       <sap2010:ViewStateData Id="UiElementExists_1" sap:VirtualizedContainerService.HintSize="697,51">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
@@ -436,15 +455,17 @@
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="LogMessage_4" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="Assign_3" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="Assign_4" sap:VirtualizedContainerService.HintSize="314,60" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_1" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="336,342">
+      <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="336,542">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="697,609">
+      <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="697,690">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -461,7 +482,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_6" sap:VirtualizedContainerService.HintSize="719,915">
+      <sap2010:ViewStateData Id="Sequence_6" sap:VirtualizedContainerService.HintSize="719,996">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -478,7 +499,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_2" sap:VirtualizedContainerService.HintSize="737,1142">
+      <sap2010:ViewStateData Id="TryCatch_2" sap:VirtualizedContainerService.HintSize="737,1223">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -494,7 +515,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_4" sap:VirtualizedContainerService.HintSize="759,3681">
+      <sap2010:ViewStateData Id="Sequence_4" sap:VirtualizedContainerService.HintSize="759,3631">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -502,7 +523,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="PerformNewEnquiry_1" sap:VirtualizedContainerService.HintSize="799,3761" />
+      <sap2010:ViewStateData Id="PerformNewEnquiry_1" sap:VirtualizedContainerService.HintSize="799,3711" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>

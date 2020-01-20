@@ -78,6 +78,7 @@
       <AssemblyReference>UiPath.Studio.Plugin.Workflow</AssemblyReference>
       <AssemblyReference>System.Data.Entity</AssemblyReference>
       <AssemblyReference>System.Collections.Immutable</AssemblyReference>
+      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence sap2010:Annotation.AnnotationText="This workflow outputs a settings Dictionary with key/value pairs to be used in the project. Settings are read from local config file then fetched from Orchestrator assets.&#xA;Assets will overwrite the config file settings&#xA;&#xA;Uses a single config for DEV, UAT and PRD environments, specified by the Operating Environment argument." DisplayName="Get All Settings" sap2010:WorkflowViewState.IdRef="Sequence_2">
@@ -98,9 +99,9 @@
         <InArgument x:TypeArguments="x:String">[in_OperatingEnvironment]</InArgument>
       </Assign.Value>
     </Assign>
-    <Assign DisplayName="Assign robot username" sap2010:WorkflowViewState.IdRef="Assign_30">
+    <Assign DisplayName="Assign Robot Username" sap2010:WorkflowViewState.IdRef="Assign_30">
       <Assign.To>
-        <OutArgument x:TypeArguments="x:String">[out_Config("Robot Username")]</OutArgument>
+        <OutArgument x:TypeArguments="x:String">[out_Config("RobotUsername")]</OutArgument>
       </Assign.To>
       <Assign.Value>
         <InArgument x:TypeArguments="x:String">[System.Security.Principal.WindowsIdentity.GetCurrent().Name.Replace(System.Environment.UserDomainName+"\","")]</InArgument>
@@ -150,36 +151,32 @@
         </ActivityAction>
       </ui:ForEach.Body>
     </ui:ForEach>
-    <Sequence DisplayName="Loading Messages">
+    <Sequence DisplayName="Loading Messages" sap2010:WorkflowViewState.IdRef="Sequence_31">
       <Sequence.Variables>
         <Variable x:TypeArguments="sd:DataTable" Name="messages" />
       </Sequence.Variables>
-      <ui:ReadRange Range="{x:Null}" AddHeaders="True" DataTable="[messages]" DisplayName="Read range Assets" SheetName="Messages" WorkbookPath="[in_configFile]" sap2010:WorkflowViewState.IdRef="ReadRange_8" />
-      <ui:ForEachRow CurrentIndex="{x:Null}" DataTable="[messages]" DisplayName="For each row">
+      <ui:ReadRange Range="{x:Null}" AddHeaders="True" DataTable="[messages]" DisplayName="Read range Assets" sap2010:WorkflowViewState.IdRef="ReadRange_8" SheetName="Messages" WorkbookPath="[in_configFile]" />
+      <ui:ForEachRow CurrentIndex="{x:Null}" DataTable="[messages]" DisplayName="For each row" sap2010:WorkflowViewState.IdRef="ForEachRow_9">
         <ui:ForEachRow.Body>
           <ActivityAction x:TypeArguments="sd:DataRow">
             <ActivityAction.Argument>
               <DelegateInArgument x:TypeArguments="sd:DataRow" Name="row" />
             </ActivityAction.Argument>
-            <If Condition="[NOT String.IsNullOrEmpty(row(&quot;Name&quot;).ToString.Trim)]">
+            <If Condition="[NOT String.IsNullOrEmpty(row(&quot;Name&quot;).ToString.Trim)]" sap2010:WorkflowViewState.IdRef="If_30">
               <If.Then>
-                <Assign DisplayName="Add key/value pair">
+                <Assign DisplayName="Add key/value pair" sap2010:WorkflowViewState.IdRef="Assign_49">
                   <Assign.To>
                     <OutArgument x:TypeArguments="x:String">[out_Config(row("Name").ToString.Trim)]</OutArgument>
                   </Assign.To>
                   <Assign.Value>
                     <InArgument x:TypeArguments="x:String">[row("Value").ToString]</InArgument>
                   </Assign.Value>
-                  <sap2010:WorkflowViewState.IdRef>Assign_49</sap2010:WorkflowViewState.IdRef>
                 </Assign>
               </If.Then>
-              <sap2010:WorkflowViewState.IdRef>If_30</sap2010:WorkflowViewState.IdRef>
             </If>
           </ActivityAction>
         </ui:ForEachRow.Body>
-        <sap2010:WorkflowViewState.IdRef>ForEachRow_9</sap2010:WorkflowViewState.IdRef>
       </ui:ForEachRow>
-      <sap2010:WorkflowViewState.IdRef>Sequence_31</sap2010:WorkflowViewState.IdRef>
     </Sequence>
     <Sequence DisplayName="Loading Assets" sap2010:WorkflowViewState.IdRef="Sequence_30">
       <Sequence.Variables>
@@ -302,8 +299,16 @@
         </ui:ForEachRow.Body>
       </ui:ForEachRow>
     </Sequence>
+    <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke DeleteVevoDocFromLocal workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_1" UnSafe="False" WorkflowFileName="CRM\DeleteVevoDocFromLocal.xaml">
+      <ui:InvokeWorkflowFile.Arguments>
+        <InArgument x:TypeArguments="x:String" x:Key="in_FolderLocation">[out_Config("DownloadLocation")]</InArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="in_FilePattern">[out_Config("VevoFileNamePattern")]</InArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="in_Username">[out_Config("RobotUsername")]</InArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="in_CaseReference" />
+      </ui:InvokeWorkflowFile.Arguments>
+    </ui:InvokeWorkflowFile>
     <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_7" Level="Info" Message="[&quot;End InitAllSettings.xaml, running with &quot; &amp; out_Config.Count &amp; &quot; settings&quot;]" />
-    <sads:DebugSymbol.Symbol>d3xDOlxVc2Vyc1x1cW1ndXB0MVxEb2N1bWVudHNcVWlQYXRoXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXElBQV9WZXZvQ2hlY2tfMS4wXElBQV9WZXZvQ2hlY2tcRnJhbWV3b3JrXEluaXRBbGxTZXR0aW5ncy54YW1sYAGjAQHSAQEDAWoBewECUwOzAg4CAQFUBVTOAQIBe1UFXA4CAXddBWQOAgFyZQVsDgIBbm0FdA4CAWl1BZgBEgIBVpkBBbcBEAIBR7gBBbACEAIBBbECBbEC3wECAQJUclTLAQIBfFpKWm0CAXpXS1dXAgF4YjBiSQIBdV8xX1UCAXNqMGqfAQIBcWcxZ08CAW9yMHJMAgFsbzFvTwIBanWlAXW4AQIBZ3sLlQEWAgFXnQEHnQHTAQIBUJ4BB7UBFwIBSLwBB7wBzwECAUG9AQevAhcCAQaxAnKxAtwBAgEDfw1/3QECAWCAAQ2UAR0CAVidAUKdAU4CAVSdAXmdAYMBAgFTnQGRAZ0BogECAVGeATieAUQCAU6kAQ2xARICAUm8AUK8AUwCAUW8AaUBvAGtAQIBRLwBuwG8AcwBAgFCvQE4vQFCAgE/wwENrAIYAgEHf0h/VwIBZX+yAX+7AQIBY3/JAX/aAQIBYYABPoABTQIBXoYBE5EBGAIBWaQBG6QBXAIBSqYBEa4BGgIBS8cBS8cBZQIBCMkBD80BFAIBPM4BD84BwQECATrPAQ/rARoCASvsAQ+OAhoCARmPAg+rAhQCAQmGASGGAWICAVqIARePASACAVurATyrAVMCAU2oAT2oAWQCAUzJAR3JAVoCAT3LARPLAWgCAT7OAX3OAb4BAgE70QET1QEmAgE23QEX5wEiAgEs7gET+AEeAgEkgAIXigIiAgEajwIdjwI5AgEKkQITmAIcAgEVmwITqQIYAgEMjQFCjQFZAgFdigFDigFqAgFc0wE/0wFLAgE40QFE0QFnAgE33gEZ3gHNAQIBMd8BGeYBIgIBLe8BFe8B8gECASnwARX3AR4CASWBAhmBAs0BAgEfggIZiQIiAgEblgI+lgJKAgEXkwI/kwJhAgEWmwIhmwJBAgENnQIXpAIgAgERpwIXpwLqAQIBD94BU94BYQIBNN4BvQHeAcoBAgEy5AFE5AFNAgEw4QFF4QFRAgEu7wFz7wGWAQIBKvUBQPUBVwIBKPIBQfIBUQIBJoECU4ECYQIBIoECvQGBAsoBAgEghwJEhwJNAgEehAJFhAJVAgEcogJCogJSAgETnwJDnwJlAgESpwJTpwK9AQIBEA==</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d2pDOlxVc2Vyc1x1cW1ndXB0MVxEb2N1bWVudHNcVWlQYXRoXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXElBQV9WZXZvQ2hlY2tcRnJhbWV3b3JrXEluaXRBbGxTZXR0aW5ncy54YW1sZQGjAQHSAQEDAWoBewECVAO4Ag4CAQFVBVXOAQMBgwFWBV0OAgF/XgVlDgIBemYFbQ4CAXZuBXUOAgFxdgWZARICAV6aAQW0ARACAU+1AQWtAhACAQ2uAgW1Ah0CAQW2AgW2At8BAgECVXJVywEDAYQBW0pbbQMBggFYS1hXAwGAAWMwY0kCAX1gMWBVAgF7azBrnwECAXloMWhOAgF3czBzTAIBdHAxcE8CAXJ2pQF2uAECAW98C5YBFgIBX54BB54B0wECAVifAQezARcCAVC5AQe5Ac8BAgFJugEHrAIXAgEOsAJKsAJqAgELsQJHsQJqAgEJsgJEsgJhAgEHrgLDAa4C5AECAQa2AnK2AtwBAgEDgAENgAHdAQIBaIEBDZUBHQIBYJ4BQp4BTgIBXJ4BpwGeAbEBAgFbngG/AZ4B0AECAVmfATifAUQCAValAQ2wARICAVG5AUK5AUwCAU25AaUBuQGtAQIBTLkBuwG5AcwBAgFKugE4ugFCAgFHwAENqQIYAgEPgAFIgAFXAgFtgAGyAYABuwECAWuAAckBgAHaAQIBaYEBPoEBTQIBZocBE5IBGAIBYaUBG6UBXAIBUqcBEa4BGgIBU8QBS8QBZQIBEMYBD8oBFAIBRMsBD8sBwQECAULMAQ/oARoCATPpAQ+LAhoCASGMAg+oAhQCARGHASGHAWICAWKJAReQASACAWOsATysAVMCAVWpAT2pAWQCAVTGAR3GAVoCAUXIARPIAWgCAUbLAX3LAb4BAgFDzgET0gEmAgE+2gEX5AEiAgE06wET9QEeAgEs/QEXhwIiAgEijAIdjAI5AgESjgITlQIcAgEdmAITpgIYAgEUjgFCjgFZAgFliwFDiwFqAgFk0AE/0AFLAgFAzgFEzgFnAgE/2wEZ2wHNAQIBOdwBGeMBIgIBNewBFewB8gECATHtARX0AR4CAS3+ARn+Ac0BAgEn/wEZhgIiAgEjkwI+kwJKAgEfkAI/kAJhAgEemAIhmAJBAgEVmgIXoQIgAgEZpAIXpALqAQIBF9sBU9sBYQIBPNsBvQHbAcoBAgE64QFE4QFNAgE43gFF3gFRAgE27AFz7AGWAQIBMvIBQPIBVwIBMO8BQe8BUQIBLv4BU/4BYQIBKv4BvQH+AcoBAgEohAJEhAJNAgEmgQJFgQJVAgEknwJCnwJSAgEbnAJDnAJlAgEapAJTpAK9AQIBGA==</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -343,10 +348,10 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_31" sap:VirtualizedContainerService.HintSize="808,607">
+      <sap2010:ViewStateData Id="Sequence_31" sap:VirtualizedContainerService.HintSize="808,51">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
             <x:Boolean x:Key="IsPinned">False</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
@@ -365,7 +370,7 @@
       <sap2010:ViewStateData Id="GetRobotAsset_1" sap:VirtualizedContainerService.HintSize="200,22" />
       <sap2010:ViewStateData Id="AddToCollection`1_1" sap:VirtualizedContainerService.HintSize="242,22" />
       <sap2010:ViewStateData Id="Assign_44" sap:VirtualizedContainerService.HintSize="242,60" />
-      <sap2010:ViewStateData Id="Sequence_26" sap:VirtualizedContainerService.HintSize="264,246">
+      <sap2010:ViewStateData Id="Sequence_26" sap:VirtualizedContainerService.HintSize="264,243">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -399,7 +404,7 @@
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="AddToCollection`1_2" sap:VirtualizedContainerService.HintSize="242,22" />
       <sap2010:ViewStateData Id="Assign_46" sap:VirtualizedContainerService.HintSize="242,60" />
-      <sap2010:ViewStateData Id="Sequence_28" sap:VirtualizedContainerService.HintSize="264,246">
+      <sap2010:ViewStateData Id="Sequence_28" sap:VirtualizedContainerService.HintSize="264,243">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -464,8 +469,9 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_1" sap:VirtualizedContainerService.HintSize="808,87" />
       <sap2010:ViewStateData Id="LogMessage_7" sap:VirtualizedContainerService.HintSize="808,91" />
-      <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="830,3709">
+      <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="830,3280">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -473,7 +479,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="GetAllSettings_1" sap:VirtualizedContainerService.HintSize="870,3789" />
+      <sap2010:ViewStateData Id="GetAllSettings_1" sap:VirtualizedContainerService.HintSize="870,3360" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
