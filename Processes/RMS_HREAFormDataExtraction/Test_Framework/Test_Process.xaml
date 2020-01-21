@@ -61,6 +61,7 @@
       <AssemblyReference>Microsoft.VisualStudio.Services.Common</AssemblyReference>
       <AssemblyReference>System.Collections.Immutable</AssemblyReference>
       <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
+      <AssemblyReference>System.Data.Entity</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence DisplayName="Test_Process" sap2010:WorkflowViewState.IdRef="Sequence_1">
@@ -71,6 +72,7 @@
       <Variable x:TypeArguments="x:String" Name="rootFolder" />
       <Variable x:TypeArguments="x:String" Name="driveLetter" />
       <Variable x:TypeArguments="x:String" Default="\\nas02.storage.uq.edu.au\CA\ITS\Academic Services\RPA\DEV\RMS_HREAFormDataExtraction\Samples.xlsx" Name="referenceLookup" />
+      <Variable x:TypeArguments="sd:DataTable" Name="exported" />
     </Sequence.Variables>
     <ui:ForEach x:TypeArguments="x:String" CurrentIndex="{x:Null}" DisplayName="For Each" sap2010:WorkflowViewState.IdRef="ForEach`1_2" Values="[Directory.GetFiles(&quot;.\&quot;, &quot;*.txt&quot;)]">
       <ui:ForEach.Body>
@@ -88,6 +90,14 @@
       </Assign.To>
       <Assign.Value>
         <InArgument x:TypeArguments="x:String">\\nas02.storage.uq.edu.au\CA\ITS\Academic Services\RPA\DEV\RMS_HREAFormDataExtraction</InArgument>
+      </Assign.Value>
+    </Assign>
+    <Assign DisplayName="Override select sourcefolder" sap2010:WorkflowViewState.IdRef="Assign_9">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">[sourceFolder]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">["\\nas02.storage.uq.edu.au\CA\ITS\Academic Services\RPA\DEV\RMS_HREAFormDataExtraction\Samples\Committee A\E-FILING\DONE\1_Fitzgerald_2019000082_FullReview_16.01.19\Responses to cmt feedback"]</InArgument>
       </Assign.Value>
     </Assign>
     <Assign DisplayName="Assign sourceFolder" sap2010:WorkflowViewState.IdRef="Assign_1">
@@ -121,7 +131,24 @@
         <InArgument x:TypeArguments="scg:List(x:String)">[Directory.GetFiles(sourceFolder, "*", SearchOption.AllDirectories).ToList]</InArgument>
       </Assign.Value>
     </Assign>
+    <Assign DisplayName="Override subset of unsortedFiles" sap2010:WorkflowViewState.IdRef="Assign_10">
+      <Assign.To>
+        <OutArgument x:TypeArguments="scg:List(x:String)">[unsortedFiles]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="scg:List(x:String)">[unsortedFiles.Where(function(f) f.ToLower.EndsWith("docx")).ToList]</InArgument>
+      </Assign.Value>
+    </Assign>
     <ui:WriteTextFile DisplayName="Write Text File" FileName="unsorted_files.txt" sap2010:WorkflowViewState.IdRef="WriteTextFile_3" Text="[String.Join(vbNewLine, unsortedFiles)]" />
+    <ui:BuildDataTable DataTable="[exported]" DisplayName="Build Data Table" sap2010:WorkflowViewState.IdRef="BuildDataTable_1" TableInfo="&lt;NewDataSet&gt;&#xA;  &lt;xs:schema id=&quot;NewDataSet&quot; xmlns=&quot;&quot; xmlns:xs=&quot;http://www.w3.org/2001/XMLSchema&quot; xmlns:msdata=&quot;urn:schemas-microsoft-com:xml-msdata&quot;&gt;&#xA;    &lt;xs:element name=&quot;NewDataSet&quot; msdata:IsDataSet=&quot;true&quot; msdata:MainDataTable=&quot;TableName&quot; msdata:UseCurrentLocale=&quot;true&quot;&gt;&#xA;      &lt;xs:complexType&gt;&#xA;        &lt;xs:choice minOccurs=&quot;0&quot; maxOccurs=&quot;unbounded&quot;&gt;&#xA;          &lt;xs:element name=&quot;TableName&quot;&gt;&#xA;            &lt;xs:complexType&gt;&#xA;              &lt;xs:sequence&gt;&#xA;                &lt;xs:element name=&quot;AppID&quot; type=&quot;xs:string&quot; minOccurs=&quot;0&quot; /&gt;&#xA;                &lt;xs:element name=&quot;RMNum&quot; type=&quot;xs:string&quot; minOccurs=&quot;0&quot; /&gt;&#xA;                &lt;xs:element name=&quot;Filename&quot; type=&quot;xs:string&quot; minOccurs=&quot;0&quot; /&gt;&#xA;                &lt;xs:element name=&quot;Full_x0020_Path&quot; type=&quot;xs:string&quot; minOccurs=&quot;0&quot; /&gt;&#xA;              &lt;/xs:sequence&gt;&#xA;            &lt;/xs:complexType&gt;&#xA;          &lt;/xs:element&gt;&#xA;        &lt;/xs:choice&gt;&#xA;      &lt;/xs:complexType&gt;&#xA;    &lt;/xs:element&gt;&#xA;  &lt;/xs:schema&gt;&#xA;&lt;/NewDataSet&gt;" />
+    <ui:WriteRange AddHeaders="False" DataTable="[exported]" DisplayName="Write Range" SheetName="Sheet1" WorkbookPath="testing_results.xlsx">
+      <ui:WriteRange.StartingCell>
+        <InArgument x:TypeArguments="x:String">
+          <Literal x:TypeArguments="x:String" Value="" />
+        </InArgument>
+      </ui:WriteRange.StartingCell>
+      <sap2010:WorkflowViewState.IdRef>WriteRange_1</sap2010:WorkflowViewState.IdRef>
+    </ui:WriteRange>
     <ui:ReadRange Range="{x:Null}" AddHeaders="True" DataTable="[reference]" DisplayName="Read Range" sap2010:WorkflowViewState.IdRef="ReadRange_1" SheetName="Sheet1" WorkbookPath="[referenceLookup.Replace(rootFolder, driveLetter)]" />
     <While DisplayName="While unsortedFiles" sap2010:WorkflowViewState.IdRef="While_1">
       <While.Variables>
@@ -159,18 +186,22 @@
       </Sequence>
     </While>
     <ui:WriteTextFile DisplayName="Write Text File" FileName="\\nas02.storage.uq.edu.au\CA\ITS\Academic Services\RPA\DEV\RMS_HREAFormDataExtraction\remaining_files.txt" sap2010:WorkflowViewState.IdRef="WriteTextFile_2" Text="[String.Join(vbNewLine, unsortedFiles)]" />
-    <sads:DebugSymbol.Symbol>d2BDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUk1TX0hSRUFGb3JtRGF0YUV4dHJhY3Rpb25cVGVzdF9GcmFtZXdvcmtcVGVzdF9Qcm9jZXNzLnhhbWwtQgOjAQ4CAQFJNEmYAQIBAksFVBICAT5VBVwOAgE6XQVkDgIBNmUFax0CATBsBXMOAgEpdAV7DgIBJXwFfLYBAgEifQV97AECARp+BaABDQIBBqEBBaEBjQICAQNLkAFLyQECAUJRC1GGAQIBP1owWoUBAgE9VzFXPQIBO2IwYpIBAgE5XzFfPwIBN2lJaVYCATRoR2hTAgEyZbwBZd4BAgExcTBxXwIBLG4xbj8CASp5OnmFAQIBKHY7dkoCASZ8igF8swECASR8PnxSAgEjfUB9TQIBIH2fAX2nAQIBH321AX3pAQIBG4ABNYABOAIBB4MBB58BEgIBC4IBGIIBNAIBCKEB4QGhAYoCAgEFoQE+oQGpAQIBBFF7UYMBAgFAiQEJjwEhAgESkAEJlgEZAgERlwEJngESAgEMjQFRjQFUAgEYiwFeiwFtAgEWjAFTjAFeAgEUiQG4AYkBxgECAROcATOcAToCAQ+ZATSZATcCAQ0=</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d2BDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUk1TX0hSRUFGb3JtRGF0YUV4dHJhY3Rpb25cVGVzdF9GcmFtZXdvcmtcVGVzdF9Qcm9jZXNzLnhhbWw6QwO+AQ4CAQFKNEqYAQIBAk0FVhICAU9XBV4OAgFLXwVmDgIBR2cFbg4CAUNvBXUdAgE9dgV9DgIBNn4FhQEOAgEyhgEFjQEOAgEujgEFjgG2AQIBK48BBY8B4AsCASiQAQWXARUCASKYAQWYAewBAgEamQEFuwENAgEGvAEFvAGNAgIBA02QAU3JAQIBU1MLU4YBAgFQXDBchQECAU5ZMVk9AgFMZDBk8QECAUphMWE/AgFIbDBskgECAUZpMWk/AgFEc0lzVgIBQXJHclMCAT9vvAFv3gECAT57MHtfAgE5eDF4PwIBN4MBOoMBhQECATWAATuAAUoCATOLATqLAX4CATGIATuIAUoCAS+OAYoBjgGzAQIBLY4BPo4BUgIBLI8BIo8BLgIBKZMBC5MBOgIBJ5ABMZABPQIBJZABYpABagIBJJABeJABjgECASOYAUCYAU0CASCYAZ8BmAGnAQIBH5gBtQGYAekBAgEbmwE1mwE4AgEHngEHugESAgELnQEYnQE0AgEIvAHhAbwBigICAQW8AT68AakBAgEEU3tTgwECAVGkAQmqASECARKrAQmxARkCARGyAQm5ARICAQyoAVGoAVQCARimAV6mAW0CARanAVOnAV4CARSkAbgBpAHGAQIBE7cBM7cBOgIBD7QBNLQBNwIBDQ==</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
       <sap2010:ViewStateData Id="Delete_2" sap:VirtualizedContainerService.HintSize="200,22" />
       <sap2010:ViewStateData Id="ForEach`1_2" sap:VirtualizedContainerService.HintSize="464,194" />
       <sap2010:ViewStateData Id="Assign_7" sap:VirtualizedContainerService.HintSize="464,60" />
+      <sap2010:ViewStateData Id="Assign_9" sap:VirtualizedContainerService.HintSize="464,60" />
       <sap2010:ViewStateData Id="Assign_1" sap:VirtualizedContainerService.HintSize="464,60" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_3" sap:VirtualizedContainerService.HintSize="464,87" />
       <sap2010:ViewStateData Id="Assign_8" sap:VirtualizedContainerService.HintSize="464,60" />
       <sap2010:ViewStateData Id="Assign_3" sap:VirtualizedContainerService.HintSize="464,60" />
+      <sap2010:ViewStateData Id="Assign_10" sap:VirtualizedContainerService.HintSize="464,60" />
       <sap2010:ViewStateData Id="WriteTextFile_3" sap:VirtualizedContainerService.HintSize="464,87" />
+      <sap2010:ViewStateData Id="BuildDataTable_1" sap:VirtualizedContainerService.HintSize="464,59" />
+      <sap2010:ViewStateData Id="WriteRange_1" sap:VirtualizedContainerService.HintSize="464,115" />
       <sap2010:ViewStateData Id="ReadRange_1" sap:VirtualizedContainerService.HintSize="464,87" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_2" sap:VirtualizedContainerService.HintSize="416,87" />
       <sap2010:ViewStateData Id="WriteTextFile_1" sap:VirtualizedContainerService.HintSize="314,87" />
@@ -200,14 +231,14 @@
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="WriteTextFile_2" sap:VirtualizedContainerService.HintSize="464,87" />
-      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="486,2064">
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="486,2518">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Test_Process_1" sap:VirtualizedContainerService.HintSize="526,2144" />
+      <sap2010:ViewStateData Id="Test_Process_1" sap:VirtualizedContainerService.HintSize="526,2598" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
