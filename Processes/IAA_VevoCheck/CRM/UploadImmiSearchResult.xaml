@@ -72,7 +72,6 @@
       <AssemblyReference>UiPath.Studio.Plugin.Workflow</AssemblyReference>
       <AssemblyReference>System.Collections.Immutable</AssemblyReference>
       <AssemblyReference>Microsoft.VisualStudio.Services.Common</AssemblyReference>
-      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence sap2010:Annotation.AnnotationText="Description: This method uploads the Vevo serach document to CRM ticket&#xA;&#xA;Inputs: &#xA;in_FolderLocation (String) : File location from Config sheet&#xA;in_FilePattern : File Name pattern from &#xA;in_Username : Robot username&#xA;in_CaseReference : Case reference from Transaction item &#xA;&#xA;&#xA;Outputs: NA&#xA;&#xA;Pre Condition:&#xA;Immi Vevo search should be successful with document available in  &#xA;&#xA;Post Condition:&#xA;NA" DisplayName="UploadImmiSearchResult" sap2010:WorkflowViewState.IdRef="Sequence_1">
@@ -127,7 +126,7 @@
           <ActivityAction.Argument>
             <DelegateInArgument x:TypeArguments="x:Object" Name="ContextTarget" />
           </ActivityAction.Argument>
-          <Sequence sap2010:WorkflowViewState.IdRef="Sequence_9">
+          <Sequence DisplayName="Vevo document filepath " sap2010:WorkflowViewState.IdRef="Sequence_9">
             <Sequence.Variables>
               <Variable x:TypeArguments="x:String" Default="C:\Users\uqmgupt1\Downloads\VEVO Visa Details Check - MANER LI.pdf" Name="AttachFilePath" />
               <Variable x:TypeArguments="x:String" Name="filePath" />
@@ -151,10 +150,7 @@
               </Assign>
               <If Condition="[fileList.Length &lt;&gt; 1]" DisplayName="Check if only one Vevo document available " sap2010:WorkflowViewState.IdRef="If_1">
                 <If.Then>
-                  <Sequence sap2010:WorkflowViewState.IdRef="Sequence_7">
-                    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_3" Level="Info" Message="[&quot;Terminating execution as &quot; +fileList.Length.ToString +&quot; vevo document found&quot;]" />
-                    <TerminateWorkflow DisplayName="Terminate Workflow" Exception="[new ApplicationException(&quot;No/Multiple Vevo document found in download folder.&quot;)]" sap2010:WorkflowViewState.IdRef="TerminateWorkflow_1" />
-                  </Sequence>
+                  <TerminateWorkflow DisplayName="Terminate Workflow" Exception="[new ApplicationException(&quot;Error encountred while uploading Immi serach results. Number of available document is : &quot; +fileList.Length.ToString)]" sap2010:WorkflowViewState.IdRef="TerminateWorkflow_1" Reason="VevoDocument" />
                 </If.Then>
                 <If.Else>
                   <Assign sap2010:WorkflowViewState.IdRef="Assign_3">
@@ -167,7 +163,7 @@
                   </Assign>
                 </If.Else>
               </If>
-              <ui:TypeInto DelayBefore="{x:Null}" DelayBetweenKeys="{x:Null}" DelayMS="{x:Null}" Activate="True" ClickBeforeTyping="False" DisplayName="Enter full file path" EmptyField="False" sap2010:WorkflowViewState.IdRef="TypeInto_1" SendWindowMessages="False" SimulateType="False" Text="[AttachFilePath]">
+              <ui:TypeInto DelayBefore="{x:Null}" DelayBetweenKeys="{x:Null}" DelayMS="{x:Null}" Activate="True" ClickBeforeTyping="False" DisplayName="Enter full file path in attachment window" EmptyField="False" sap2010:WorkflowViewState.IdRef="TypeInto_1" SendWindowMessages="False" SimulateType="False" Text="[AttachFilePath]">
                 <ui:TypeInto.Target>
                   <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="78280fed89c36e98fb3e2ea03cd2d75a" Selector="&lt;wnd aaname='File name:' idx='2' /&gt;" WaitForReady="COMPLETE" />
                 </ui:TypeInto.Target>
@@ -192,23 +188,39 @@
         </ActivityAction>
       </ui:WindowScope.Body>
     </ui:WindowScope>
-    <ui:BrowserScope Browser="{x:Null}" SearchScope="{x:Null}" TimeoutMS="{x:Null}" UiBrowser="{x:Null}" BrowserType="Chrome" DisplayName="Attach Browser - Oracle CRM Upload section" InformativeScreenshot="f4d78eb1e7758524a078b044eba571de" Selector="&lt;html app='chrome.exe' title='Oracle ® Service Cloud*' /&gt;">
+    <ui:BrowserScope Browser="{x:Null}" SearchScope="{x:Null}" TimeoutMS="{x:Null}" UiBrowser="{x:Null}" BrowserType="Chrome" DisplayName="Attach Browser - Oracle CRM Upload section" sap2010:WorkflowViewState.IdRef="BrowserScope_2" InformativeScreenshot="f4d78eb1e7758524a078b044eba571de" Selector="&lt;html app='chrome.exe' title='Oracle ® Service Cloud*' /&gt;">
       <ui:BrowserScope.Body>
         <ActivityAction x:TypeArguments="x:Object">
           <ActivityAction.Argument>
             <DelegateInArgument x:TypeArguments="x:Object" Name="ContextTarget" />
           </ActivityAction.Argument>
-          <Sequence DisplayName="Validate if file attached successfully " sap2010:WorkflowViewState.IdRef="Sequence_10" />
+          <Sequence DisplayName="Validate if file attached successfully " sap2010:WorkflowViewState.IdRef="Sequence_10">
+            <Sequence.Variables>
+              <Variable x:TypeArguments="x:Boolean" Name="isFileAttached" />
+            </Sequence.Variables>
+            <ui:UiElementExists DisplayName="Check if file attached successfully" Exists="[isFileAttached]" sap2010:WorkflowViewState.IdRef="UiElementExists_1">
+              <ui:UiElementExists.Target>
+                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" InformativeScreenshot="7e200c97779e6035b1e4b7c95c66d0ab" Selector="&lt;webctrl tag='TBODY' aaname='*VEVO Visa Details Check*' /&gt;" TimeoutMS="10000" WaitForReady="COMPLETE" />
+              </ui:UiElementExists.Target>
+            </ui:UiElementExists>
+            <If Condition="[isFileAttached]" DisplayName="Check if Vevo document  attached successfully" sap2010:WorkflowViewState.IdRef="If_2">
+              <If.Then>
+                <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_4" Level="Info" Message="[&quot;Vevo check document successfully uploaded to CRM.&quot;]" />
+              </If.Then>
+              <If.Else>
+                <TerminateWorkflow DisplayName="Terminate Workflow" Exception="[new ApplicationException(&quot;An error encountred while uploading Immi serach results on CRM&quot;)]" sap2010:WorkflowViewState.IdRef="TerminateWorkflow_2" Reason="CRMUploadIssue" />
+              </If.Else>
+            </If>
+          </Sequence>
         </ActivityAction>
       </ui:BrowserScope.Body>
-      <sap2010:WorkflowViewState.IdRef>BrowserScope_2</sap2010:WorkflowViewState.IdRef>
     </ui:BrowserScope>
     <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[&quot;End UploadImmiSearchResult.xaml for case reference : &quot; +in_CaseReference]" />
-    <sads:DebugSymbol.Symbol>d2tDOlxVc2Vyc1x1cW1ndXB0MVxEb2N1bWVudHNcVWlQYXRoXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXElBQV9WZXZvQ2hlY2tcQ1JNXFVwbG9hZEltbWlTZWFyY2hSZXN1bHQueGFtbCoBeQF+AQJOA9ABDgIBAVIFUs4BAgExUwV7FwIBKnwFwgEWAgEIwwEFzQEXAgEFzgEFzgHMAQIBAlJyUssBAgEyU5oCU9sCAgEwWQt4FgIBK3yRAnzLAgIBKYIBC78BFgIBCcMB+gHDAbsCAgEHyQELyQF7AgEGzgFyzgHJAQIBA1oNaBgCAS5pDXcYAgEshAE8hAGAAQIBCocBDb4BGAIBC2agAWbTAQIBL3WgAXXQAQIBLYgBD48BGAIBI5ABD5cBGAIBH5gBD6kBFAIBEqoBD64BHQIBDq8BD70BGgIBDI0BOo0BaQIBJooBO4oBRQIBJJUBPJUBaQIBIpIBPZIBRwIBIJgBHZgBOwIBE5oBE50BHgIBGaABE6cBHAIBFawBogGsAc0BAgERqgGkAqoBtgICAQ+7AaIBuwHKAQIBDZsBFZsB6gECARycARWcAekBAgEapQE+pQFOAgEYogE/ogFPAgEWmwGCAZsB5wECAR2cAVOcAbABAgEb</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d2tDOlxVc2Vyc1x1cW1ndXB0MVxEb2N1bWVudHNcVWlQYXRoXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXElBQV9WZXZvQ2hlY2tcQ1JNXFVwbG9hZEltbWlTZWFyY2hSZXN1bHQueGFtbDMBeQF+AQJNA9wBDgIBAVEFUc4BAgE7UgV6FwIBNHsFvgEWAgEVvwEF2QEXAgEF2gEF2gHMAQIBAlFyUcsBAgE8UpoCUtsCAgE6WAt3FgIBNXuRAnvLAgIBM4EBC7sBFgIBFr8BqwK/AewCAgEUxQEL1gEWAgEG2gFy2gHJAQIBA1kNZxgCAThoDXYYAgE2gwE8gwGAAQIBF4YBDboBGAIBGMkBDc0BIgIBD84BDdUBEgIBB2WgAWXTAQIBOXSgAXTQAQIBN4cBD44BGAIBLY8BD5YBGAIBKZcBD6UBFAIBH6YBD6oBHQIBG6sBD7kBGgIBGcsBiwHLAc0BAgETywHYAcsB3wECARLJAVrJAWwCARDOARvOAS0CAQjQARHQAcIBAgEN0wER0wGIAgIBCowBOowBaQIBMIkBO4kBRQIBLpQBPJQBaQIBLJEBPZEBRwIBKpcBHZcBOwIBIJkBE5kBvAICASacAROjARwCASKoAaIBqAHNAQIBHqYBuQKmAcsCAgEctwGiAbcBygECARrQAX7QAb8BAgEO0wH1AdMBhQICAQzTAU/TAbcBAgELmQGrApkBuQICASiZAVGZAe0BAgEnoQE+oQFOAgElngE/ngFPAgEj</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
-      <sap2010:ViewStateData Id="LogMessage_1" sap:VirtualizedContainerService.HintSize="414,91">
+      <sap2010:ViewStateData Id="LogMessage_1" sap:VirtualizedContainerService.HintSize="575,91">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -233,27 +245,19 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="BrowserScope_1" sap:VirtualizedContainerService.HintSize="414,51">
+      <sap2010:ViewStateData Id="BrowserScope_1" sap:VirtualizedContainerService.HintSize="575,522">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
             <x:Boolean x:Key="IsPinned">False</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Assign_2" sap:VirtualizedContainerService.HintSize="603,60" />
-      <sap2010:ViewStateData Id="Assign_1" sap:VirtualizedContainerService.HintSize="603,60" />
-      <sap2010:ViewStateData Id="LogMessage_3" sap:VirtualizedContainerService.HintSize="314,91" />
-      <sap2010:ViewStateData Id="TerminateWorkflow_1" sap:VirtualizedContainerService.HintSize="314,22" />
-      <sap2010:ViewStateData Id="Sequence_7" sap:VirtualizedContainerService.HintSize="336,277">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Assign_2" sap:VirtualizedContainerService.HintSize="467,60" />
+      <sap2010:ViewStateData Id="Assign_1" sap:VirtualizedContainerService.HintSize="467,60" />
+      <sap2010:ViewStateData Id="TerminateWorkflow_1" sap:VirtualizedContainerService.HintSize="200,22" />
       <sap2010:ViewStateData Id="Assign_3" sap:VirtualizedContainerService.HintSize="242,60" />
-      <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="603,424">
+      <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="467,207">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -261,7 +265,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TypeInto_1" sap:VirtualizedContainerService.HintSize="603,134">
+      <sap2010:ViewStateData Id="TypeInto_1" sap:VirtualizedContainerService.HintSize="467,134">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -269,8 +273,8 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Click_3" sap:VirtualizedContainerService.HintSize="603,106" />
-      <sap2010:ViewStateData Id="Sequence_5" sap:VirtualizedContainerService.HintSize="625,1068">
+      <sap2010:ViewStateData Id="Click_3" sap:VirtualizedContainerService.HintSize="467,106" />
+      <sap2010:ViewStateData Id="Sequence_5" sap:VirtualizedContainerService.HintSize="489,851">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -278,22 +282,14 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_9" sap:VirtualizedContainerService.HintSize="647,1192">
+      <sap2010:ViewStateData Id="Sequence_9" sap:VirtualizedContainerService.HintSize="511,975">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="WindowScope_2" sap:VirtualizedContainerService.HintSize="414,51">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
-            <x:Boolean x:Key="IsPinned">False</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_10" sap:VirtualizedContainerService.HintSize="200,99">
+      <sap2010:ViewStateData Id="WindowScope_2" sap:VirtualizedContainerService.HintSize="575,1121">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -301,7 +297,11 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="BrowserScope_2" sap:VirtualizedContainerService.HintSize="414,245">
+      <sap2010:ViewStateData Id="UiElementExists_1" sap:VirtualizedContainerService.HintSize="539,106" />
+      <sap2010:ViewStateData Id="LogMessage_4" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="TerminateWorkflow_2" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="If_2" sap:VirtualizedContainerService.HintSize="539,238" />
+      <sap2010:ViewStateData Id="Sequence_10" sap:VirtualizedContainerService.HintSize="561,508">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -309,7 +309,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="LogMessage_2" sap:VirtualizedContainerService.HintSize="414,91">
+      <sap2010:ViewStateData Id="BrowserScope_2" sap:VirtualizedContainerService.HintSize="575,654">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -317,7 +317,15 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="436,1080">
+      <sap2010:ViewStateData Id="LogMessage_2" sap:VirtualizedContainerService.HintSize="575,91">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="597,3015">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -325,7 +333,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="UploadImmiSearchResult_1" sap:VirtualizedContainerService.HintSize="848,2892" />
+      <sap2010:ViewStateData Id="UploadImmiSearchResult_1" sap:VirtualizedContainerService.HintSize="637,3095" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
