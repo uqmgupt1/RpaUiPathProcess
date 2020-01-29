@@ -72,7 +72,6 @@
       <AssemblyReference>System.ValueTuple</AssemblyReference>
       <AssemblyReference>UiPath.Studio.Plugin.Workflow</AssemblyReference>
       <AssemblyReference>System.Collections.Immutable</AssemblyReference>
-      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence sap2010:Annotation.AnnotationText="Description: Get data from spreadsheets, databases, email, web API or UiPath server queues. If no new data, set out_TransactionItem to Nothing. &#xA;&#xA;For a linear process (not repetitive), set out_TransactionItem only for in_TransactionNumber 1 - first and only transaction. &#xA;&#xA;If the process is repeatable, set io_TransactionData once for in_TransactionNumber 1, then assign a new out_TransactionItem by using the in_TransactionNumber to index io_TransactionData. Be aware that, at the end of the io_TransactionData collection, it is your responsibility to set out_TransactionItem to Nothing, thus ending the process." DisplayName="GetTransactionData" sap2010:WorkflowViewState.IdRef="Sequence_1">
@@ -129,7 +128,6 @@
       <If Condition="[case_counter &gt; cint(in_Config(&quot;VevoMaxRetryCount&quot;))]" DisplayName="Validate if count is greater than VevoMaxCaseCount" sap2010:WorkflowViewState.IdRef="If_3">
         <If.Then>
           <Sequence DisplayName="Skip this CaseRef to add in TransactionItem " sap2010:WorkflowViewState.IdRef="Sequence_5">
-            <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_5" Level="Error" Message="[&quot;Attension - Case Reference : &quot;+ caseReference + &quot; re-attempted &quot;+  case_counter.ToString +&quot; times in last 12 hours&quot;]" />
             <ui:Click DelayBefore="{x:Null}" DelayMS="{x:Null}" ClickType="CLICK_DOUBLE" DisplayName="Open Case reference" sap2010:WorkflowViewState.IdRef="Click_1" KeyModifiers="None" MouseButton="BTN_LEFT" SendWindowMessages="False" SimulateClick="True">
               <ui:Click.CursorPosition>
                 <ui:CursorPosition Position="Center">
@@ -162,16 +160,15 @@
                 <InArgument x:TypeArguments="x:String" x:Key="in_CaseReference">[caseReference]</InArgument>
               </ui:InvokeWorkflowFile.Arguments>
             </ui:InvokeWorkflowFile>
-            <ui:LogMessage DisplayName="Log Message" Level="Info" Message="[in_Config(&quot;VevoMaxCountExceedEmailErrorMsg&quot;)]" sap2010:WorkflowViewState.IdRef="LogMessage_6" />
-            <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke SendEmail with attachment" UnSafe="False" WorkflowFileName="SendEmail.xaml">
+            <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_6" Level="Warn" Message="[in_Config(&quot;VevoMaxCountExceedEmailErrorMsg&quot;) +caseReference]" />
+            <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke SendEmail without attachment" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_7" UnSafe="False" WorkflowFileName="SendEmail.xaml">
               <ui:InvokeWorkflowFile.Arguments>
                 <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)" x:Key="in_Config">[in_Config]</InArgument>
                 <InArgument x:TypeArguments="x:String" x:Key="receiverAddress">[in_Config("exceptionEmailAddress_"+ in_Config("OperatingEnvironment"))]</InArgument>
-                <InArgument x:TypeArguments="x:String" x:Key="body">[in_Config("VevoMaxCountExceedEmailErrorMsg")]</InArgument>
+                <InArgument x:TypeArguments="x:String" x:Key="body">[in_Config("VevoMaxCountExceedEmailErrorMsg") + caseReference]</InArgument>
                 <InArgument x:TypeArguments="x:String" x:Key="subject">["Environment : " + in_Config("OperatingEnvironment") +" ProcessName : " + in_Config("logF_BusinessProcessName") + " - Error Notification"]</InArgument>
                 <InArgument x:TypeArguments="x:String" x:Key="attachmentPath" />
               </ui:InvokeWorkflowFile.Arguments>
-              <sap2010:WorkflowViewState.IdRef>InvokeWorkflowFile_7</sap2010:WorkflowViewState.IdRef>
             </ui:InvokeWorkflowFile>
           </Sequence>
         </If.Then>
@@ -185,7 +182,7 @@
         </If.Else>
       </If>
     </Sequence>
-    <sads:DebugSymbol.Symbol>d21DOlxVc2Vyc1x1cW1ndXB0MVxEb2N1bWVudHNcVWlQYXRoXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXElBQV9WZXZvQ2hlY2tcRnJhbWV3b3JrXEdldFRyYW5zYWN0aW9uRGF0YS54YW1sO04DvQEOAgEBUwVTogECAVhUBVodAgFQWwViDgIBS2MFY5IDAgFKZAW7ARACAQJTclOfAQIBWVZLVloCAVZXUFdjAgFUVLkBVN8BAgFTWE1YbQIBUWAwYD8CAU5dMV1EAgFMZktmeQIBA2kHacUDAgFEageAARQCATqBAQe6AQwCAQRpqwNpwgMCAUlp4QJpkQMCAUdpyQFp7gECAUZpmQNppwMCAUVqtgFqxAECAUNwDX0YAgE7gQEVgQFZAgEFgwELsAEWAgETswELuAEjAgEIcQ98FAIBPIQBDYQBlAICATaFAQ2TARgCATOUAQ2ZASUCAS2aAQ2fASUCASegAQ2kASUCASOlAQ2lAbcBAgEgpgENrwElAgEUswGPArMBoAICARG2AUa2AVUCAQ+zAdQBswGEAgIBDbUBTbUBaQIBC7MBsQKzAcgCAgEJcR1xaQIBPXMTehwCAT6EAXuEAZECAgE3kQFnkQGhAgIBNJYBTJYBbQIBMZcBUZcBYAIBL5QBzQGUAfABAgEunQFRnQFgAgErnAFTnAF2AgEpmgHRAZoB+AECASiiAVGiAWACASWgAcoBoAHqAQIBJKUBS6UBhQECASGqAUWqAXMCAR6pAVCpAZgBAgEbqwFIqwHTAQIBGKgBZKgBbwIBFqYBjgGmAZ4BAgEVeD14TQIBQXU+dUwCAT8=</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d21DOlxVc2Vyc1x1cW1ndXB0MVxEb2N1bWVudHNcVWlQYXRoXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXElBQV9WZXZvQ2hlY2tcRnJhbWV3b3JrXEdldFRyYW5zYWN0aW9uRGF0YS54YW1sOU0DugEOAgEBUgVSogECAVZTBVkdAgFOWgVhDgIBSWIFYpIDAgFIYwW4ARACAQJSclKfAQIBV1VLVVoCAVRWUFZjAgFSU7kBU98BAgFRV01XbQIBT18wXz8CAUxcMVxEAgFKZUtleQIBA2gHaMUDAgFCaQd/FAIBOIABB7cBDAIBBGirA2jCAwIBR2jhAmiRAwIBRWjJAWjuAQIBRGiZA2inAwIBQ2m2AWnEAQIBQW8NfBgCATmAARWAAVkCAQWCAQutARYCAROwAQu1ASMCAQhwD3sUAgE6gwENkQEYAgE1kgENlwElAgEvmAENnQElAgEpngENogElAgElowENowHGAQIBIaQBDawBJQIBFLABjwKwAaACAgERswFGswFVAgEPsAHUAbABhAICAQ2yAU2yAWkCAQuwAbECsAHIAgIBCXAdcGkCATtyE3kcAgE8jwFnjwGhAgIBNpQBTJQBbQIBM5UBUZUBYAIBMZIBzQGSAfABAgEwmwFRmwFgAgEtmgFTmgF2AgErmAHRAZgB+AECASqgAVGgAWACASeeAcoBngHqAQIBJqMBeqMBwwECASKoAUWoAYMBAgEepwFQpwGYAQIBG6kBSKkB0wECARimAWSmAW8CARakAcgBpAHYAQIBFXc9d00CAT90PnRMAgE9</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -219,14 +216,13 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="LogMessage_5" sap:VirtualizedContainerService.HintSize="314,91" />
       <sap2010:ViewStateData Id="Click_1" sap:VirtualizedContainerService.HintSize="314,68" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_3" sap:VirtualizedContainerService.HintSize="314,87" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_5" sap:VirtualizedContainerService.HintSize="314,87" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_4" sap:VirtualizedContainerService.HintSize="314,87" />
       <sap2010:ViewStateData Id="LogMessage_6" sap:VirtualizedContainerService.HintSize="314,91" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_7" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="Sequence_5" sap:VirtualizedContainerService.HintSize="336,962">
+      <sap2010:ViewStateData Id="Sequence_5" sap:VirtualizedContainerService.HintSize="336,831">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -234,8 +230,8 @@
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="AddTransactionItem_1" sap:VirtualizedContainerService.HintSize="200,22" />
-      <sap2010:ViewStateData Id="If_3" sap:VirtualizedContainerService.HintSize="561,1110" />
-      <sap2010:ViewStateData Id="Sequence_3" sap:VirtualizedContainerService.HintSize="583,1802">
+      <sap2010:ViewStateData Id="If_3" sap:VirtualizedContainerService.HintSize="561,979" />
+      <sap2010:ViewStateData Id="Sequence_3" sap:VirtualizedContainerService.HintSize="583,1671">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -243,7 +239,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="605,2694">
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="605,2563">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -251,7 +247,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="GetTransactionData_1" sap:VirtualizedContainerService.HintSize="645,2774" />
+      <sap2010:ViewStateData Id="GetTransactionData_1" sap:VirtualizedContainerService.HintSize="645,2643" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
