@@ -80,7 +80,6 @@
       <AssemblyReference>System.Data.Entity</AssemblyReference>
       <AssemblyReference>System.Collections.Immutable</AssemblyReference>
       <AssemblyReference>UiPath.Studio.Plugin.Workflow</AssemblyReference>
-      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence sap2010:Annotation.AnnotationText="Description: Generates a list of all items processed, will send of an email or can can save a transaction log to a folder. If the folder is dropped straight into the project directory then there should be minimal changes required.&#xA;&#xA;NOTE: When setting a transaction status, the item in orchestrator is updated but not the one used by the robot. To use this reporting the transaction must be updated upon setting the transaction status. Example provided below.&#xA;&#xA;Required Inputs:&#xA;in_TransactionData (List&lt;QueueItem&gt;): List of transaction items processed during the job, to set up this declare a New List(Of QueueItem) in your main workflow and add each transaction to the list after setting the status.&#xA;&#xA;Optional Arguments:&#xA;All optional arguments are assigned to the specific variable if it's assigned, or they will take the value specified in the configuration file if its specified is a key, or there will be a default value to handle the argument being ommitted, all values are strings.&#xA;in_Argument (String)&#xA;in_Config(&quot;Argument&quot;)&#xA;&quot;Argument&quot;&#xA;&#xA;in_Config (Dictionary&lt;String, Object&gt;): Configuration file where all settings can be declared.&#xA;&#xA;in_ProcessName (String): The name of the process\robot, will use the robot machine\username if not provided.&#xA;in_HtmlTemplate (String): Path to email template.&#xA;in_HtmlLogo (String): Path to robot logo.&#xA;in_EmailCredentials (String): Credential asset in orchestrator to use in exchange.&#xA;in_EmailRecipients (String): String asset in orchestrator with a list of semicolon separated email addresses. (eg. &quot;test@email.com;email@test.com&quot;)&#xA;in_LogWorkbook (String): Path to a transaction log workbook.&#xA;in_LogSheet (String): Name of the transaction log worksheet, will use in_ProcessName if not provided.&#xA;&#xA;Outputs: NA&#xA;&#xA;Pre Condition:&#xA;TransactionLog must be initialised.&#xA;RobotSupport (TBC) asset must exist in orchestrator.&#xA;&#xA;Post Condition:&#xA;Some notice sent to to the team." DisplayName="SendJobReport" sap2010:WorkflowViewState.IdRef="Sequence_1">
@@ -443,18 +442,20 @@
         <If.Then>
           <Sequence DisplayName="SuccessMessage" sap2010:WorkflowViewState.IdRef="Sequence_40">
             <Sequence.Variables>
-              <Variable x:TypeArguments="x:Int32" Name="successCount" />
+              <Variable x:TypeArguments="scg:List(ui:QueueItem)" Name="SuccessfulItems" />
               <Variable x:TypeArguments="x:Int32" Name="totalCount" />
+              <Variable x:TypeArguments="ui:GenericValue" Name="successfulReferences" />
+              <Variable x:TypeArguments="scg:List(x:String)" Default="[New List(Of String)]" Name="tableRows" />
             </Sequence.Variables>
             <Assign DisplayName="Assign SuccessCount" sap2010:WorkflowViewState.IdRef="Assign_84">
               <Assign.To>
-                <OutArgument x:TypeArguments="x:Int32">[successCount]</OutArgument>
+                <OutArgument x:TypeArguments="scg:List(ui:QueueItem)">[SuccessfulItems]</OutArgument>
               </Assign.To>
               <Assign.Value>
-                <InArgument x:TypeArguments="x:Int32">[CInt(in_TransactionData.LongCount(Function(qi) qi.Status = QueueItemStatus.Successful))]</InArgument>
+                <InArgument x:TypeArguments="scg:List(ui:QueueItem)">[in_TransactionData.Where(Function(qi) qi.Status = QueueItemStatus.Successful).ToList]</InArgument>
               </Assign.Value>
             </Assign>
-            <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_4" Level="Trace" Message="[&quot;Got &quot; &amp; successCount &amp; &quot; successful items&quot;]" />
+            <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_4" Level="Trace" Message="[&quot;Got &quot; &amp; SuccessfulItems.Count &amp; &quot; successful items&quot;]" />
             <Assign DisplayName="Assign TotalCount" sap2010:WorkflowViewState.IdRef="Assign_94">
               <Assign.To>
                 <OutArgument x:TypeArguments="x:Int32">[totalCount]</OutArgument>
@@ -463,6 +464,16 @@
                 <InArgument x:TypeArguments="x:Int32">[in_TransactionData.Count]</InArgument>
               </Assign.Value>
             </Assign>
+            <ui:ForEach x:TypeArguments="ui:QueueItem" CurrentIndex="{x:Null}" DisplayName="For Each Success" sap2010:WorkflowViewState.IdRef="ForEach`1_14" Values="[SuccessfulItems]">
+              <ui:ForEach.Body>
+                <ActivityAction x:TypeArguments="ui:QueueItem">
+                  <ActivityAction.Argument>
+                    <DelegateInArgument x:TypeArguments="ui:QueueItem" Name="Success" />
+                  </ActivityAction.Argument>
+                  <AddToCollection x:TypeArguments="x:String" Collection="[tableRows]" DisplayName="Add To Successful Refs" sap2010:WorkflowViewState.IdRef="AddToCollection`1_12" Item="[String.Format(TemplateSections(&quot;TableRefs&quot;),&#xA;success.Output(&quot;RM Number&quot;).ToString,&#xA;success.Output(&quot;Proforma Updated&quot;).ToString,&#xA;success.Output(&quot;Proforma Skipped&quot;).ToString)]" />
+                </ActivityAction>
+              </ui:ForEach.Body>
+            </ui:ForEach>
             <Assign DisplayName="Assign SuccessMessage" sap2010:WorkflowViewState.IdRef="Assign_87">
               <Assign.To>
                 <OutArgument x:TypeArguments="x:String">[HtmlReportMessage]</OutArgument>
@@ -470,11 +481,13 @@
               <Assign.Value>
                 <InArgument x:TypeArguments="x:String" xml:space="preserve">[HtmlReportMessage.
 Replace("{MessageStatus}", TemplateSections("SuccessMessage")).
-Replace("{Success}", If(successCount = totalCount, TemplateSections("AllItems"), TemplateSections("SomeItems"))).
-Replace("{SuccessCount}", successCount.ToString).
+Replace("{Success}", If(SuccessfulItems.Count = totalCount, TemplateSections("AllItems"), TemplateSections("SomeItems"))).
+Replace("{SuccessCount}", SuccessfulItems.Count.ToString).
 Replace("{TotalCount}", totalCount.ToString).
-Replace("{ALL}", If(successCount &lt;&gt; 1, "all ", "")).
-Replace("{S}", If(successCount &lt;&gt; 1, "s", ""))]</InArgument>
+Replace("{ALL}", If(SuccessfulItems.Count &lt;&gt; 1, "all ", "")).
+Replace("{S}", If(SuccessfulItems.Count &lt;&gt; 1, "s", "")).
+Replace("{SuccessfulRefs}", TemplateSections("SuccessfulItems")).
+Replace("{TableRows}", String.Join("", tableRows))]</InArgument>
               </Assign.Value>
             </Assign>
           </Sequence>
@@ -894,6 +907,7 @@ Replace("{TransactionItem}", in_TransactionItem)]</InArgument>
                 <TryCatch.Try>
                   <Sequence sap2010:WorkflowViewState.IdRef="Sequence_11">
                     <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_20" Level="Trace" Message="[&quot;Sending &quot; + subject + &quot; to &quot; + in_EmailRecipients]" />
+                    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_29" Level="Info" Message="[in_ProcessName]" />
                     <ui:SendMail Bcc="{x:Null}" Cc="{x:Null}" Email="{x:Null}" MailMessage="{x:Null}" Password="{x:Null}" TimeoutMS="{x:Null}" AttachmentsCollection="[attachments]" Body="[HtmlReportMessage]" DisplayName="Send SMTP Mail Message" EnableSSL="True" From="noreply@uq.edu.au" sap2010:WorkflowViewState.IdRef="SendMail_1" IsBodyHtml="True" Name="[in_ProcessName]" Port="[in_EmailSmtpPort]" SecureConnection="None" Server="[in_EmailSmtpServer]" Subject="[subject]" To="[in_EmailRecipients]">
                       <ui:SendMail.Files>
                         <scg:List x:TypeArguments="InArgument(x:String)" Capacity="0" />
@@ -970,7 +984,7 @@ Replace("{TransactionItem}", in_TransactionItem)]</InArgument>
       </ui:ForEach>
     </Sequence>
     <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[&quot;End SendJobReport.xaml, send to &quot; + in_EmailRecipients]" />
-    <sads:DebugSymbol.Symbol>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</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d1NDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQ2hhcnRTdHJpbmdQcm9mb3JtYURldGFpbFxFbmRKb2JSZXBvcnQueGFtbNUCVQPcBw4CAQFXTldzAgECWgVxFQMB6ANyBfQCEAMB2AL1AgX1AuIBAwHWAvYCBZ8GEAMBiQGgBgXZBxACAQbaBwXaB7oBAgEDcwd+DAMB4QN/B5gBDAMB0gOZAQeyAQwDAcMDswEHzAEMAwG0A80BB9gBDAMBqwPZAQf5AQwDAZwD+gEHpAIMAwGHA6UCB88CDAMB8gLQAgfbAgwDAekC3AIH5wIMAwHgAugCB/MCDAMB2QL1AnL1At8BAwHXAvcCB7gDEgMBswK5Awf8AwwDAZUC/QMHygUMAwG5AcsFB54GEgMBigGjBkCjBlcCAQelBgfbBgwCAWPcBgfcBtkBAgFf3QYHzgcMAgEOzwcH2AcUAgEI2gdy2ge3AQIBBHMVcy0DAeIDdQt8FAMB5AN/FX81AwHTA4EBC5YBEAMB1QOZARWZATkDAcQDmwELsAEQAwHGA7MBFbMBNgMBtQO1AQvKARADAbcDzQEVzQFfAwGsA88BC9YBFAMBrwPZARXZAVEDAZ0D2wEL4gEUAwGmA+UBC/cBFgMBnwP6ARX6AWgDAYgD/AELgwIUAwGXA4YCC6ICFgMBiwOlAhWlAnMDAfMCpwILrgIUAwGCA7ECC80CFgMB9gLQAhXQAnYDAeoC0gIL2QIUAwHtAtwCFdwCXwMB4QLeAgvlAhQDAeQC6AIV6AIwAwHaAuoCC/ECFAMB3AL8AgmDAxIDAdIChAMJrgMWAwG8Aq8DCa8D0wEDAbkCsAMJtwMSAwG0ArkDFbkDQQMBlgK7AwvtAxYDAZ4C8AML+gMUAwGXAv0DFf0DYAMBugH/Awu9BRYDAcABwAULyAUUAwG7AdAFD9AFPgMBiwHUBQnbBRIDAbUB3AUJkQYOAwGVAZIGCZ0GEgMBjAGlBhWlBk0CAWSnBgvWBhYCAWfZBgvZBrcBAgFl3AZ23AbWAQIBYN0GFd0GdQIBD98GC8wHFgIBEM8HngHPB60BAgEM1QcN1QeZAQIBCXpQenMDAecDd1F3XAMB5QOBARmBAUsDAdYDgwEPigEYAwHcA40BD5QBGAMB2AObARmbAU8DAccDnQEPpAEYAwHNA6cBD64BGAMByQO1ARm1AUwDAbgDtwEPvgEYAwG+A8EBD8gBGAMBugPUATbUAU0DAbID0QE30QFEAwGwA+ABN+ABYgMBqQPdATjdAUsDAacD5wEP6wEiAwGiA/MBE/MB5QEDAaADgQI1gQJZAwGaA/4BNv4BSAMBmAOIAg+MAiIDAZMDlAITngIeAwGMA6wCNqwCVgMBhQOpAjepAksDAYMDswIPtwIiAwH+Ar8CE8kCHgMB9wLXAjbXAlkDAfAC1AI31AJLAwHuAuMCNeMCVQMB5wLgAjbgAkcDAeUC7wI17wI7AwHfAuwCNuwCRwMB3QKBAzaBA1oDAdUC/gI3/gI9AwHTAoQDpQGEA60BAwHQAooDD6sDFAMBvQKvA3ivA9ABAwG6ArUDNLUDVgMBtwKyAzWyA0gDAbUCwANGwANdAwGfAsIDDckDFgMBsALKAw3KA9IBAwGuAssDDdIDFgMBqgLTAw3cAxoDAaQC3QMN7AMWAwGgAvIDN/IDSgMBmAKCBD2CBEQDAcEBhAQNiwQWAwGSAowEDYwEywEDAZACjQQNlwQWAwGMApgEDe0EEgMB5QHuBA28BRIDAcIBwgU3wgVKAwG8AdkFNNkFUQMBuAHWBTXWBUADAbYB3AUX3AU0AwGWAd4FDY8GGAMBmAGUBjWUBkgDAY0BqwYNsgYWAwGFAbMGDbMG2wEDAYIBtAYNyQYaAgFuygYN1QYSAgFo2QZ52Qa0AQIBZuAGDYMHEgIBS4QHDcsHFQIBEdUHjgHVB5YBAgEKiAE6iAFUAwHfA4UBO4UBSwMB3QOSATqSAakBAwHbA48BO48BSwMB2QOiATqiAVgDAdADnwE7nwFPAwHOA6wBOqwBRQMBzAOpATupAU8DAcoDvAE6vAFVAwHBA7kBO7kBTAMBvwPGATrGAUoDAb0DwwE7wwFMAwG7A+kBPOkBTwMBpAPnAUDnAVADAaMD8wGBAfMB4gEDAaEDigI6igJMAwGVA4gCQIgCTgMBlAOVAhWVAuYBAwGRA5YCFZ0CHgMBjQO1Aju1Ak8DAYADswJAswJQAwH/AsACFcAC4AEDAfwCwQIVyAIeAwH4AooDHYoDQAMBvgKMAxOfAx4DAcUCogMTqQMcAwHAAscDRscDnAEDAbICxANHxANYAwGxAsoDe8oDzwEDAa8C0AM30ANRAwGtAs0DOM0DRAMBqwLTA6UB0wO4AQMBqQLZAxPZA6ADAwGlAt8DOd8DTAMBoQKJBEaJBJgBAwGUAoYER4YEVAMBkwKMBHyMBMgBAwGRAo8EOY8ETAMBjQKYBBuYBIQBAwHmAZoEEeAEHAMB7AHjBBHrBBoDAecB7gQb7gSHAQMBwwHwBBGvBRwDAckBsgURugUaAwHEAd8FD4UGFAMBnwGGBg+OBhgDAZkBsAY6sAZoAwGIAa0GO60GQgMBhgGzBnuzBtgBAwGDAbQGrQG0BrYBAwGAAboGE8YGHgIBb8oGG8oGRQIBacwGEdMGGgIBauAGG+AGZgIBTOIGEfcGHAIBUvoGEYEHGgIBTYYHP4YHRQIBE4cHPYcHRAIBEooHD8oHGgIBFokHIIkHKQIBFJUCgwGVAuMBAwGSA5sCP5sCQgMBkAOYAkCYAlIDAY4DwAKDAcAC3QEDAf0CxgJAxgJSAwH7AsMCQcMCVQMB+QKNAxWUAx4DAcsClQMVngMeAwHGAqcDPqcDcgMBxAKkAz+kA1YDAcEC2QNK2QNXAwGnAtkDuQHZA50DAwGmAp0ETJ0EYwMB7QGfBBOmBBwDAYgCpwQTrgQcAwGFAq8EE68E2wEDAYMCsAQT1AQgAwHyAdUEE98EHAMB7gHlBD3lBFADAegB8wRM8wRjAwHKAfUEE/wEHAMB4gH9BBP9BNcBAwHgAf4EE6IFIAMBzwGjBROuBRwDAcsBtAU9tAVQAwHFAd8FHd8FSwMBoAHhBRP2BR4DAaoB+QUTgwYeAwGhAYgGO4gGSAMBmgG7BhW7BrkBAgF+vAYVvAbgAQIBer0GFb0G5QECAXi+BhXFBhoCAXDRBlHRBugBAgFtzgZAzgZVAgFr4wYT6gYcAgFa6wYT9gYYAgFT/wY8/wZlAgFQ/AY9/AZGAgFOjAcTnAceAgEvswcTyAcYAgEgpAcXrgciAgEXkgNAkgNWAwHOAo8DQY8DRgMBzAKbAxubA0oDAcoClwNBlwNYAwHHAqQEP6QEQwMBiwKhBEChBEYDAYkCrARMrAS8AQMBhwKpBE2pBGEDAYYCrwSCAa8E2AEDAYQCsASxAbAExwEDAYICtgQZ0QQkAwHzAdcEP9cEUgMB7wH6BEz6BL8BAwHkAfcETfcEXwMB4wH9BIIB/QTUAQMB4QH+BK8B/gTDAQMB3wGEBRmfBSQDAdABpQU/pQVSAwHMAeUFFeUFyAEDAbMB5gUV7QUeAwGvAe4FFfUFHgMBqwH6BRX6BeQBAwGnAfsFFYIGHgMBogG7BoMBuwa2AQIBf7wGTLwGWwIBfLwGwwG8Bt0BAgF7vQaEAb0G4gECAXm+BiO+BmgCAXHABhnDBiQCAXLoBj7oBmsCAV3lBj/lBkgCAVvrBiHrBtABAgFU7QYX9AYgAgFVjQcVjQfRAQIBR44HFY4HmAECAUSPBxWTByMCATSUBxWbBx4CATCzByGzB00CASG1BxfGByICASWlBxmlB6ABAgEdpgcZrQciAgEYugQbzwQgAwH4AdAEG9AE0wIDAfQBiAUbnQUgAwHVAZ4FG54F0QIDAdEB5QWEAeUFxQEDAbQB6wVA6wVgAwGyAegFQegFSAMBsAHzBUDzBYkBAwGuAfAFQfAFTgMBrAH6BYQB+gXhAQMBqAGABkCABk0DAaUB/QVB/QVOAwGjAcEGG8EG4wECAXTCBhvCBlECAXPyBkLyBn4CAVjvBkPvBlcCAVaNB4QBjQfOAQIBSI4HgwGOB5UBAgFFjwfeA48H9AMCAUKPB6YBjwe1AQIBQI8HuwGPB9ABAgE+jwfPA48H2gMCATyPB4wCjwefAgIBO48H/AKPB5ADAgE5jwewA48HxgMCATePB+QCjwf2AgIBNZkHQZkHRgIBM5YHQpYHSwIBMbYHGb0HIgIBK74HGcUHIgIBJqUHiAGlB50BAgEeqwdDqwdVAgEbqAdEqAdNAgEZugQpugSUAQMB+QG8BB/DBCgDAf4BxgQfzQQoAwH6AdAEUtAEXwMB9gHQBL8B0ATQAgMB9QGIBSmIBZQBAwHWAYoFH5EFKAMB2wGUBR+bBSgDAdcBngVSngVfAwHTAZ4FvQGeBc4CAwHSAcEGV8EGZgIBdsEGzAHBBuABAgF1uwdFuwdKAgEuuAdGuAdPAgEswAdIwAddAgEnwQRMwQSUAQMBgQK+BE2+BFgDAf8BywRMywSVAQMB/QHIBE3IBFgDAfsBjwVMjwWUAQMB3gGMBU2MBVgDAdwBmQVMmQWVAQMB2gGWBU2WBVgDAdgB</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -1132,8 +1146,10 @@ Replace("{TransactionItem}", in_TransactionItem)]</InArgument>
       <sap2010:ViewStateData Id="Assign_84" sap:VirtualizedContainerService.HintSize="314,60" />
       <sap2010:ViewStateData Id="LogMessage_4" sap:VirtualizedContainerService.HintSize="314,91" />
       <sap2010:ViewStateData Id="Assign_94" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="AddToCollection`1_12" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="ForEach`1_14" sap:VirtualizedContainerService.HintSize="314,194" />
       <sap2010:ViewStateData Id="Assign_87" sap:VirtualizedContainerService.HintSize="314,64" />
-      <sap2010:ViewStateData Id="Sequence_40" sap:VirtualizedContainerService.HintSize="336,519">
+      <sap2010:ViewStateData Id="Sequence_40" sap:VirtualizedContainerService.HintSize="336,753">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -1142,7 +1158,7 @@ Replace("{TransactionItem}", in_TransactionItem)]</InArgument>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="Assign_16" sap:VirtualizedContainerService.HintSize="242,64" />
-      <sap2010:ViewStateData Id="If_10" sap:VirtualizedContainerService.HintSize="1125,667">
+      <sap2010:ViewStateData Id="If_10" sap:VirtualizedContainerService.HintSize="1125,901">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -1351,9 +1367,10 @@ Replace("{TransactionItem}", in_TransactionItem)]</InArgument>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="LogMessage_20" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="LogMessage_29" sap:VirtualizedContainerService.HintSize="314,91" />
       <sap2010:ViewStateData Id="SendMail_1" sap:VirtualizedContainerService.HintSize="314,145" />
       <sap2010:ViewStateData Id="Assign_8" sap:VirtualizedContainerService.HintSize="314,60" />
-      <sap2010:ViewStateData Id="Sequence_11" sap:VirtualizedContainerService.HintSize="336,500">
+      <sap2010:ViewStateData Id="Sequence_11" sap:VirtualizedContainerService.HintSize="336,631">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -1387,8 +1404,8 @@ Replace("{TransactionItem}", in_TransactionItem)]</InArgument>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="If_44" sap:VirtualizedContainerService.HintSize="464,432" />
-      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="418,727" />
-      <sap2010:ViewStateData Id="While_1" sap:VirtualizedContainerService.HintSize="753,885">
+      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="418,858" />
+      <sap2010:ViewStateData Id="While_1" sap:VirtualizedContainerService.HintSize="753,1016">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -1396,14 +1413,14 @@ Replace("{TransactionItem}", in_TransactionItem)]</InArgument>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_55" sap:VirtualizedContainerService.HintSize="775,1633">
+      <sap2010:ViewStateData Id="Sequence_55" sap:VirtualizedContainerService.HintSize="775,1764">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_52" sap:VirtualizedContainerService.HintSize="900,1781" />
+      <sap2010:ViewStateData Id="If_52" sap:VirtualizedContainerService.HintSize="900,1912" />
       <sap2010:ViewStateData Id="Delete_3" sap:VirtualizedContainerService.HintSize="200,22" />
       <sap2010:ViewStateData Id="ForEach`1_12" sap:VirtualizedContainerService.HintSize="900,194" />
       <sap2010:ViewStateData Id="Sequence_49" sap:VirtualizedContainerService.HintSize="416,51">
