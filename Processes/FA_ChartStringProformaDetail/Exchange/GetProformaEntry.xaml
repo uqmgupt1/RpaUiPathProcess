@@ -14,9 +14,9 @@
     <x:Property Name="out_FoundValue" Type="OutArgument(x:String)" />
     <x:Property Name="in_BackupSelector" Type="InArgument(x:String)" />
     <x:Property Name="in_PrimarySelector" Type="InArgument(x:String)" />
-    <x:Property Name="in_RegexMatcher" Type="InArgument(str:Regex)" />
     <x:Property Name="in_TableScope" Type="InArgument(ui:UiElement)" />
     <x:Property Name="in_Offset" Type="InArgument(x:Int32)" />
+    <x:Property Name="in_NumberLength" Type="InArgument(x:Int32)" />
   </x:Members>
   <mva:VisualBasic.Settings>
     <x:Null />
@@ -88,9 +88,9 @@
       <AssemblyReference>System.ServiceModel</AssemblyReference>
       <AssemblyReference>System.ValueTuple</AssemblyReference>
       <AssemblyReference>System.ComponentModel.Composition</AssemblyReference>
-      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
       <AssemblyReference>System.Collections.Immutable</AssemblyReference>
       <AssemblyReference>Microsoft.VisualStudio.Services.Common</AssemblyReference>
+      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence sap2010:Annotation.AnnotationText="Description: Checks if the primary selector contains the regex pattern, then checks if the backup selector that's offset from the primary contains the regex pattern.&#xA;&#xA;Inputs:&#xA;in_PrimarySelector (String): Cell with field title.&#xA;in_BackupSelector (String): Cell below primary, is some offset row below.&#xA;in_TableScope (UiElement): HTML table containing cells to search.&#xA;in_RegexMatcher (Regex): regex pattern to match data with.&#xA;in_Offset (Integer) [optional]: defaults to look for backup selector 1 row below the primary.&#xA;&#xA;Outputs:&#xA;out_FoundValue (String): An returned argument.&#xA;&#xA;Pre Condition: NA&#xA;&#xA;Post Condition:&#xA;Matched text from the primary selector is returned or matched text from the backup selector is returned, or an empty string is returned." sap2010:WorkflowViewState.IdRef="Sequence_59">
@@ -125,25 +125,15 @@
                 <OutArgument x:TypeArguments="x:String">[out_FoundValue]</OutArgument>
               </ui:GetValue.Value>
             </ui:GetValue>
-            <Assign DisplayName="Assign regex match" sap2010:WorkflowViewState.IdRef="Assign_9">
+            <Assign DisplayName="Assign only letters or digits" sap2010:WorkflowViewState.IdRef="Assign_18">
               <Assign.To>
-                <OutArgument x:TypeArguments="str:Match">[matches]</OutArgument>
+                <OutArgument x:TypeArguments="x:String">[out_FoundValue]</OutArgument>
               </Assign.To>
               <Assign.Value>
-                <InArgument x:TypeArguments="str:Match">[in_RegexMatcher.Match(out_FoundValue)]</InArgument>
+                <InArgument x:TypeArguments="x:String">[String.Join(String.Empty, out_FoundValue.Where(function(c) Char.IsLetterOrDigit(c)))]</InArgument>
               </Assign.Value>
             </Assign>
-            <If Condition="[matches.Success]" DisplayName="If primary match" sap2010:WorkflowViewState.IdRef="If_6">
-              <If.Then>
-                <Assign DisplayName="Assign primary value" sap2010:WorkflowViewState.IdRef="Assign_10">
-                  <Assign.To>
-                    <OutArgument x:TypeArguments="x:String">[out_FoundValue]</OutArgument>
-                  </Assign.To>
-                  <Assign.Value>
-                    <InArgument x:TypeArguments="x:String">[matches.Groups(2).Value]</InArgument>
-                  </Assign.Value>
-                </Assign>
-              </If.Then>
+            <If Condition="[out_FoundValue.Length = in_NumberLength And out_FoundValue.All(function(c) Char.IsDigit(c))]" DisplayName="If primary number of digits" sap2010:WorkflowViewState.IdRef="If_6">
               <If.Else>
                 <Sequence sap2010:WorkflowViewState.IdRef="Sequence_57">
                   <Sequence.Variables>
@@ -174,25 +164,15 @@
                       <OutArgument x:TypeArguments="x:String">[out_FoundValue]</OutArgument>
                     </ui:GetValue.Value>
                   </ui:GetValue>
-                  <Assign DisplayName="Assign regex match" sap2010:WorkflowViewState.IdRef="Assign_14">
+                  <Assign DisplayName="Assign only digits" sap2010:WorkflowViewState.IdRef="Assign_19">
                     <Assign.To>
-                      <OutArgument x:TypeArguments="str:Match">[matches]</OutArgument>
+                      <OutArgument x:TypeArguments="x:String">[out_FoundValue]</OutArgument>
                     </Assign.To>
                     <Assign.Value>
-                      <InArgument x:TypeArguments="str:Match">[in_RegexMatcher.Match(out_FoundValue)]</InArgument>
+                      <InArgument x:TypeArguments="x:String">[String.Join(String.Empty, out_FoundValue.Where(function(c) Char.IsLetterOrDigit(c)))]</InArgument>
                     </Assign.Value>
                   </Assign>
-                  <If Condition="[matches.Success]" DisplayName="If backup match" sap2010:WorkflowViewState.IdRef="If_8">
-                    <If.Then>
-                      <Assign DisplayName="Assign backup value" sap2010:WorkflowViewState.IdRef="Assign_15">
-                        <Assign.To>
-                          <OutArgument x:TypeArguments="x:String">[out_FoundValue]</OutArgument>
-                        </Assign.To>
-                        <Assign.Value>
-                          <InArgument x:TypeArguments="x:String">[matches.Groups(2).Value]</InArgument>
-                        </Assign.Value>
-                      </Assign>
-                    </If.Then>
+                  <If Condition="[out_FoundValue.Length = in_NumberLength And out_FoundValue.All(function(c) Char.IsDigit(c))]" DisplayName="If backup number of digits" sap2010:WorkflowViewState.IdRef="If_8">
                     <If.Else>
                       <Assign DisplayName="Assign not found" sap2010:WorkflowViewState.IdRef="Assign_17">
                         <Assign.To>
@@ -216,41 +196,31 @@
         <ui:Target ClippingRegion="{x:Null}" Selector="{x:Null}" TimeoutMS="{x:Null}" Element="[in_TableScope]" WaitForReady="INTERACTIVE" />
       </ui:ElementScope.Target>
     </ui:ElementScope>
-    <Assign DisplayName="Assign single line" sap2010:WorkflowViewState.IdRef="Assign_12">
-      <Assign.To>
-        <OutArgument x:TypeArguments="x:String">[out_FoundValue]</OutArgument>
-      </Assign.To>
-      <Assign.Value>
-        <InArgument x:TypeArguments="x:String">[String.Join("", out_FoundValue.Where(function(c) Not Char.IsWhiteSpace(c)))]</InArgument>
-      </Assign.Value>
-    </Assign>
-    <sads:DebugSymbol.Symbol>d2BDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQ2hhcnRTdHJpbmdQcm9mb3JtYURldGFpbFxFeGNoYW5nZVxHZXRQcm9mb3JtYUVudHJ5LnhhbWwyYAPkAQ4CAQFhBWwKAgFJbQXaARcCAQbbAQXiAQ4CAQJhE2EkAgFKYwlqEgIBTNgBX9gBcAIBR3ML1AEWAgEH4AEw4AF9AgEF3QEx3QFBAgEDaDNoNgIBT2U0ZT8CAU13DXeuAQIBRHgNfxsCAT+AAQ2HARYCATmIAQ3TARICAQh3fHerAQIBRX05fUkCAUB6oAF6tgECAUKFATmFAWACATyCATqCAUMCATqIARuIAS4CAQmKARGRARoCATSUARHRARwCAQuPATyPAVUCATeMAT2MAU0CATWYAROfASUCAS6gAROnARwCASeoAROoAbMBAgEkqQETsAEhAgEesQETuAEcAgEYuQET0AEYAgEMmAFJmAFTAgExmgE+mgFDAgEvnQFtnQGDAQIBMqUBPqUBegIBKqIBP6IBUgIBKKgBggGoAbABAgElrgE/rgFPAgEfqwGRAasBpgECASKrAbEBqwG3AQIBIbYBP7YBZgIBG7MBQLMBSQIBGbkBIbkBNAIBDbsBF8IBIAIBE8UBF84BIAIBD8ABQsABWwIBFr0BQ70BUwIBFMsBHcsBTAIBEscBQ8cBUwIBEA==</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d2BDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQ2hhcnRTdHJpbmdQcm9mb3JtYURldGFpbFxFeGNoYW5nZVxHZXRQcm9mb3JtYUVudHJ5LnhhbWwpYAPIAQ4CAQFhBWwKAgE4bQXGARcCAQJhE2EkAgE5YwlqEgIBO8QBX8QBcAIBNnMLwAEWAgEDaDNoNgIBPmU0ZT8CATx3DXeuAQIBM3gNfxsCAS2AAQ2HARYCASmIAQ2/ARICAQR3fHerAQIBNH05fUkCAS96oAF6tgECATGFATiFAY4BAgEsggE5ggFJAgEqiAEbiAF6AgEFigERvQEcAgEGjgETlQElAgEilgETnQEcAgEbngETngGzAQIBGJ8BE6YBIQIBEacBE64BHAIBDa8BE7wBGAIBB44BSY4BUwIBJpABPpABQwIBJJMBbZMBgwECASebAT6bAXoCAR6YAT+YAVICARyeAYIBngGwAQIBGaQBP6QBTwIBE6EBkQGhAaYBAgEWoQGxAaEBtwECARWsAT6sAZQBAgEQqQE/qQFPAgEOrwEhrwGAAQIBCLEBF7oBIAIBCbcBHbcBTAIBDLMBQ7MBUwIBCg==</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
       <sap2010:ViewStateData Id="Assign_13" sap:VirtualizedContainerService.HintSize="242,60" />
-      <sap2010:ViewStateData Id="If_7" sap:VirtualizedContainerService.HintSize="834,208" />
-      <sap2010:ViewStateData Id="LogMessage_35" sap:VirtualizedContainerService.HintSize="798,91" />
-      <sap2010:ViewStateData Id="GetValue_21" sap:VirtualizedContainerService.HintSize="798,106" />
-      <sap2010:ViewStateData Id="Assign_9" sap:VirtualizedContainerService.HintSize="798,60" />
-      <sap2010:ViewStateData Id="Assign_10" sap:VirtualizedContainerService.HintSize="242,60" />
-      <sap2010:ViewStateData Id="GetAttribute_6" sap:VirtualizedContainerService.HintSize="509,96" />
-      <sap2010:ViewStateData Id="Assign_11" sap:VirtualizedContainerService.HintSize="509,60" />
-      <sap2010:ViewStateData Id="LogMessage_36" sap:VirtualizedContainerService.HintSize="509,91" />
-      <sap2010:ViewStateData Id="GetValue_22" sap:VirtualizedContainerService.HintSize="509,106" />
-      <sap2010:ViewStateData Id="Assign_14" sap:VirtualizedContainerService.HintSize="509,60" />
-      <sap2010:ViewStateData Id="Assign_15" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="If_7" sap:VirtualizedContainerService.HintSize="647,208" />
+      <sap2010:ViewStateData Id="LogMessage_35" sap:VirtualizedContainerService.HintSize="611,91" />
+      <sap2010:ViewStateData Id="GetValue_21" sap:VirtualizedContainerService.HintSize="611,106" />
+      <sap2010:ViewStateData Id="Assign_18" sap:VirtualizedContainerService.HintSize="611,60" />
+      <sap2010:ViewStateData Id="GetAttribute_6" sap:VirtualizedContainerService.HintSize="464,96" />
+      <sap2010:ViewStateData Id="Assign_11" sap:VirtualizedContainerService.HintSize="464,60" />
+      <sap2010:ViewStateData Id="LogMessage_36" sap:VirtualizedContainerService.HintSize="464,91" />
+      <sap2010:ViewStateData Id="GetValue_22" sap:VirtualizedContainerService.HintSize="464,106" />
+      <sap2010:ViewStateData Id="Assign_19" sap:VirtualizedContainerService.HintSize="464,60" />
       <sap2010:ViewStateData Id="Assign_17" sap:VirtualizedContainerService.HintSize="242,60" />
-      <sap2010:ViewStateData Id="If_8" sap:VirtualizedContainerService.HintSize="509,207" />
-      <sap2010:ViewStateData Id="Sequence_57" sap:VirtualizedContainerService.HintSize="531,944">
+      <sap2010:ViewStateData Id="If_8" sap:VirtualizedContainerService.HintSize="464,207" />
+      <sap2010:ViewStateData Id="Sequence_57" sap:VirtualizedContainerService.HintSize="486,944">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_6" sap:VirtualizedContainerService.HintSize="798,1091" />
-      <sap2010:ViewStateData Id="Sequence_58" sap:VirtualizedContainerService.HintSize="820,1592">
+      <sap2010:ViewStateData Id="If_6" sap:VirtualizedContainerService.HintSize="611,1091" />
+      <sap2010:ViewStateData Id="Sequence_58" sap:VirtualizedContainerService.HintSize="633,1592">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -258,9 +228,8 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="ElementScope_1" sap:VirtualizedContainerService.HintSize="834,1700" />
-      <sap2010:ViewStateData Id="Assign_12" sap:VirtualizedContainerService.HintSize="834,60" />
-      <sap2010:ViewStateData Id="Sequence_59" sap:VirtualizedContainerService.HintSize="856,2439">
+      <sap2010:ViewStateData Id="ElementScope_1" sap:VirtualizedContainerService.HintSize="647,1700" />
+      <sap2010:ViewStateData Id="Sequence_59" sap:VirtualizedContainerService.HintSize="669,2354">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -268,7 +237,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="GetProformaEntry_1" sap:VirtualizedContainerService.HintSize="896,2519" />
+      <sap2010:ViewStateData Id="GetProformaEntry_1" sap:VirtualizedContainerService.HintSize="709,2434" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
