@@ -1,26 +1,26 @@
-﻿<Activity mc:Ignorable="sap sap2010 sads" x:Class="WordDocxForms"
+﻿<Activity mc:Ignorable="sap sap2010 sads" x:Class="PdfApproval"
  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
  xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities"
- xmlns:p="http://schemas.uipath.com/workflow/activities/word"
  xmlns:s="clr-namespace:System;assembly=mscorlib"
  xmlns:sads="http://schemas.microsoft.com/netfx/2010/xaml/activities/debugger"
  xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
  xmlns:scg="clr-namespace:System.Collections.Generic;assembly=mscorlib"
  xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=mscorlib"
+ xmlns:sd="clr-namespace:System.Drawing;assembly=System.Drawing"
  xmlns:str="clr-namespace:System.Text.RegularExpressions;assembly=System"
  xmlns:ui="http://schemas.uipath.com/workflow/activities"
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <x:Members>
+    <x:Property Name="in_ApprovalFilename" Type="InArgument(x:String)" />
     <x:Property Name="out_ApplicationIdentifier" Type="OutArgument(x:String)" />
     <x:Property Name="out_ResearchMasterNumber" Type="OutArgument(x:String)" />
-    <x:Property Name="in_ApprovalFilename" Type="InArgument(x:String)" />
   </x:Members>
   <mva:VisualBasic.Settings>
     <x:Null />
   </mva:VisualBasic.Settings>
-  <sap2010:WorkflowViewState.IdRef>WordDocxForms_1</sap2010:WorkflowViewState.IdRef>
+  <sap2010:WorkflowViewState.IdRef>PdfApproval_1</sap2010:WorkflowViewState.IdRef>
   <TextExpression.NamespacesForImplementation>
     <sco:Collection x:TypeArguments="x:String">
       <x:String>System.Activities</x:String>
@@ -45,6 +45,7 @@
       <x:String>UiPath.Core</x:String>
       <x:String>UiPath.Core.Activities</x:String>
       <x:String>System.Text.RegularExpressions</x:String>
+      <x:String>Microsoft.VisualBasic.CompilerServices</x:String>
     </sco:Collection>
   </TextExpression.NamespacesForImplementation>
   <TextExpression.ReferencesForImplementation>
@@ -68,12 +69,12 @@
       <AssemblyReference>System.ServiceModel</AssemblyReference>
       <AssemblyReference>System.ValueTuple</AssemblyReference>
       <AssemblyReference>System.ComponentModel.Composition</AssemblyReference>
+      <AssemblyReference>UiPath.Studio.Plugin.Workflow</AssemblyReference>
       <AssemblyReference>System.Collections.Immutable</AssemblyReference>
       <AssemblyReference>Microsoft.VisualStudio.Services.Common</AssemblyReference>
-      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
-  <Sequence DisplayName="WordDocxForms" sap2010:WorkflowViewState.IdRef="Sequence_4">
+  <Sequence DisplayName="PdfApproval" sap2010:WorkflowViewState.IdRef="Sequence_1">
     <Sequence.Variables>
       <Variable x:TypeArguments="x:String" Name="documentContent">
         <Variable.Default>
@@ -81,47 +82,73 @@
         </Variable.Default>
       </Variable>
     </Sequence.Variables>
-    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;Start WordDocxForms.xaml, loading &quot; + Path.GetFileName(in_ApprovalFilename)]" />
-    <TryCatch DisplayName="Try Catch" sap2010:WorkflowViewState.IdRef="TryCatch_4">
+    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;Start PdfApproval.xaml, loading &quot; + Path.GetFileName(in_ApprovalFilename)]" />
+    <TryCatch DisplayName="Try Catch" sap2010:WorkflowViewState.IdRef="TryCatch_1">
       <TryCatch.Try>
-        <p:DocumentReadText DisplayName="Read Text" FilePath="[in_ApprovalFilename]" sap2010:WorkflowViewState.IdRef="DocumentReadText_2" Text="[documentContent]" />
+        <ui:ReadPDFText PreserveFormatting="{x:Null}" DisplayName="Read PDF Text" FileName="[in_ApprovalFilename]" sap2010:WorkflowViewState.IdRef="ReadPDFText_1" Range="All" Text="[documentContent]" />
       </TryCatch.Try>
       <TryCatch.Catches>
-        <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch`1_4">
+        <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch`1_1">
           <ActivityAction x:TypeArguments="s:Exception">
             <ActivityAction.Argument>
               <DelegateInArgument x:TypeArguments="s:Exception" Name="exception" />
             </ActivityAction.Argument>
-            <ui:LogMessage DisplayName="Log Message" Level="Error" Message="[exception.Message]" sap2010:WorkflowViewState.IdRef="LogMessage_8" />
+            <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_3" Level="Error" Message="[exception.Message]" />
           </ActivityAction>
         </Catch>
       </TryCatch.Catches>
     </TryCatch>
-    <ui:AppendLine DisplayName="Append Line" FileName="content.txt" sap2010:WorkflowViewState.IdRef="AppendLine_1" Text="[String.Join(vbNewLine, documentContent.&#xA;Split(vbNewLine.ToCharArray, StringSplitOptions.RemoveEmptyEntries).&#xA;Where(Function(l) Regex.IsMatch(l, &quot;(\d{10}|\w{2}\d{5})&quot;)))]" />
-    <ui:ForEach x:TypeArguments="x:String" CurrentIndex="{x:Null}" DisplayName="For Each line" sap2010:WorkflowViewState.IdRef="ForEach`1_2" Values="[documentContent.Split(vbNewLine.ToCharArray, StringSplitOptions.RemoveEmptyEntries)]">
+    <If Condition="[documentContent = &quot;&quot;]" sap2010:WorkflowViewState.IdRef="If_1">
+      <If.Then>
+        <TryCatch DisplayName="Try Catch" sap2010:WorkflowViewState.IdRef="TryCatch_2">
+          <TryCatch.Try>
+            <ui:ReadPDFWithOCR DegreeOfParallelism="-1" DisplayName="Read PDF With OCR" FileName="[in_ApprovalFilename]" sap2010:WorkflowViewState.IdRef="ReadPDFWithOCR_1" ImageDpi="150" Range="All" Text="[documentContent]">
+              <ui:ReadPDFWithOCR.OCREngine>
+                <ActivityFunc x:TypeArguments="sd:Image, scg:IEnumerable(scg:KeyValuePair(sd:Rectangle, x:String))">
+                  <ActivityFunc.Argument>
+                    <DelegateInArgument x:TypeArguments="sd:Image" Name="Image" />
+                  </ActivityFunc.Argument>
+                  <ui:MicrosoftOCR FilterRegion="{x:Null}" Output="{x:Null}" Text="{x:Null}" ComputeSkewAngle="False" DisplayName="Microsoft OCR" ExtractWords="False" sap2010:WorkflowViewState.IdRef="MicrosoftOCR_1" Image="[Image]" Language="en" Profile="Legacy" Scale="1" />
+                </ActivityFunc>
+              </ui:ReadPDFWithOCR.OCREngine>
+            </ui:ReadPDFWithOCR>
+          </TryCatch.Try>
+          <TryCatch.Catches>
+            <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch`1_2">
+              <ActivityAction x:TypeArguments="s:Exception">
+                <ActivityAction.Argument>
+                  <DelegateInArgument x:TypeArguments="s:Exception" Name="exception" />
+                </ActivityAction.Argument>
+                <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_5" Level="Error" Message="[exception.Message]" />
+              </ActivityAction>
+            </Catch>
+          </TryCatch.Catches>
+        </TryCatch>
+      </If.Then>
+    </If>
+    <ui:ForEach x:TypeArguments="x:String" CurrentIndex="{x:Null}" DisplayName="For Each line" sap2010:WorkflowViewState.IdRef="ForEach`1_1" Values="[documentContent.Split(vbNewLine.ToCharArray, StringSplitOptions.RemoveEmptyEntries)]">
       <ui:ForEach.Body>
         <ActivityAction x:TypeArguments="x:String">
           <ActivityAction.Argument>
             <DelegateInArgument x:TypeArguments="x:String" Name="line" />
           </ActivityAction.Argument>
-          <Sequence DisplayName="Body" sap2010:WorkflowViewState.IdRef="Sequence_6">
+          <Sequence DisplayName="Body" sap2010:WorkflowViewState.IdRef="Sequence_4">
             <Sequence.Variables>
-              <Variable x:TypeArguments="str:Match" Name="applicationID" />
               <Variable x:TypeArguments="str:Match" Name="approvalNumber" />
-              <Variable x:TypeArguments="x:String" Name="clearanceNumber" />
+              <Variable x:TypeArguments="str:Match" Name="applicationID" />
             </Sequence.Variables>
-            <Assign DisplayName="Assign approvalNumber" sap2010:WorkflowViewState.IdRef="Assign_5">
+            <Assign DisplayName="Assign approvalNumber" sap2010:WorkflowViewState.IdRef="Assign_3">
               <Assign.To>
                 <OutArgument x:TypeArguments="str:Match">[approvalNumber]</OutArgument>
               </Assign.To>
               <Assign.Value>
-                <InArgument x:TypeArguments="str:Match">[Regex.Match(line, "(Approval Number:|Clearance No:|Clearance number:)\s*(\w+)")]</InArgument>
+                <InArgument x:TypeArguments="str:Match">[Regex.Match(line, "(approval number:|clearance no:|clearance number:)\s*(\w+)", RegexOptions.IgnoreCase)]</InArgument>
               </Assign.Value>
             </Assign>
-            <If Condition="[approvalNumber.Success]" DisplayName="If approval number" sap2010:WorkflowViewState.IdRef="If_4">
+            <If Condition="[approvalNumber.Success]" DisplayName="If approval number" sap2010:WorkflowViewState.IdRef="If_3">
               <If.Then>
-                <Sequence sap2010:WorkflowViewState.IdRef="Sequence_7">
-                  <Assign DisplayName="Assign ResearchMasterNumber" sap2010:WorkflowViewState.IdRef="Assign_6">
+                <Sequence sap2010:WorkflowViewState.IdRef="Sequence_3">
+                  <Assign DisplayName="Assign ResearchMasterNumber" sap2010:WorkflowViewState.IdRef="Assign_2">
                     <Assign.To>
                       <OutArgument x:TypeArguments="x:String">[out_ResearchMasterNumber]</OutArgument>
                     </Assign.To>
@@ -129,11 +156,11 @@
                       <InArgument x:TypeArguments="x:String">[approvalNumber.Groups(2).Value]</InArgument>
                     </Assign.Value>
                   </Assign>
-                  <ui:Break sap2010:WorkflowViewState.IdRef="Break_3" />
+                  <ui:Break sap2010:WorkflowViewState.IdRef="Break_1" />
                 </Sequence>
               </If.Then>
             </If>
-            <Assign DisplayName="Assign applicationID" sap2010:WorkflowViewState.IdRef="Assign_3">
+            <Assign DisplayName="Assign applicationID" sap2010:WorkflowViewState.IdRef="Assign_4">
               <Assign.To>
                 <OutArgument x:TypeArguments="str:Match">[applicationID]</OutArgument>
               </Assign.To>
@@ -141,10 +168,10 @@
                 <InArgument x:TypeArguments="str:Match">[Regex.Match(line, "Application ID:\s*(\w+)")]</InArgument>
               </Assign.Value>
             </Assign>
-            <If Condition="[applicationID.Success]" DisplayName="If application identifier" sap2010:WorkflowViewState.IdRef="If_3">
+            <If Condition="[applicationID.Success]" DisplayName="If application identifier" sap2010:WorkflowViewState.IdRef="If_4">
               <If.Then>
                 <Sequence sap2010:WorkflowViewState.IdRef="Sequence_5">
-                  <Assign DisplayName="Assign ApplicationIdentifier" sap2010:WorkflowViewState.IdRef="Assign_4">
+                  <Assign DisplayName="Assign ApplicationIdentifier" sap2010:WorkflowViewState.IdRef="Assign_5">
                     <Assign.To>
                       <OutArgument x:TypeArguments="x:String">[out_ApplicationIdentifier]</OutArgument>
                     </Assign.To>
@@ -160,37 +187,49 @@
         </ActivityAction>
       </ui:ForEach.Body>
     </ui:ForEach>
-    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_4" Level="Info" Message="[String.Format(&quot;End WordDocxForms.xaml, got App ID: {0}, RM No: {1}&quot;,&#xA;If(out_ApplicationIdentifier Is Nothing, &quot;Nothing&quot;, out_ApplicationIdentifier),&#xA;If(out_ResearchMasterNumber Is Nothing, &quot;Nothing&quot;, out_ResearchMasterNumber))]" />
-    <sads:DebugSymbol.Symbol>d1JDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUk1TX0hSRUFGb3JtRGF0YUV4dHJhY3Rpb25cV29yZERvY3hGb3Jtcy54YW1sJkwDpQEOAgEBUAtQOgIBAlQFVM8BAgE0VQVjEAIBK2QFZLoCAgEoZQWiARICAQmjAQWjAYEDAgEDVHJUzAECATVXCVemAQIBL18NX5MBAgEsZHlktwICASpkN2REAgEpZZUBZewBAgEnawufARYCAQqjAXKjAf4CAgEEV5ABV6MBAgEyVz5XVQIBMF9MX2ECAS1xDXgWAgEjeQ2HARICARmIAQ2PARYCARWQAQ2eARICAQt2OXaKAQIBJnM6c0oCASR5G3k1AgEaexGFARwCARyNATmNAWcCARiKATqKAUkCARaQARuQATQCAQySARGcARwCAQ58E4MBHAIBHoQBE4QBSQIBHZMBE5oBHAIBEJsBE5sBSQIBD4EBPoEBXgIBIX4/flkCAR+YAT6YAV0CAROVAT+VAVoCARE=</sads:DebugSymbol.Symbol>
+    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[String.Format(&quot;End PdfApproval.xaml, got App ID: {0}, RM No: {1}&quot;,&#xA;If(out_ApplicationIdentifier Is Nothing, &quot;Nothing&quot;, out_ApplicationIdentifier),&#xA;If(out_ResearchMasterNumber Is Nothing, &quot;Nothing&quot;, out_ResearchMasterNumber))]" />
+    <sads:DebugSymbol.Symbol>d2FDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUk1TX0hSRUFGb3JtRGF0YUV4dHJhY3Rpb25cRG9jdW1lbnRIYW5kbGVyc1xQZGZBcHByb3ZhbC54YW1sMk0DwAEOAgEBUQtROgIBAlUFVc0BAgFFVgVkEAIBO2UFgAEKAgEogQEFvQESAgEJvgEFvgH/AgIBA1VyVcoBAgFGWAlYywECAT9gDWCTAQIBPGUTZTUCASlnCX4UAgErgQGVAYEB7AECASeHAQu6ARYCAQq+AXK+AfwCAgEEWLUBWMgBAgFDWFxYcwIBQViqAVivAQIBQGB7YJABAgE9aQ1yIQIBL3oRepcBAgEsjAENkwEWAgEjlAENogESAgEZowENqgEWAgEVqwENuQESAgELaTRpOAIBOmnNAWngAQIBOGliaXkCATZpwgFpxwECATVvE2+UAgIBMHp/epQBAgEtkQE5kQGjAQIBJo4BOo4BSgIBJJQBG5QBNQIBGpYBEaABHAIBHKgBOagBZwIBGKUBOqUBSQIBFqsBG6sBNAIBDK0BEbcBHAIBDm+OAm+RAgIBNG/fAW/oAQIBMm/yAW/2AQIBMZcBE54BHAIBHp8BE58BSQIBHa4BE7UBHAIBELYBE7YBSQIBD5wBPpwBXgIBIZkBP5kBWQIBH7MBPrMBXQIBE7ABP7ABWgIBEQ==</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
-      <sap2010:ViewStateData Id="LogMessage_1" sap:VirtualizedContainerService.HintSize="502,91" />
-      <sap2010:ViewStateData Id="DocumentReadText_2" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="LogMessage_8" sap:VirtualizedContainerService.HintSize="314,91" />
-      <sap2010:ViewStateData Id="Catch`1_4" sap:VirtualizedContainerService.HintSize="400,160">
+      <sap2010:ViewStateData Id="LogMessage_1" sap:VirtualizedContainerService.HintSize="543,91" />
+      <sap2010:ViewStateData Id="ReadPDFText_1" sap:VirtualizedContainerService.HintSize="314,59" />
+      <sap2010:ViewStateData Id="LogMessage_3" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="Catch`1_1" sap:VirtualizedContainerService.HintSize="404,21">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
             <x:Boolean x:Key="IsPinned">False</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_4" sap:VirtualizedContainerService.HintSize="502,322" />
-      <sap2010:ViewStateData Id="AppendLine_1" sap:VirtualizedContainerService.HintSize="502,87" />
-      <sap2010:ViewStateData Id="Assign_5" sap:VirtualizedContainerService.HintSize="464,60" />
-      <sap2010:ViewStateData Id="Assign_6" sap:VirtualizedContainerService.HintSize="242,60" />
-      <sap2010:ViewStateData Id="Break_3" sap:VirtualizedContainerService.HintSize="242,22" />
-      <sap2010:ViewStateData Id="Sequence_7" sap:VirtualizedContainerService.HintSize="264,246">
+      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="543,287" />
+      <sap2010:ViewStateData Id="MicrosoftOCR_1" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="ReadPDFWithOCR_1" sap:VirtualizedContainerService.HintSize="314,131" />
+      <sap2010:ViewStateData Id="LogMessage_5" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="Catch`1_2" sap:VirtualizedContainerService.HintSize="404,21">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="TryCatch_2" sap:VirtualizedContainerService.HintSize="418,358" />
+      <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="543,506" />
+      <sap2010:ViewStateData Id="Assign_3" sap:VirtualizedContainerService.HintSize="464,60" />
+      <sap2010:ViewStateData Id="Assign_2" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="Break_1" sap:VirtualizedContainerService.HintSize="242,22" />
+      <sap2010:ViewStateData Id="Sequence_3" sap:VirtualizedContainerService.HintSize="264,246">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_4" sap:VirtualizedContainerService.HintSize="464,394" />
-      <sap2010:ViewStateData Id="Assign_3" sap:VirtualizedContainerService.HintSize="464,60" />
-      <sap2010:ViewStateData Id="Assign_4" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="If_3" sap:VirtualizedContainerService.HintSize="464,394" />
+      <sap2010:ViewStateData Id="Assign_4" sap:VirtualizedContainerService.HintSize="464,60" />
+      <sap2010:ViewStateData Id="Assign_5" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="Break_2" sap:VirtualizedContainerService.HintSize="242,22" />
       <sap2010:ViewStateData Id="Sequence_5" sap:VirtualizedContainerService.HintSize="264,246">
         <sap:WorkflowViewStateService.ViewState>
@@ -199,24 +238,24 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_3" sap:VirtualizedContainerService.HintSize="464,394" />
-      <sap2010:ViewStateData Id="Sequence_6" sap:VirtualizedContainerService.HintSize="486,1152">
+      <sap2010:ViewStateData Id="If_4" sap:VirtualizedContainerService.HintSize="464,394" />
+      <sap2010:ViewStateData Id="Sequence_4" sap:VirtualizedContainerService.HintSize="486,1152">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="ForEach`1_2" sap:VirtualizedContainerService.HintSize="502,1286" />
-      <sap2010:ViewStateData Id="LogMessage_4" sap:VirtualizedContainerService.HintSize="502,91" />
-      <sap2010:ViewStateData Id="Sequence_4" sap:VirtualizedContainerService.HintSize="524,2161">
+      <sap2010:ViewStateData Id="ForEach`1_1" sap:VirtualizedContainerService.HintSize="543,1286" />
+      <sap2010:ViewStateData Id="LogMessage_2" sap:VirtualizedContainerService.HintSize="543,91" />
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="565,2545">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="WordDocxForms_1" sap:VirtualizedContainerService.HintSize="564,2281" />
+      <sap2010:ViewStateData Id="PdfApproval_1" sap:VirtualizedContainerService.HintSize="605,2625" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
