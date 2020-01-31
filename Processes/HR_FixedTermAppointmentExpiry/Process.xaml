@@ -7,12 +7,15 @@
  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
  xmlns:scg="clr-namespace:System.Collections.Generic;assembly=mscorlib"
  xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=mscorlib"
+ xmlns:sd="clr-namespace:System.Data;assembly=System.Data"
  xmlns:ui="http://schemas.uipath.com/workflow/activities"
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <x:Members>
     <x:Property Name="in_TransactionItem" Type="InArgument(ui:QueueItem)" />
     <x:Property Name="in_Config" Type="InArgument(scg:Dictionary(x:String, x:Object))" />
     <x:Property Name="in_uqCustomWorklistBrowser" Type="InArgument(ui:Browser)" />
+    <x:Property Name="in_AurionWindow" Type="InArgument(ui:Window)" />
+    <x:Property Name="in_payEntityDT" Type="InArgument(sd:DataTable)" />
   </x:Members>
   <mva:VisualBasic.Settings>
     <x:Null />
@@ -41,6 +44,7 @@
       <x:String>UiPath.Core</x:String>
       <x:String>UiPath.Core.Activities</x:String>
       <x:String>System.Windows.Markup</x:String>
+      <x:String>System.Xml.Serialization</x:String>
     </sco:Collection>
   </TextExpression.NamespacesForImplementation>
   <TextExpression.ReferencesForImplementation>
@@ -68,36 +72,70 @@
       <AssemblyReference>UiPath.Mail</AssemblyReference>
       <AssemblyReference>System.ValueTuple</AssemblyReference>
       <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
+      <AssemblyReference>System.Data.DataSetExtensions</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence sap2010:Annotation.AnnotationText="Description: In this file all other process specific files will be invoked. If an application exception occurs, the current transaction can be retried. If a BRE is thrown, the transaction will be skipped. Can be a flowchart or sequence. " DisplayName="ProcessTransaction" sap2010:WorkflowViewState.IdRef="Sequence_1">
     <Sequence.Variables>
       <Variable x:TypeArguments="x:String" Name="EmployeeNumber" />
       <Variable x:TypeArguments="x:String" Name="CurrentContractEndDate" />
-      <Variable x:TypeArguments="x:String" Name="ProposedContractEndDate" />
       <Variable x:TypeArguments="ui:Browser" Name="UnitaskWorklistBrowser" />
+      <Variable x:TypeArguments="x:String" Name="employeeName" />
+      <Variable x:TypeArguments="x:String" Name="proposedContractStartDate" />
+      <Variable x:TypeArguments="x:String" Name="proposedContractEndDate" />
+      <Variable x:TypeArguments="x:Boolean" Name="systemErrorFlag" />
+      <Variable x:TypeArguments="x:String" Name="systemErrorNotes" />
+      <Variable x:TypeArguments="x:String" Name="payEntityUsername" />
     </Sequence.Variables>
-    <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke Unitask_OpenTask workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_1" UnSafe="False" WorkflowFileName="Unitask\Unitask_OpenTask.xaml">
+    <ui:CommentOut DisplayName="Comment Out" sap2010:WorkflowViewState.IdRef="CommentOut_1">
+      <ui:CommentOut.Body>
+        <Sequence DisplayName="Ignored Activities" sap2010:WorkflowViewState.IdRef="Sequence_2">
+          <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke Unitask_OpenTask workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_1" UnSafe="False" WorkflowFileName="Unitask\Unitask_OpenTask.xaml">
+            <ui:InvokeWorkflowFile.Arguments>
+              <InArgument x:TypeArguments="ui:QueueItem" x:Key="in_TransactionItem">[in_TransactionItem]</InArgument>
+              <InArgument x:TypeArguments="ui:Browser" x:Key="in_uqCustomWorklistBrowser">[in_uqCustomWorklistBrowser]</InArgument>
+            </ui:InvokeWorkflowFile.Arguments>
+          </ui:InvokeWorkflowFile>
+          <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke Unitask_ScrapeTask workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_2" UnSafe="False" WorkflowFileName="Unitask\Unitask_ScrapeTask.xaml">
+            <ui:InvokeWorkflowFile.Arguments>
+              <OutArgument x:TypeArguments="x:String" x:Key="out_EmployeeNumber">[EmployeeNumber]</OutArgument>
+              <OutArgument x:TypeArguments="x:String" x:Key="out_CurrentContractEndDate">[CurrentContractEndDate]</OutArgument>
+              <OutArgument x:TypeArguments="x:String" x:Key="out_ProposedContractEndDate">[ProposedContractEndDate]</OutArgument>
+              <OutArgument x:TypeArguments="ui:Browser" x:Key="out_UnitaskWorklistBrowser">[UnitaskWorklistBrowser]</OutArgument>
+            </ui:InvokeWorkflowFile.Arguments>
+          </ui:InvokeWorkflowFile>
+          <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke Unitask_CloseUniTaskWorklistTab workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_3" UnSafe="False" WorkflowFileName="Unitask\Unitask_CloseUniTaskWorklistTab.xaml">
+            <ui:InvokeWorkflowFile.Arguments>
+              <InArgument x:TypeArguments="ui:Browser" x:Key="in_UnitaskWorklistBrowser">[UnitaskWorklistBrowser]</InArgument>
+            </ui:InvokeWorkflowFile.Arguments>
+          </ui:InvokeWorkflowFile>
+          <WriteLine DisplayName="Write Line" sap2010:WorkflowViewState.IdRef="WriteLine_1" Text="[EmployeeNumber + vbNewLine + CurrentContractEndDate  + vbNewLine + ProposedContractEndDate]" />
+        </Sequence>
+      </ui:CommentOut.Body>
+    </ui:CommentOut>
+    <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke Unitask_ExtractEmployeeNameAndProposedContractDates workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_4" UnSafe="False" WorkflowFileName="Unitask\Unitask_ExtractEmployeeNameAndProposedContractDates.xaml">
       <ui:InvokeWorkflowFile.Arguments>
         <InArgument x:TypeArguments="ui:QueueItem" x:Key="in_TransactionItem">[in_TransactionItem]</InArgument>
-        <InArgument x:TypeArguments="ui:Browser" x:Key="in_uqCustomWorklistBrowser">[in_uqCustomWorklistBrowser]</InArgument>
+        <OutArgument x:TypeArguments="x:String" x:Key="out_employeeName">[employeeName]</OutArgument>
+        <OutArgument x:TypeArguments="x:String" x:Key="out_employeeNumber">[EmployeeNumber]</OutArgument>
+        <OutArgument x:TypeArguments="x:String" x:Key="out_proposedContractStartDate">[proposedContractStartDate]</OutArgument>
+        <OutArgument x:TypeArguments="x:String" x:Key="out_proposedContractEndDate">[proposedContractEndDate]</OutArgument>
+        <OutArgument x:TypeArguments="x:Boolean" x:Key="out_systemErrorFlag">[systemErrorFlag]</OutArgument>
+        <OutArgument x:TypeArguments="x:String" x:Key="out_systemErrorNotes">[systemErrorNotes]</OutArgument>
       </ui:InvokeWorkflowFile.Arguments>
     </ui:InvokeWorkflowFile>
-    <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke Unitask_ScrapeTask workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_2" UnSafe="False" WorkflowFileName="Unitask\Unitask_ScrapeTask.xaml">
+    <WriteLine DisplayName="Write Line" sap2010:WorkflowViewState.IdRef="WriteLine_2" Text="[&quot;Case ID is &quot; + in_TransactionItem.Reference + vbNewLine +&quot;Employee name is &quot; + employeeName + vbNewLine + &quot;Employee number is &quot; + employeeNumber + vbNewLine + &quot;Proposed start date &quot; + proposedContractStartDate + vbNewLine + &quot;Proposed end date &quot; + proposedContractEndDate + vbNewLine + &quot;System Error Flag is &quot; + systemErrorFlag.ToString + vbNewLine + &quot;--------------------&quot;]" />
+    <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke Aurion_CreateNewContract workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_5" UnSafe="False" WorkflowFileName="Aurion\Aurion_CreateNewContract.xaml">
       <ui:InvokeWorkflowFile.Arguments>
-        <OutArgument x:TypeArguments="x:String" x:Key="out_EmployeeNumber">[EmployeeNumber]</OutArgument>
-        <OutArgument x:TypeArguments="x:String" x:Key="out_CurrentContractEndDate">[CurrentContractEndDate]</OutArgument>
-        <OutArgument x:TypeArguments="x:String" x:Key="out_ProposedContractEndDate">[ProposedContractEndDate]</OutArgument>
-        <OutArgument x:TypeArguments="ui:Browser" x:Key="out_UnitaskWorklistBrowser">[UnitaskWorklistBrowser]</OutArgument>
+        <InArgument x:TypeArguments="ui:QueueItem" x:Key="in_TransactionItem">[in_TransactionItem]</InArgument>
+        <InArgument x:TypeArguments="ui:Window" x:Key="in_AurionWindow">[in_AurionWindow]</InArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="in_employeeNumber">[EmployeeNumber]</InArgument>
+        <InArgument x:TypeArguments="sd:DataTable" x:Key="in_payEntityDT">[in_payEntityDT]</InArgument>
+        <OutArgument x:TypeArguments="x:String" x:Key="out_payEntityUsername">[payEntityUsername]</OutArgument>
       </ui:InvokeWorkflowFile.Arguments>
     </ui:InvokeWorkflowFile>
-    <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke Unitask_CloseUniTaskWorklistTab workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_3" UnSafe="False" WorkflowFileName="Unitask\Unitask_CloseUniTaskWorklistTab.xaml">
-      <ui:InvokeWorkflowFile.Arguments>
-        <InArgument x:TypeArguments="ui:Browser" x:Key="in_UnitaskWorklistBrowser">[UnitaskWorklistBrowser]</InArgument>
-      </ui:InvokeWorkflowFile.Arguments>
-    </ui:InvokeWorkflowFile>
-    <WriteLine DisplayName="Write Line" sap2010:WorkflowViewState.IdRef="WriteLine_1" Text="[EmployeeNumber + vbNewLine + CurrentContractEndDate  + vbNewLine + ProposedContractEndDate]" />
-    <sads:DebugSymbol.Symbol>d0FDOlxVaVBhdGhcVVFcUHJvY2Vzc2VzXEhSX0ZpeGVkVGVybUFwcG9pbnRtZW50RXhwaXJ5XFByb2Nlc3MueGFtbBBJA2UOAgEBUAVVHQIBElYFXR0CAQheBWIdAgEEYwVjvQECAQJTVVNxAgEWUk9SYwIBFFC9AVDcAQIBE1pVWm4CARBbVltuAgEOVr8BVuABAgENWVRZbAIBC1hMWFwCAQlgVGBsAgEGXswBXvoBAgEFY1xjugECAQM=</sads:DebugSymbol.Symbol>
+    <WriteLine DisplayName="Write Line" Text="[&quot;payEntityUsername = &quot; + payEntityUsername]" sap2010:WorkflowViewState.IdRef="WriteLine_3" />
+    <sads:DebugSymbol.Symbol>d2FDOlxVc2Vyc1x1cXNkZWJiZVxEb2N1bWVudHNcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcSFJfRml4ZWRUZXJtQXBwb2ludG1lbnRFeHBpcnlcUHJvY2Vzcy54YW1sFk4DiwEOAgEBWgVzFQIBI3QFfh0CARN/BX+eBAIBEYABBYgBHQIBBYkBBYkBlwECAQJ6VXpuAgEhe057XwIBH3dKd1gCAR15V3lyAgEbfE58YAIBGXZPdmMCARd04AF0ogICARZ4THhcAgEUf1x/mwQCARKFAUuFAVsCAQ+GAU+GAWICAQ2EAUqEAVoCAQuCAU+CAWMCAQmDAUmDAVoCAQeAAcUBgAHrAQIBBokBLokBZgIBAw==</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -105,7 +143,32 @@
       <sap2010:ViewStateData Id="InvokeWorkflowFile_2" sap:VirtualizedContainerService.HintSize="314,87" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_3" sap:VirtualizedContainerService.HintSize="314,87" />
       <sap2010:ViewStateData Id="WriteLine_1" sap:VirtualizedContainerService.HintSize="314,61" />
-      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="336,653">
+      <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="336,566">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="CommentOut_1" sap:VirtualizedContainerService.HintSize="314,51">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_4" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="WriteLine_2" sap:VirtualizedContainerService.HintSize="314,61">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_5" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="WriteLine_3" sap:VirtualizedContainerService.HintSize="314,61" />
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="336,718">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -113,7 +176,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="ProcessTransaction_1" sap:VirtualizedContainerService.HintSize="376,733" />
+      <sap2010:ViewStateData Id="ProcessTransaction_1" sap:VirtualizedContainerService.HintSize="376,798" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>

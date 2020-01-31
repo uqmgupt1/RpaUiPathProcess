@@ -17,6 +17,8 @@
   <x:Members>
     <x:Property Name="in_TestMode" Type="InArgument(x:Boolean)" />
     <x:Property Name="in_MaxAttempts" Type="InArgument(x:Int32)" />
+    <x:Property Name="in_Config" Type="InArgument(scg:Dictionary(x:String, x:Object))" />
+    <x:Property Name="out_AurionWindow" Type="OutArgument(ui:Window)" />
   </x:Members>
   <mva:VisualBasic.Settings>
     <x:Null />
@@ -72,7 +74,6 @@
       <AssemblyReference>System.Data.DataSetExtensions</AssemblyReference>
       <AssemblyReference>UiPath.Excel</AssemblyReference>
       <AssemblyReference>UiPath.Mail</AssemblyReference>
-      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Flowchart sap2010:Annotation.AnnotationText="Last Edited 29/05/2019 - UiPath 2019.5.0&#xA;&#xA;Performs the login process for Aurion. The workflow will retry the login process up to in_MaxAttempts times (default 3) in the case of failure. After the final retry a Login Failure exception is thrown.&#xA;&#xA;--- Instructions for usage ---&#xA;1. Create a copy of this .xaml file for each application you need to login to.&#xA;2. Rename each .xaml file to be &lt;Application&gt;_Login.xaml &#xA;3. Rename this activity, the above annotation, and the log message activity within the Initialise sequence below, to indicate the app being logged into.&#xA;4. Add any require input arguments (such as the in_Config argument, if using the REFramework), making sure to add them to the appropariate section of the annotation below.&#xA;5. Follow the annotations on each activity in the below flow chart to add the desired login functionality.&#xA;6. Invoke the .xaml workflow where you would usually open and login to a given application. &#xA;--- End Instructions ---&#xA;&#xA;In Args&#xA;&#xA;Out Args" DisplayName="Login to Aurion" sap2010:WorkflowViewState.IdRef="Flowchart_1">
@@ -107,7 +108,7 @@
                       <Variable x:TypeArguments="ss:SecureString" Name="securePassword" />
                       <Variable x:TypeArguments="x:String" Name="username" />
                     </Sequence.Variables>
-                    <ui:GetRobotCredential TimeoutMS="{x:Null}" AssetName="HR_FTAE_Aurion_AURTEST" DisplayName="Get Credential" sap2010:WorkflowViewState.IdRef="GetRobotCredential_1" Password="[securePassword]" Username="[username]" />
+                    <ui:GetRobotCredential TimeoutMS="{x:Null}" AssetName="HR_FTAE_Aurion_Credentials" DisplayName="Get Credential" sap2010:WorkflowViewState.IdRef="GetRobotCredential_1" Password="[securePassword]" Username="[username]" />
                     <Assign DisplayName="Assign usernamePasswordInvalid" sap2010:WorkflowViewState.IdRef="Assign_10">
                       <Assign.To>
                         <OutArgument x:TypeArguments="x:Boolean">[usernamePasswordInvalid]</OutArgument>
@@ -152,11 +153,28 @@
                       </ui:RetryScope>
                       <ui:StartProcess Arguments="{x:Null}" WorkingDirectory="{x:Null}" DisplayName="Start Process" FileName="T:\Shortcuts\AURTEST urouter.lnk" sap2010:WorkflowViewState.IdRef="StartProcess_1" />
                     </Parallel>
-                    <ui:TypeInto DelayBefore="{x:Null}" DelayBetweenKeys="{x:Null}" DelayMS="{x:Null}" Activate="True" ClickBeforeTyping="False" DisplayName="Type Into 'User Name' and 'Password&quot;'" EmptyField="True" sap2010:WorkflowViewState.IdRef="TypeInto_1" SendWindowMessages="False" SimulateType="False" Text="[username+ &quot;[k(tab)]&quot;+ (New System.Net.NetworkCredential(String.Empty,securePassword).Password).ToString+ &quot;[k(enter)]&quot;]">
-                      <ui:TypeInto.Target>
-                        <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="d5319045307e7f6f5ef4e3035a899853" Selector="&lt;wnd app='aurion.exe' cls='UniApplication' omit:title='Aurion*' /&gt;&lt;wnd cls='Edit' idx='3' /&gt;" WaitForReady="COMPLETE" />
-                      </ui:TypeInto.Target>
-                    </ui:TypeInto>
+                    <ui:WindowScope SearchScope="{x:Null}" TimeoutMS="{x:Null}" Window="{x:Null}" ApplicationWindow="[out_AurionWindow]" DisplayName="Attach Window 'Aurion.exe Aurion'" sap2010:WorkflowViewState.IdRef="WindowScope_3" InformativeScreenshot="2835ab1afff2f657f6ad50b8f1be8379" Selector="&lt;wnd app='aurion.exe' cls='UniApplication' title='Aurion*' /&gt;">
+                      <ui:WindowScope.Body>
+                        <ActivityAction x:TypeArguments="x:Object">
+                          <ActivityAction.Argument>
+                            <DelegateInArgument x:TypeArguments="x:Object" Name="ContextTarget" />
+                          </ActivityAction.Argument>
+                          <Sequence DisplayName="Do" sap2010:WorkflowViewState.IdRef="Sequence_30">
+                            <ui:Activate DelayBefore="{x:Null}" DelayMS="{x:Null}" sap2010:WorkflowViewState.IdRef="Activate_2">
+                              <ui:Activate.Target>
+                                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Selector="{x:Null}" TimeoutMS="{x:Null}" WaitForReady="INTERACTIVE" />
+                              </ui:Activate.Target>
+                            </ui:Activate>
+                            <ui:MaximizeWindow Window="{x:Null}" DisplayName="Maximize Window" sap2010:WorkflowViewState.IdRef="MaximizeWindow_2" />
+                            <ui:TypeInto DelayBefore="{x:Null}" DelayBetweenKeys="{x:Null}" DelayMS="{x:Null}" Activate="True" ClickBeforeTyping="False" DisplayName="Type Into 'User Name' and 'Password&quot;'" EmptyField="True" sap2010:WorkflowViewState.IdRef="TypeInto_1" SendWindowMessages="False" SimulateType="False" Text="[username+ &quot;[k(tab)]&quot;+ (New System.Net.NetworkCredential(String.Empty,securePassword).Password).ToString+ &quot;[k(enter)]&quot;]">
+                              <ui:TypeInto.Target>
+                                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="d5319045307e7f6f5ef4e3035a899853" Selector="&lt;wnd app='aurion.exe' cls='UniApplication' omit:title='Aurion*' /&gt;&lt;wnd cls='Edit' idx='3' /&gt;" WaitForReady="COMPLETE" />
+                              </ui:TypeInto.Target>
+                            </ui:TypeInto>
+                          </Sequence>
+                        </ActivityAction>
+                      </ui:WindowScope.Body>
+                    </ui:WindowScope>
                   </Sequence>
                   <Assign DisplayName="Assign errorFlag" sap2010:WorkflowViewState.IdRef="Assign_3">
                     <Assign.To>
@@ -245,14 +263,13 @@
                             <InArgument x:TypeArguments="x:Int32">999</InArgument>
                           </Assign.Value>
                         </Assign>
-                        <Assign DisplayName="Assign usernamePasswordInvalid">
+                        <Assign DisplayName="Assign usernamePasswordInvalid" sap2010:WorkflowViewState.IdRef="Assign_12">
                           <Assign.To>
                             <OutArgument x:TypeArguments="x:Boolean">[usernamePasswordInvalid]</OutArgument>
                           </Assign.To>
                           <Assign.Value>
                             <InArgument x:TypeArguments="x:Boolean">True</InArgument>
                           </Assign.Value>
-                          <sap2010:WorkflowViewState.IdRef>Assign_12</sap2010:WorkflowViewState.IdRef>
                         </Assign>
                         <ui:WindowScope ApplicationWindow="{x:Null}" SearchScope="{x:Null}" TimeoutMS="{x:Null}" Window="{x:Null}" DisplayName="Attach Window 'Aurion.exe Aurion'" sap2010:WorkflowViewState.IdRef="WindowScope_1" InformativeScreenshot="edcff83a15188445a5746557ce72f2e9" Selector="&lt;wnd app='aurion.exe' cls='UniApplication' /&gt;">
                           <ui:WindowScope.Body>
@@ -282,6 +299,66 @@
                           </ui:WindowScope.Body>
                         </ui:WindowScope>
                       </Sequence>
+                    </If.Then>
+                  </If>
+                  <If Condition="[errorFlag = false]" DisplayName="If  no errors, go to employee placement" sap2010:WorkflowViewState.IdRef="If_4">
+                    <If.Then>
+                      <ui:WindowScope ApplicationWindow="{x:Null}" SearchScope="{x:Null}" TimeoutMS="{x:Null}" Window="{x:Null}" DisplayName="Attach Window 'Aurion Au Uniapplic'" sap2010:WorkflowViewState.IdRef="WindowScope_2" InformativeScreenshot="6808c8dafc1191d874b3cfbcf935e222" Selector="&lt;wnd app='aurion.exe' cls='UniApplication' title='Aurion - [Aurion 11 AURTEST ENVIRONMENT]' /&gt;">
+                        <ui:WindowScope.Body>
+                          <ActivityAction x:TypeArguments="x:Object">
+                            <ActivityAction.Argument>
+                              <DelegateInArgument x:TypeArguments="x:Object" Name="ContextTarget" />
+                            </ActivityAction.Argument>
+                            <Sequence DisplayName="Do" sap2010:WorkflowViewState.IdRef="Sequence_29">
+                              <ui:Activate DelayBefore="{x:Null}" DelayMS="{x:Null}" sap2010:WorkflowViewState.IdRef="Activate_1">
+                                <ui:Activate.Target>
+                                  <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Selector="{x:Null}" TimeoutMS="{x:Null}" WaitForReady="INTERACTIVE" />
+                                </ui:Activate.Target>
+                              </ui:Activate>
+                              <ui:MaximizeWindow Window="{x:Null}" DisplayName="Maximize Window" sap2010:WorkflowViewState.IdRef="MaximizeWindow_1" />
+                              <ui:Click DelayBefore="{x:Null}" DelayMS="{x:Null}" ClickType="CLICK_SINGLE" DisplayName="Click 'Placements'" sap2010:WorkflowViewState.IdRef="Click_15" KeyModifiers="None" MouseButton="BTN_LEFT" SendWindowMessages="False" SimulateClick="False">
+                                <ui:Click.CursorPosition>
+                                  <ui:CursorPosition Position="Center">
+                                    <ui:CursorPosition.OffsetX>
+                                      <InArgument x:TypeArguments="x:Int32" />
+                                    </ui:CursorPosition.OffsetX>
+                                    <ui:CursorPosition.OffsetY>
+                                      <InArgument x:TypeArguments="x:Int32" />
+                                    </ui:CursorPosition.OffsetY>
+                                  </ui:CursorPosition>
+                                </ui:Click.CursorPosition>
+                                <ui:Click.Target>
+                                  <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="15f8ee607cc8325b352e28ccefb38e77" Selector="&lt;wnd app='aurion.exe' cls='UniApplication' title='Aurion*' /&gt;&lt;wnd cls='SysTreeView32' idx='1' title='TreeView' /&gt;&lt;ctrl name='Placements' role='outline item' /&gt;" WaitForReady="INTERACTIVE" />
+                                </ui:Click.Target>
+                              </ui:Click>
+                              <ui:AnchorBase AnchorPosition="Top" DisplayName="AnchorBase Click 'Query Employee'" sap2010:WorkflowViewState.IdRef="AnchorBase_2">
+                                <ui:AnchorBase.Action>
+                                  <ActivityAction x:TypeArguments="ui:Anchor">
+                                    <ActivityAction.Argument>
+                                      <DelegateInArgument x:TypeArguments="ui:Anchor" Name="ContextAnchor" />
+                                    </ActivityAction.Argument>
+                                    <ui:Click DelayBefore="{x:Null}" DelayMS="{x:Null}" ClickType="CLICK_SINGLE" DisplayName="Action Click 'Query Employee'" sap2010:WorkflowViewState.IdRef="Click_16" KeyModifiers="None" MouseButton="BTN_LEFT" SendWindowMessages="False" SimulateClick="False">
+                                      <ui:Click.CursorPosition>
+                                        <ui:CursorPosition OffsetX="540" OffsetY="14" Position="TopLeft" />
+                                      </ui:Click.CursorPosition>
+                                      <ui:Click.Target>
+                                        <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="3990a10b1d4400a3f5ae75d67882f26c" Selector="&lt;wnd cls='UTabControl' /&gt;" WaitForReady="INTERACTIVE" />
+                                      </ui:Click.Target>
+                                    </ui:Click>
+                                  </ActivityAction>
+                                </ui:AnchorBase.Action>
+                                <ui:AnchorBase.AnchorProvider>
+                                  <ui:WaitUiElementAppear FoundElement="{x:Null}" DisplayName="Anchor Find Element 'Select Employee'" sap2010:WorkflowViewState.IdRef="WaitUiElementAppear_2" WaitActive="False" WaitVisible="False">
+                                    <ui:WaitUiElementAppear.Target>
+                                      <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="25013bb7b76136ed64dd3e53e04a4358" Selector="&lt;wnd aaname='Select Employee' cls='Edit' /&gt;" WaitForReady="INTERACTIVE" />
+                                    </ui:WaitUiElementAppear.Target>
+                                  </ui:WaitUiElementAppear>
+                                </ui:AnchorBase.AnchorProvider>
+                              </ui:AnchorBase>
+                            </Sequence>
+                          </ActivityAction>
+                        </ui:WindowScope.Body>
+                      </ui:WindowScope>
                     </If.Then>
                   </If>
                 </Sequence>
@@ -370,7 +447,7 @@
                 </FlowDecision.True>
                 <FlowDecision.False>
                   <FlowStep x:Name="__ReferenceID5" sap2010:WorkflowViewState.IdRef="FlowStep_14">
-                    <Sequence sap2010:Annotation.AnnotationText="Contains a log messaged indicating that login was successful.&#xA;&#xA;(Optionally) May contain any activities that much be executed after login succuess." DisplayName="Login Success" sap2010:WorkflowViewState.IdRef="Sequence_18">
+                    <Sequence sap2010:Annotation.AnnotationText="Contains a log message indicating that login was successful.&#xA;&#xA;(Optionally) May contain any activities that much be executed after login succuess." DisplayName="Login Success" sap2010:WorkflowViewState.IdRef="Sequence_18">
                       <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_6" Level="Info" Message="[&quot;Aurion successfully logged in&quot;]" />
                     </Sequence>
                   </FlowStep>
@@ -389,7 +466,7 @@
     <x:Reference>__ReferenceID5</x:Reference>
     <x:Reference>__ReferenceID6</x:Reference>
     <x:Reference>__ReferenceID7</x:Reference>
-    <sads:DebugSymbol.Symbol>d3ZDOlxVc2Vyc1x1cXNkZWJiZVxEb2N1bWVudHNcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcSFJfRml4ZWRUZXJtQXBwb2ludG1lbnRFeHBpcnlcQXVyaW9uXEF1cmlvbl9Mb2dpbldpdGhSZXRyeS54YW1scgFwAXIBAwFQAVUBAk4DiQMPAgEBWQljFAMBhwFmDbUCGAIBIrcCP7cCTAIBIPUCFfcCIAIBHbkCQ7kCZwIBGucCGe4CHgIBErwCGdACJAIBC9MCHd0CKAIBAloLWp4BAwGMAVsLYhQDAYgBaBGfAhwCASunAhWxAiACASP2Ahf2ArQBAgEe5wIn5wJCAgET6QId6QLgAQIBGOwCHewC6QECARW+Ah2+AuYBAgERxgIhzAIsAgEM1AIf2wIoAgEG3AIf3ALGAQIBA1p4WpsBAwGNAWA1YDYDAYsBXTZdRAMBiQFpE6ABHgIBZaEBE6gBHAIBYakBE60BKAIBXK4BE9sBGAIBSNwBE+MBIQIBROQBE54CGAIBLKgCF68CIAIBJ7ACF7ACvwECAST2AoQB9gKxAQIBH+kCXOkCswECARnsAlLsArwBAgEWxwIjywI7AgEN2QJJ2QJbAgEJ1gJK1gJYAgEH3AKMAdwCwwECAQRuFW7sAQMBgQFvFXYeAgF9dxWaASACAWubARWfASMCAWamAT+mAUQCAWSjAUCjAUsCAWKrAZEBqwGZAgIBYKsBpAKrAaoCAgFfqQG6AakB2gECAV2uASGuAUECAUmwARfZASICAUvhAT/hAU0CAUXeAaYB3gGHAgIBR+QBIeQBbwIBLeYBF5wCIgIBL60CQ60CRwIBKqoCRKoCTwIBKLAChAGwArwBAgElxwKpAccCrwECARDJAmXJAmsCAQ/HArwCxwLjAgIBDm5LbmMDAYYBbt0BbukBAwGEAW7BAW7TAQMBggF0QXRGAwGAAXFCcVsCAX54F5gBJwIBbpkBF5kB1AECAWydAagBnQGSAgIBapsBvwKbAcwDAgFnsQEZsQHAAQIBWrIBGcABJAIBWMEBGcgBIgIBVMkBGdABIgIBUNEBGdgBIgIBTOcBGecBwAECAULoARnvASICAT7wARn3ASICATr4ARmAAiICATaBAhmbAioCATB4pwF4sQECAXx4lAF4mAECAXt7HZABKAIBcpUBHZUBhwECAW+ZAX6ZAaABAgFtsQGHAbEBvQECAVu+AawBvgGCAgIBWcYBRcYBSQIBV8MBRsMBXwIBVc4BRc4BSQIBU8sBRssBUQIBUdYBQ9YBRgIBT9MBRNMBUgIBTecBhwHnAb0BAgFD7QFF7QFJAgFB6gFG6gFRAgE/9QFD9QFGAgE98gFE8gFSAgE7/QFF/QFJAgE5+gFG+gFfAgE3gQKmAoEC2wICATWHAh+YAioCATF8H4oBKgIBeIsBH48BNAIBc5UBcZUBhAECAXCIAiGIAtcBAgE0iQIhlwIsAgEyiAGyAYgBtAICAXp8fHyCAQIBeY0BnQGNAZ8CAgF3jQGqAo0BsAICAXaLAWSLAXcCAXSVArQBlQL+AQIBMw==</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d3ZDOlxVc2Vyc1x1cXNkZWJiZVxEb2N1bWVudHNcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcSFJfRml4ZWRUZXJtQXBwb2ludG1lbnRFeHBpcnlcQXVyaW9uXEF1cmlvbl9Mb2dpbldpdGhSZXRyeS54YW1siAEBcAFyAQMBUAFVAQJPA9YDDwIBAVoJZBQDAZ8BZw2CAxgCASKEAz+EA0wCASDCAxXEAyACAR2GA0OGA2cCARq0Axm7Ax4CARKJAxmdAyQCAQugAx2qAygCAQJbC1ueAQMBpAFcC2MUAwGgAWkR7AIcAgEr9AIV/gIgAgEjwwMXwwO0AQIBHrQDJ7QDQgIBE7YDHbYD4AECARi5Ax25A+kBAgEViwMdiwPmAQIBEZMDIZkDLAIBDKEDH6gDKAIBBqkDH6kDxgECAQNbeFubAQMBpQFhNWE2AwGjAV42XkQDAaEBahOyAR4CAXazARO6ARwCAXK7ARO/ASgCAW3AARPtARgCAVnuARP1ASECAVX2AROvAhgCAT2wAhPrAhgCASz1Ahf8AiACASf9Ahf9Ar8BAgEkwwOEAcMDsQECAR+2A1y2A7MBAgEZuQNSuQO8AQIBFpQDI5gDOwIBDaYDSaYDWwIBCaMDSqMDWAIBB6kDjAGpA8MBAgEEbxVv8AEDAZkBcBV3HgMBlQF4FZsBIAMBgwGcARWxASYCAXe4AT+4AUQCAXW1AUC1AUsCAXO9AZEBvQGZAgIBcb0BpAK9AaoCAgFwuwG6AbsB2gECAW7AASHAAUECAVrCARfrASICAVzzAT/zAU0CAVbwAaYB8AGHAgIBWPYBIfYBbwIBPvgBF60CIgIBQLACIbACNgIBLbICF+kCKAIBL/oCQ/oCRwIBKvcCRPcCTwIBKP0ChAH9ArwBAgEllAOpAZQDrwECARCWA2WWA2sCAQ+UA7wClAPjAgIBDm9Lb2cDAZ4Bb+EBb+0BAwGcAW/FAW/XAQMBmgF1QXVGAwGYAXJCclsDAZYBeReZAScDAYYBmgEXmgHUAQMBhAGcAawCnAHxAgMBggGcAXWcAYkBAwGAAaIBG64BJgIBeMMBGcMBwAECAWvEARnSASQCAWnTARnaASICAWXbARniASICAWHjARnqASICAV35ARn5AcABAgFT+gEZgQIiAgFPggIZiQIiAgFLigIZkQIiAgFHkgIZrAIqAgFBsgKmArICjAMCATy4Ah3mAigCATB5pwF5sQEDAZQBeZQBeZgBAwGTAXwdkQEoAwGKAZYBHZYBhwEDAYcBmgF+mgGgAQMBhQGjAR2nASsCAX+oAR2oAZUBAgF+qQEdrQErAgF5wwGHAcMBvQECAWzQAawB0AGCAgIBatgBRdgBSQIBaNUBRtUBXwIBZuABReABSQIBZN0BRt0BUQIBYugBQ+gBRgIBYOUBROUBUgIBXvkBhwH5Ab0BAgFU/wFF/wFJAgFS/AFG/AFRAgFQhwJDhwJGAgFOhAJEhAJSAgFMjwJFjwJJAgFKjAJGjAJfAgFIkgKmApIC2wICAUaYAh+pAioCAUK5Ah+9Ai0CATu+Ah++ApcBAgE6vwIfzQIqAgE4zgIf5QIvAgExfR+LASoDAZABjAEfkAE0AwGLAZYBcZYBhAEDAYgBqwGwAasBmgICAX2pAccCqQHUAwIBepkCIZkC1wECAUWaAiGoAiwCAUPLArIBywLlAgIBOd8CI+MCPAIBNtQCJdsCMAIBMokBsgGJAbQCAwGSAX18fYIBAwGRAY4BnQGOAZ8CAwGPAY4BqgKOAbACAwGOAYwBZIwBdwMBjAGmArQBpgL+AQIBROECtgHhAukBAgE32QK4AdkC2QECATXWAlLWAlYCATTWAkTWAkkCATM=</sads:DebugSymbol.Symbol>
   </Flowchart>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -417,9 +494,33 @@
       <sap2010:ViewStateData Id="IsFalse_1" sap:VirtualizedContainerService.HintSize="200,22" />
       <sap2010:ViewStateData Id="RetryScope_1" sap:VirtualizedContainerService.HintSize="358,557" />
       <sap2010:ViewStateData Id="StartProcess_1" sap:VirtualizedContainerService.HintSize="314,557" />
-      <sap2010:ViewStateData Id="Parallel_1" sap:VirtualizedContainerService.HintSize="826,603" />
-      <sap2010:ViewStateData Id="TypeInto_1" sap:VirtualizedContainerService.HintSize="826,134" />
-      <sap2010:ViewStateData Id="Sequence_12" sap:VirtualizedContainerService.HintSize="848,1090">
+      <sap2010:ViewStateData Id="Parallel_1" sap:VirtualizedContainerService.HintSize="826,603">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Activate_2" sap:VirtualizedContainerService.HintSize="314,51">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="MaximizeWindow_2" sap:VirtualizedContainerService.HintSize="314,22" />
+      <sap2010:ViewStateData Id="TypeInto_1" sap:VirtualizedContainerService.HintSize="314,134" />
+      <sap2010:ViewStateData Id="Sequence_30" sap:VirtualizedContainerService.HintSize="336,411">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="WindowScope_3" sap:VirtualizedContainerService.HintSize="826,557" />
+      <sap2010:ViewStateData Id="Sequence_12" sap:VirtualizedContainerService.HintSize="848,1513">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -429,10 +530,12 @@
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="Assign_3" sap:VirtualizedContainerService.HintSize="848,60" />
-      <sap2010:ViewStateData Id="UiElementExists_3" sap:VirtualizedContainerService.HintSize="848,133">
+      <sap2010:ViewStateData Id="UiElementExists_3" sap:VirtualizedContainerService.HintSize="848,93">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsAnnotationDocked">True</x:Boolean>
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
@@ -448,7 +551,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="848,809">
+      <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="539,809">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -456,7 +559,14 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="GetValue_1" sap:VirtualizedContainerService.HintSize="848,106" />
+      <sap2010:ViewStateData Id="GetValue_1" sap:VirtualizedContainerService.HintSize="539,51">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="LogMessage_8" sap:VirtualizedContainerService.HintSize="414,91" />
       <sap2010:ViewStateData Id="Assign_8" sap:VirtualizedContainerService.HintSize="414,60" />
       <sap2010:ViewStateData Id="Assign_9" sap:VirtualizedContainerService.HintSize="414,60" />
@@ -485,8 +595,64 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_3" sap:VirtualizedContainerService.HintSize="848,1170" />
-      <sap2010:ViewStateData Id="Sequence_8" sap:VirtualizedContainerService.HintSize="870,3692">
+      <sap2010:ViewStateData Id="If_3" sap:VirtualizedContainerService.HintSize="539,51">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Activate_1" sap:VirtualizedContainerService.HintSize="314,51">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="MaximizeWindow_1" sap:VirtualizedContainerService.HintSize="314,22" />
+      <sap2010:ViewStateData Id="Click_15" sap:VirtualizedContainerService.HintSize="314,106" />
+      <sap2010:ViewStateData Id="Click_16" sap:VirtualizedContainerService.HintSize="314,106">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="WaitUiElementAppear_2" sap:VirtualizedContainerService.HintSize="314,106">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="AnchorBase_2" sap:VirtualizedContainerService.HintSize="314,51">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Sequence_29" sap:VirtualizedContainerService.HintSize="336,474">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="WindowScope_2" sap:VirtualizedContainerService.HintSize="414,620">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="If_4" sap:VirtualizedContainerService.HintSize="539,768" />
+      <sap2010:ViewStateData Id="Sequence_8" sap:VirtualizedContainerService.HintSize="870,3709">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -502,7 +668,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Catch`1_1" sap:VirtualizedContainerService.HintSize="874,21">
+      <sap2010:ViewStateData Id="Catch`1_1" sap:VirtualizedContainerService.HintSize="565,21">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">False</x:Boolean>
@@ -510,7 +676,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="888,3946">
+      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="200,93">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsAnnotationDocked">True</x:Boolean>
@@ -597,7 +763,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_2" sap:VirtualizedContainerService.HintSize="464,208">
+      <sap2010:ViewStateData Id="If_2" sap:VirtualizedContainerService.HintSize="200,51">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
