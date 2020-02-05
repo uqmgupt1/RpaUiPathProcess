@@ -1,4 +1,4 @@
-﻿<Activity mc:Ignorable="sap sap2010 sads" x:Class="Aurion_CreateNewContract" this:Aurion_CreateNewContract.in_payEntityDT="[New System.Data.DataTable]"
+﻿<Activity mc:Ignorable="sap sap2010 sads" x:Class="Aurion_CreateNewContract" this:Aurion_CreateNewContract.in_payPointDT="[New System.Data.DataTable]"
  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
  xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities"
@@ -17,12 +17,15 @@
     <x:Property Name="in_TransactionItem" Type="InArgument(ui:QueueItem)" />
     <x:Property Name="in_AurionWindow" Type="InArgument(ui:Window)" />
     <x:Property Name="in_employeeNumber" Type="InArgument(x:String)" />
-    <x:Property Name="in_payEntityDT" Type="InArgument(sd:DataTable)" />
-    <x:Property Name="out_payEntityUsername" Type="OutArgument(x:String)" />
     <x:Property Name="in_proposedContractStartDate" Type="InArgument(x:String)" />
     <x:Property Name="in_proposedContractEndDate" Type="InArgument(x:String)" />
     <x:Property Name="in_Config" Type="InArgument(scg:Dictionary(x:String, x:Object))" />
-    <x:Property Name="out_payEntityCode" Type="OutArgument(x:String)" />
+    <x:Property Name="io_reportDT" Type="InOutArgument(sd:DataTable)" />
+    <x:Property Name="in_employeeName" Type="InArgument(x:String)" />
+    <x:Property Name="in_systemErrorNotes" Type="InArgument(x:String)" />
+    <x:Property Name="out_payPointUsername" Type="OutArgument(x:String)" />
+    <x:Property Name="out_payPointCode" Type="OutArgument(x:String)" />
+    <x:Property Name="in_payPointDT" Type="InArgument(sd:DataTable)" />
   </x:Members>
   <mva:VisualBasic.Settings>
     <x:Null />
@@ -83,6 +86,7 @@
       <AssemblyReference>System.ComponentModel.Composition</AssemblyReference>
       <AssemblyReference>Microsoft.VisualStudio.Services.Common</AssemblyReference>
       <AssemblyReference>System.Data.Entity</AssemblyReference>
+      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence DisplayName="Aurion_CreateNewContract" sap2010:WorkflowViewState.IdRef="Sequence_5">
@@ -93,6 +97,7 @@
       <Variable x:TypeArguments="x:String" Name="placementProcessingDates" />
       <Variable x:TypeArguments="sd:DataTable" Default="[New System.Data.DataTable]" Name="datesDT" />
       <Variable x:TypeArguments="x:Boolean" Name="textClicked" />
+      <Variable x:TypeArguments="x:Boolean" Name="systemErrorFlag" />
     </Sequence.Variables>
     <ui:WindowScope ApplicationWindow="{x:Null}" SearchScope="{x:Null}" TimeoutMS="{x:Null}" Window="{x:Null}" DisplayName="Attach Window 'Aurion Au Uniapplic'" sap2010:WorkflowViewState.IdRef="WindowScope_1" InformativeScreenshot="86b90901e960af24b4c267407a920d68" Selector="&lt;wnd app='aurion.exe' cls='UniApplication' title='Aurion*' /&gt;">
       <ui:WindowScope.Body>
@@ -101,6 +106,14 @@
             <DelegateInArgument x:TypeArguments="x:Object" Name="ContextTarget" />
           </ActivityAction.Argument>
           <Sequence DisplayName="Do" sap2010:WorkflowViewState.IdRef="Sequence_4">
+            <Assign sap2010:WorkflowViewState.IdRef="Assign_6">
+              <Assign.To>
+                <OutArgument x:TypeArguments="x:Boolean">[systemErrorFlag]</OutArgument>
+              </Assign.To>
+              <Assign.Value>
+                <InArgument x:TypeArguments="x:Boolean">False</InArgument>
+              </Assign.Value>
+            </Assign>
             <ui:Activate DelayBefore="{x:Null}" DelayMS="{x:Null}" sap2010:WorkflowViewState.IdRef="Activate_1">
               <ui:Activate.Target>
                 <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Selector="{x:Null}" TimeoutMS="{x:Null}" WaitForReady="INTERACTIVE" />
@@ -146,21 +159,45 @@
                 <OutArgument x:TypeArguments="x:String">[selectEmployeeList]</OutArgument>
               </ui:GetVisibleText.Text>
             </ui:GetVisibleText>
-            <ui:ClickText ContinueOnError="{x:Null}" DelayBefore="{x:Null}" DelayMS="{x:Null}" ClickType="CLICK_DOUBLE" DisplayName="Dbl Click Text '#######' (Employee number)" FormattedText="False" sap2010:WorkflowViewState.IdRef="ClickText_1" KeyModifiers="None" MouseButton="BTN_LEFT" Occurrence="1" SendWindowMessages="False" Text="[in_employeeNumber]">
-              <ui:ClickText.CursorPosition>
-                <ui:CursorPosition Position="Center">
-                  <ui:CursorPosition.OffsetX>
-                    <InArgument x:TypeArguments="x:Int32" />
-                  </ui:CursorPosition.OffsetX>
-                  <ui:CursorPosition.OffsetY>
-                    <InArgument x:TypeArguments="x:Int32" />
-                  </ui:CursorPosition.OffsetY>
-                </ui:CursorPosition>
-              </ui:ClickText.CursorPosition>
-              <ui:ClickText.Target>
-                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="79176bb4db199712d4ee018836c2537b" Selector="&lt;wnd cls='AfxWnd140u' idx='2' /&gt;" WaitForReady="INTERACTIVE" />
-              </ui:ClickText.Target>
-            </ui:ClickText>
+            <If Condition="[selectEmployeeList.ToUpper.Contains(&quot;TERMINATED&quot;)]" DisplayName="If terminated employee" sap2010:WorkflowViewState.IdRef="If_1">
+              <If.Then>
+                <Sequence sap2010:WorkflowViewState.IdRef="Sequence_11">
+                  <Assign sap2010:WorkflowViewState.IdRef="Assign_7">
+                    <Assign.To>
+                      <OutArgument x:TypeArguments="x:Boolean">[systemErrorFlag]</OutArgument>
+                    </Assign.To>
+                    <Assign.Value>
+                      <InArgument x:TypeArguments="x:Boolean">True</InArgument>
+                    </Assign.Value>
+                  </Assign>
+                  <Assign sap2010:WorkflowViewState.IdRef="Assign_8">
+                    <Assign.To>
+                      <OutArgument x:TypeArguments="x:String">[in_systemErrorNotes]</OutArgument>
+                    </Assign.To>
+                    <Assign.Value>
+                      <InArgument x:TypeArguments="x:String">Employee marked as terminated in Aurion</InArgument>
+                    </Assign.Value>
+                  </Assign>
+                  <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke UpdateReport workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_1" UnSafe="False" WorkflowFileName="Report\UpdateReport.xaml">
+                    <ui:InvokeWorkflowFile.Arguments>
+                      <InArgument x:TypeArguments="scg:Dictionary(x:String, x:Object)" x:Key="in_Config">[in_Config]</InArgument>
+                      <InArgument x:TypeArguments="ui:QueueItem" x:Key="in_TransactionItem">[in_TransactionItem]</InArgument>
+                      <InOutArgument x:TypeArguments="sd:DataTable" x:Key="io_ReportDT">[io_reportDT]</InOutArgument>
+                      <InArgument x:TypeArguments="x:String" x:Key="in_employeeName">[in_employeeName]</InArgument>
+                      <InArgument x:TypeArguments="x:String" x:Key="in_employeeNumber">[in_EmployeeNumber]</InArgument>
+                      <InArgument x:TypeArguments="x:String" x:Key="in_proposedContractStartDate">[in_proposedContractStartDate]</InArgument>
+                      <InArgument x:TypeArguments="x:String" x:Key="in_proposedContractEndDate">[in_proposedContractEndDate]</InArgument>
+                      <InArgument x:TypeArguments="x:Boolean" x:Key="in_systemErrorFlag">[systemErrorFlag]</InArgument>
+                      <InArgument x:TypeArguments="x:String" x:Key="in_systemErrorNotes">[in_systemErrorNotes]</InArgument>
+                      <InOutArgument x:TypeArguments="x:String" x:Key="io_DTasHTML" />
+                      <InArgument x:TypeArguments="x:String" x:Key="in_payPointCode">[out_payPointCode]</InArgument>
+                      <InArgument x:TypeArguments="x:String" x:Key="in_payPointUsername">[out_payPointUsername]</InArgument>
+                    </ui:InvokeWorkflowFile.Arguments>
+                  </ui:InvokeWorkflowFile>
+                  <Throw DisplayName="Throw Terminated employee" Exception="[New BusinessRuleException(in_systemErrorNotes)]" sap2010:WorkflowViewState.IdRef="Throw_1" />
+                </Sequence>
+              </If.Then>
+            </If>
             <ui:CommentOut DisplayName="Comment Out" sap2010:WorkflowViewState.IdRef="CommentOut_2">
               <ui:CommentOut.Body>
                 <Sequence DisplayName="Ignored Activities" sap2010:WorkflowViewState.IdRef="Sequence_6">
@@ -182,213 +219,249 @@
                 </Sequence>
               </ui:CommentOut.Body>
             </ui:CommentOut>
-            <Sequence DisplayName="Do" sap2010:WorkflowViewState.IdRef="Sequence_3">
-              <ui:RetryScope DisplayName="Retry Scope - Click Text 'Organisation Unit'" sap2010:WorkflowViewState.IdRef="RetryScope_1" NumberOfRetries="10" RetryInterval="00:00:01">
-                <ui:RetryScope.ActivityBody>
-                  <ActivityAction>
-                    <TryCatch DisplayName="TC: Click Text 'Organisation Unit'" sap2010:WorkflowViewState.IdRef="TryCatch_1">
-                      <TryCatch.Try>
-                        <Sequence sap2010:WorkflowViewState.IdRef="Sequence_8">
-                          <ui:ClickText ContinueOnError="{x:Null}" DelayBefore="{x:Null}" DelayMS="{x:Null}" ClickType="CLICK_SINGLE" DisplayName="Click Text 'Organisation Unit'" FormattedText="False" sap2010:WorkflowViewState.IdRef="ClickText_2" KeyModifiers="None" MouseButton="BTN_LEFT" Occurrence="1" SendWindowMessages="False" Text="Organisation Unit">
-                            <ui:ClickText.CursorPosition>
-                              <ui:CursorPosition Position="Center">
-                                <ui:CursorPosition.OffsetX>
-                                  <InArgument x:TypeArguments="x:Int32" />
-                                </ui:CursorPosition.OffsetX>
-                                <ui:CursorPosition.OffsetY>
-                                  <InArgument x:TypeArguments="x:Int32" />
-                                </ui:CursorPosition.OffsetY>
-                              </ui:CursorPosition>
-                            </ui:ClickText.CursorPosition>
-                            <ui:ClickText.Target>
-                              <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" InformativeScreenshot="54729718152f3b9b1f1c4ff1b30a463e" Selector="&lt;wnd cls='UTabControl' idx='9' /&gt;" TimeoutMS="1000" WaitForReady="COMPLETE" />
-                            </ui:ClickText.Target>
-                          </ui:ClickText>
-                          <Assign DisplayName="Assign textClicked = True" sap2010:WorkflowViewState.IdRef="Assign_4">
+            <ui:RetryScope DisplayName="Retry Scope - Dbl Click Text '#######' (Employee number)" sap2010:WorkflowViewState.IdRef="RetryScope_1" NumberOfRetries="10" RetryInterval="00:00:01">
+              <ui:RetryScope.ActivityBody>
+                <ActivityAction>
+                  <TryCatch DisplayName="TC: Dbl Click Text '#######' (Employee number)" sap2010:WorkflowViewState.IdRef="TryCatch_1">
+                    <TryCatch.Try>
+                      <Sequence sap2010:WorkflowViewState.IdRef="Sequence_8">
+                        <ui:ClickText ContinueOnError="{x:Null}" DelayBefore="{x:Null}" DelayMS="{x:Null}" ClickType="CLICK_DOUBLE" DisplayName="Dbl Click Text '#######' (Employee number)" FormattedText="False" sap2010:WorkflowViewState.IdRef="ClickText_1" KeyModifiers="None" MouseButton="BTN_LEFT" Occurrence="1" SendWindowMessages="False" Text="[in_employeeNumber]">
+                          <ui:ClickText.CursorPosition>
+                            <ui:CursorPosition Position="Center">
+                              <ui:CursorPosition.OffsetX>
+                                <InArgument x:TypeArguments="x:Int32" />
+                              </ui:CursorPosition.OffsetX>
+                              <ui:CursorPosition.OffsetY>
+                                <InArgument x:TypeArguments="x:Int32" />
+                              </ui:CursorPosition.OffsetY>
+                            </ui:CursorPosition>
+                          </ui:ClickText.CursorPosition>
+                          <ui:ClickText.Target>
+                            <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="79176bb4db199712d4ee018836c2537b" Selector="&lt;wnd cls='AfxWnd140u' idx='2' /&gt;" WaitForReady="INTERACTIVE" />
+                          </ui:ClickText.Target>
+                        </ui:ClickText>
+                        <Assign DisplayName="Assign textClicked = True" sap2010:WorkflowViewState.IdRef="Assign_4">
+                          <Assign.To>
+                            <OutArgument x:TypeArguments="x:Boolean">[textClicked]</OutArgument>
+                          </Assign.To>
+                          <Assign.Value>
+                            <InArgument x:TypeArguments="x:Boolean">True</InArgument>
+                          </Assign.Value>
+                        </Assign>
+                      </Sequence>
+                    </TryCatch.Try>
+                    <TryCatch.Catches>
+                      <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch`1_1">
+                        <ActivityAction x:TypeArguments="s:Exception">
+                          <ActivityAction.Argument>
+                            <DelegateInArgument x:TypeArguments="s:Exception" Name="exception" />
+                          </ActivityAction.Argument>
+                          <Assign DisplayName="Assign textClicked = False" sap2010:WorkflowViewState.IdRef="Assign_5">
                             <Assign.To>
                               <OutArgument x:TypeArguments="x:Boolean">[textClicked]</OutArgument>
                             </Assign.To>
                             <Assign.Value>
-                              <InArgument x:TypeArguments="x:Boolean">True</InArgument>
+                              <InArgument x:TypeArguments="x:Boolean">False</InArgument>
                             </Assign.Value>
                           </Assign>
-                        </Sequence>
-                      </TryCatch.Try>
-                      <TryCatch.Catches>
-                        <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch`1_1">
-                          <ActivityAction x:TypeArguments="s:Exception">
-                            <ActivityAction.Argument>
-                              <DelegateInArgument x:TypeArguments="s:Exception" Name="exception" />
-                            </ActivityAction.Argument>
-                            <Assign DisplayName="Assign textClicked = False" sap2010:WorkflowViewState.IdRef="Assign_5">
-                              <Assign.To>
-                                <OutArgument x:TypeArguments="x:Boolean">[textClicked]</OutArgument>
-                              </Assign.To>
-                              <Assign.Value>
-                                <InArgument x:TypeArguments="x:Boolean">False</InArgument>
-                              </Assign.Value>
-                            </Assign>
-                          </ActivityAction>
-                        </Catch>
-                      </TryCatch.Catches>
-                    </TryCatch>
-                  </ActivityAction>
-                </ui:RetryScope.ActivityBody>
-                <ui:RetryScope.Condition>
-                  <ActivityFunc x:TypeArguments="x:Boolean">
-                    <p:IsTrue DisplayName="Is true" sap2010:WorkflowViewState.IdRef="IsTrue_1" Input="[textClicked]" />
-                  </ActivityFunc>
-                </ui:RetryScope.Condition>
-              </ui:RetryScope>
-              <ui:GetVisibleText WordsInfo="{x:Null}" DisplayName="Get Visible Text 'uPaneClass'" FormattedText="False" sap2010:WorkflowViewState.IdRef="GetVisibleText_2">
-                <ui:GetVisibleText.Target>
-                  <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="d175a1baa57d11310037b6a5e6956e86" Selector="&lt;wnd cls='uPaneClass' idx='28' /&gt;" WaitForReady="COMPLETE" />
-                </ui:GetVisibleText.Target>
-                <ui:GetVisibleText.Text>
-                  <OutArgument x:TypeArguments="x:String">[placementDetailText]</OutArgument>
-                </ui:GetVisibleText.Text>
-              </ui:GetVisibleText>
-              <Assign DisplayName="Assign out_payEntityCode" sap2010:WorkflowViewState.IdRef="Assign_1">
-                <Assign.To>
-                  <OutArgument x:TypeArguments="x:String">[out_payEntityCode]</OutArgument>
-                </Assign.To>
-                <Assign.Value>
-                  <InArgument x:TypeArguments="x:String">[System.Text.RegularExpressions.Regex.Match(placementDetailText,"(?&lt;=External Name).*").Groups(0).ToString.Trim]</InArgument>
-                </Assign.Value>
-              </Assign>
-              <WriteLine DisplayName="Write Line" sap2010:WorkflowViewState.IdRef="WriteLine_1" Text="[&quot;*&quot; + out_payEntityCode + &quot;*&quot;]" />
-              <ui:ForEachRow CurrentIndex="{x:Null}" DataTable="[in_payEntityDT]" DisplayName="For Each Row" sap2010:WorkflowViewState.IdRef="ForEachRow_1">
-                <ui:ForEachRow.Body>
-                  <ActivityAction x:TypeArguments="sd:DataRow">
-                    <ActivityAction.Argument>
-                      <DelegateInArgument x:TypeArguments="sd:DataRow" Name="row" />
-                    </ActivityAction.Argument>
-                    <If Condition="[row.Item(&quot;Pay Entity&quot;).ToString = out_payEntityCode]" DisplayName="If row.Item(&quot;Pay Entity&quot;).ToString = out_payEntityCode" sap2010:WorkflowViewState.IdRef="If_2">
-                      <If.Then>
-                        <Sequence sap2010:WorkflowViewState.IdRef="Sequence_2">
-                          <Assign DisplayName="Assign out_payEntityUsername" sap2010:WorkflowViewState.IdRef="Assign_2">
+                        </ActivityAction>
+                      </Catch>
+                    </TryCatch.Catches>
+                  </TryCatch>
+                </ActivityAction>
+              </ui:RetryScope.ActivityBody>
+              <ui:RetryScope.Condition>
+                <ActivityFunc x:TypeArguments="x:Boolean">
+                  <p:IsTrue DisplayName="Is true" sap2010:WorkflowViewState.IdRef="IsTrue_1" Input="[textClicked]" />
+                </ActivityFunc>
+              </ui:RetryScope.Condition>
+            </ui:RetryScope>
+            <ui:RetryScope DisplayName="Retry Scope - Click Text 'Organisation Unit'" sap2010:WorkflowViewState.IdRef="RetryScope_2" NumberOfRetries="10" RetryInterval="00:00:01">
+              <ui:RetryScope.ActivityBody>
+                <ActivityAction>
+                  <TryCatch DisplayName="TC: Click Text 'Organisation Unit'" sap2010:WorkflowViewState.IdRef="TryCatch_2">
+                    <TryCatch.Try>
+                      <Sequence sap2010:WorkflowViewState.IdRef="Sequence_13">
+                        <ui:ClickText ContinueOnError="{x:Null}" DelayBefore="{x:Null}" DelayMS="{x:Null}" ClickType="CLICK_SINGLE" DisplayName="Click Text 'Organisation Unit'" FormattedText="False" sap2010:WorkflowViewState.IdRef="ClickText_4" KeyModifiers="None" MouseButton="BTN_LEFT" Occurrence="1" SendWindowMessages="False" Text="Organisation Unit">
+                          <ui:ClickText.CursorPosition>
+                            <ui:CursorPosition Position="Center">
+                              <ui:CursorPosition.OffsetX>
+                                <InArgument x:TypeArguments="x:Int32" />
+                              </ui:CursorPosition.OffsetX>
+                              <ui:CursorPosition.OffsetY>
+                                <InArgument x:TypeArguments="x:Int32" />
+                              </ui:CursorPosition.OffsetY>
+                            </ui:CursorPosition>
+                          </ui:ClickText.CursorPosition>
+                          <ui:ClickText.Target>
+                            <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" InformativeScreenshot="54729718152f3b9b1f1c4ff1b30a463e" Selector="&lt;wnd cls='UTabControl' idx='9' /&gt;" TimeoutMS="1000" WaitForReady="COMPLETE" />
+                          </ui:ClickText.Target>
+                        </ui:ClickText>
+                        <Assign DisplayName="Assign textClicked = True" sap2010:WorkflowViewState.IdRef="Assign_9">
+                          <Assign.To>
+                            <OutArgument x:TypeArguments="x:Boolean">[textClicked]</OutArgument>
+                          </Assign.To>
+                          <Assign.Value>
+                            <InArgument x:TypeArguments="x:Boolean">True</InArgument>
+                          </Assign.Value>
+                        </Assign>
+                      </Sequence>
+                    </TryCatch.Try>
+                    <TryCatch.Catches>
+                      <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch`1_2">
+                        <ActivityAction x:TypeArguments="s:Exception">
+                          <ActivityAction.Argument>
+                            <DelegateInArgument x:TypeArguments="s:Exception" Name="exception" />
+                          </ActivityAction.Argument>
+                          <Assign DisplayName="Assign textClicked = False" sap2010:WorkflowViewState.IdRef="Assign_10">
                             <Assign.To>
-                              <OutArgument x:TypeArguments="x:String">[out_payEntityUsername]</OutArgument>
+                              <OutArgument x:TypeArguments="x:Boolean">[textClicked]</OutArgument>
                             </Assign.To>
                             <Assign.Value>
-                              <InArgument x:TypeArguments="x:String">[row.Item("UQ Username").ToString]</InArgument>
+                              <InArgument x:TypeArguments="x:Boolean">False</InArgument>
                             </Assign.Value>
                           </Assign>
-                          <ui:Break sap2010:WorkflowViewState.IdRef="Break_1" />
-                        </Sequence>
-                      </If.Then>
-                    </If>
-                  </ActivityAction>
-                </ui:ForEachRow.Body>
-              </ui:ForEachRow>
-              <WriteLine DisplayName="Write Line" sap2010:WorkflowViewState.IdRef="WriteLine_2" Text="[&quot;*&quot; + out_payEntityUsername + &quot;*&quot;]" />
-              <ui:Click DelayBefore="{x:Null}" DelayMS="{x:Null}" ClickType="CLICK_SINGLE" DisplayName="Click 'Update'" sap2010:WorkflowViewState.IdRef="Click_3" KeyModifiers="None" MouseButton="BTN_LEFT" SendWindowMessages="False" SimulateClick="False">
-                <ui:Click.CursorPosition>
-                  <ui:CursorPosition Position="Center">
-                    <ui:CursorPosition.OffsetX>
-                      <InArgument x:TypeArguments="x:Int32" />
-                    </ui:CursorPosition.OffsetX>
-                    <ui:CursorPosition.OffsetY>
-                      <InArgument x:TypeArguments="x:Int32" />
-                    </ui:CursorPosition.OffsetY>
-                  </ui:CursorPosition>
-                </ui:Click.CursorPosition>
-                <ui:Click.Target>
-                  <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="bc9e598a6dd47da6abd3bcced6d1823f" Selector="&lt;wnd cls='Button' title='Update' /&gt;" WaitForReady="INTERACTIVE" />
-                </ui:Click.Target>
-              </ui:Click>
-              <If Condition="[selectEmployeeList.ToUpper.Contains(&quot;TERMINATED&quot;)]" DisplayName="If terminated employee" sap2010:WorkflowViewState.IdRef="If_1">
-                <If.Then>
-                  <ui:Click DelayBefore="{x:Null}" DelayMS="{x:Null}" ClickType="CLICK_SINGLE" DisplayName="Click 'OK'" sap2010:WorkflowViewState.IdRef="Click_2" KeyModifiers="None" MouseButton="BTN_LEFT" SendWindowMessages="False" SimulateClick="False">
-                    <ui:Click.CursorPosition>
-                      <ui:CursorPosition Position="Center">
-                        <ui:CursorPosition.OffsetX>
-                          <InArgument x:TypeArguments="x:Int32" />
-                        </ui:CursorPosition.OffsetX>
-                        <ui:CursorPosition.OffsetY>
-                          <InArgument x:TypeArguments="x:Int32" />
-                        </ui:CursorPosition.OffsetY>
-                      </ui:CursorPosition>
-                    </ui:Click.CursorPosition>
-                    <ui:Click.Target>
-                      <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" InformativeScreenshot="47b8f5e8028e0c6d63dbf6b226ccd81a" Selector="&lt;wnd app='aurion.exe' cls='#32770' title='Aurion' /&gt;&lt;wnd ctrlid='11' title='&amp;amp;OK' /&gt;" TimeoutMS="3000" WaitForReady="INTERACTIVE" />
-                    </ui:Click.Target>
-                  </ui:Click>
-                </If.Then>
-              </If>
-              <ui:GetVisibleText WordsInfo="{x:Null}" DisplayName="Get Visible Text 'Placement Processing' dates" FormattedText="False" sap2010:WorkflowViewState.IdRef="GetVisibleText_3">
-                <ui:GetVisibleText.Target>
-                  <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="8eaf0368da02950e7f4046c26c026a20" Selector="&lt;wnd app='aurion.exe' cls='UniForm' title='Placement Processing' /&gt;&lt;wnd cls='AfxWnd140u' idx='2' /&gt;" WaitForReady="COMPLETE" />
-                </ui:GetVisibleText.Target>
-                <ui:GetVisibleText.Text>
-                  <OutArgument x:TypeArguments="x:String">[placementProcessingDates]</OutArgument>
-                </ui:GetVisibleText.Text>
-              </ui:GetVisibleText>
-              <ui:GenerateDataTable ColumnSizes="{x:Null}" NewLineSeparator="{x:Null}" Positions="{x:Null}" CSVParsing="True" ColumnSeparators=" " DataTable="[datesDT]" DisplayName="Generate Data Table" sap2010:WorkflowViewState.IdRef="GenerateDataTable_1" Input="[placementProcessingDates]" />
-              <ui:SortDataTable ColumnIndex="{x:Null}" DataColumn="{x:Null}" ColumnName="Column1" DataTable="[datesDT]" DisplayName="Sort Data Table" sap2010:WorkflowViewState.IdRef="SortDataTable_1" Order="Decending" OutputDataTable="[sortedDatesDT]" />
-              <WriteLine DisplayName="Write Line" sap2010:WorkflowViewState.IdRef="WriteLine_3" Text="[CDate(CStr(sortedDatesDT.Rows(0)(&quot;Column1&quot;))).ToString(&quot;dd-MMM-yyyy&quot;).ToUpper]" />
-              <ui:ClickText ContinueOnError="{x:Null}" DelayBefore="{x:Null}" DelayMS="{x:Null}" ClickType="CLICK_SINGLE" DisplayName="Click Text 'Date' (Newest placement by date)" FormattedText="False" sap2010:WorkflowViewState.IdRef="ClickText_3" KeyModifiers="None" MouseButton="BTN_LEFT" Occurrence="1" SendWindowMessages="False" Text="[CDate(CStr(sortedDatesDT.Rows(0)(&quot;Column1&quot;))).ToString(&quot;dd-MMM-yyyy&quot;).ToUpper]">
-                <ui:ClickText.CursorPosition>
-                  <ui:CursorPosition Position="Center">
-                    <ui:CursorPosition.OffsetX>
-                      <InArgument x:TypeArguments="x:Int32" />
-                    </ui:CursorPosition.OffsetX>
-                    <ui:CursorPosition.OffsetY>
-                      <InArgument x:TypeArguments="x:Int32" />
-                    </ui:CursorPosition.OffsetY>
-                  </ui:CursorPosition>
-                </ui:ClickText.CursorPosition>
-                <ui:ClickText.Target>
-                  <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="0837b5a33d78ec1d936ef11f4b1fe5d9" Selector="&lt;wnd app='aurion.exe' cls='UniForm' title='Placement Processing' /&gt;&lt;wnd cls='AfxWnd140u' idx='2' /&gt;" WaitForReady="INTERACTIVE" />
-                </ui:ClickText.Target>
-              </ui:ClickText>
-              <ui:Click DelayBefore="{x:Null}" DelayMS="{x:Null}" ClickType="CLICK_SINGLE" DisplayName="Click 'Copy'" sap2010:WorkflowViewState.IdRef="Click_4" KeyModifiers="None" MouseButton="BTN_LEFT" SendWindowMessages="False" SimulateClick="False">
-                <ui:Click.CursorPosition>
-                  <ui:CursorPosition Position="Center">
-                    <ui:CursorPosition.OffsetX>
-                      <InArgument x:TypeArguments="x:Int32" />
-                    </ui:CursorPosition.OffsetX>
-                    <ui:CursorPosition.OffsetY>
-                      <InArgument x:TypeArguments="x:Int32" />
-                    </ui:CursorPosition.OffsetY>
-                  </ui:CursorPosition>
-                </ui:Click.CursorPosition>
-                <ui:Click.Target>
-                  <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="cd643ebe2e95f14d4d2f5531d005f43c" Selector="&lt;wnd app='aurion.exe' cls='UniForm' title='Placement Processing' /&gt;&lt;wnd cls='Button' title='Copy' /&gt;" WaitForReady="INTERACTIVE" />
-                </ui:Click.Target>
-              </ui:Click>
-              <ui:SetToClipboard DisplayName="Set To Clipboard (in_proposedContractStartDate)" sap2010:WorkflowViewState.IdRef="SetToClipboard_1" Text="[DateTime.ParseExact(in_proposedContractStartDate, &quot;dd-MM-yyyy&quot;, System.Globalization.CultureInfo.InvariantCulture).ToString(&quot;dd-MMM-yyyy&quot;).ToUpper]" />
-              <ui:SendHotkey DelayBefore="{x:Null}" DelayBetweenKeys="{x:Null}" DelayMS="{x:Null}" Activate="True" ClickBeforeTyping="False" DisplayName="Send Hotkey 'ctrl + v'" EmptyField="False" sap2010:WorkflowViewState.IdRef="SendHotkey_1" Key="v" KeyModifiers="Ctrl" SendWindowMessages="False" SpecialKey="False">
-                <ui:SendHotkey.Target>
-                  <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="b9a2bae68ea2fe454d6bd6faf59156cc" Selector="&lt;wnd app='aurion.exe' cls='UniForm' title='Placement Processing' /&gt;&lt;wnd cls='uPaneClass' idx='2' /&gt;&lt;ctrl role='client' /&gt;" WaitForReady="INTERACTIVE" />
-                </ui:SendHotkey.Target>
-              </ui:SendHotkey>
-              <ui:SendHotkey DelayBefore="{x:Null}" DelayBetweenKeys="{x:Null}" DelayMS="{x:Null}" Activate="True" ClickBeforeTyping="False" DisplayName="Send Hotkey &quot;tab'" EmptyField="False" sap2010:WorkflowViewState.IdRef="SendHotkey_2" Key="tab" KeyModifiers="None" SendWindowMessages="False" SpecialKey="True">
-                <ui:SendHotkey.Target>
-                  <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="b9a2bae68ea2fe454d6bd6faf59156cc" Selector="&lt;wnd app='aurion.exe' cls='UniForm' title='Placement Processing' /&gt;&lt;wnd cls='uPaneClass' idx='2' /&gt;&lt;ctrl role='client' /&gt;" WaitForReady="INTERACTIVE" />
-                </ui:SendHotkey.Target>
-              </ui:SendHotkey>
-              <ui:SetToClipboard DisplayName="Set To Clipboard (in_proposedContractEndDate)" sap2010:WorkflowViewState.IdRef="SetToClipboard_2" Text="[DateTime.ParseExact(in_proposedContractEndDate, &quot;dd-MM-yyyy&quot;, System.Globalization.CultureInfo.InvariantCulture).ToString(&quot;dd-MMM-yyyy&quot;).ToUpper]" />
-              <ui:SendHotkey DelayBefore="{x:Null}" DelayBetweenKeys="{x:Null}" DelayMS="{x:Null}" Activate="True" ClickBeforeTyping="False" DisplayName="Send Hotkey 'ctrl + v'" EmptyField="False" sap2010:WorkflowViewState.IdRef="SendHotkey_3" Key="v" KeyModifiers="Ctrl" SendWindowMessages="False" SpecialKey="False">
-                <ui:SendHotkey.Target>
-                  <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="b9a2bae68ea2fe454d6bd6faf59156cc" Selector="&lt;wnd app='aurion.exe' cls='UniForm' title='Placement Processing' /&gt;&lt;wnd cls='uPaneClass' idx='2' /&gt;&lt;ctrl role='client' /&gt;" WaitForReady="INTERACTIVE" />
-                </ui:SendHotkey.Target>
-              </ui:SendHotkey>
-              <ui:SendHotkey DelayBefore="{x:Null}" DelayBetweenKeys="{x:Null}" DelayMS="{x:Null}" Activate="True" ClickBeforeTyping="False" DisplayName="Send Hotkey &quot;tab'" EmptyField="False" sap2010:WorkflowViewState.IdRef="SendHotkey_4" Key="tab" KeyModifiers="None" SendWindowMessages="False" SpecialKey="True">
-                <ui:SendHotkey.Target>
-                  <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="b9a2bae68ea2fe454d6bd6faf59156cc" Selector="&lt;wnd app='aurion.exe' cls='UniForm' title='Placement Processing' /&gt;&lt;wnd cls='uPaneClass' idx='2' /&gt;&lt;ctrl role='client' /&gt;" WaitForReady="INTERACTIVE" />
-                </ui:SendHotkey.Target>
-              </ui:SendHotkey>
-              <Delay DisplayName="Delay 00:00:05" Duration="00:00:05" sap2010:WorkflowViewState.IdRef="Delay_1" />
-              <ui:CommentOut DisplayName="Comment Out" sap2010:WorkflowViewState.IdRef="CommentOut_3">
-                <ui:CommentOut.Body>
-                  <Sequence DisplayName="Ignored Activities" sap2010:WorkflowViewState.IdRef="Sequence_9">
-                    <ui:MessageBox Caption="{x:Null}" ChosenButton="{x:Null}" Buttons="Ok" DisplayName="Message Box" sap2010:WorkflowViewState.IdRef="MessageBox_1" Text="[&quot;Pause&quot;]" TopMost="True" />
-                  </Sequence>
-                </ui:CommentOut.Body>
-              </ui:CommentOut>
-            </Sequence>
-            <If Condition="[in_Config(&quot;OperatingEnvironment&quot;).ToString.ToUpper.Equals(&quot;DEV&quot;)]" sap2010:WorkflowViewState.IdRef="If_3">
+                        </ActivityAction>
+                      </Catch>
+                    </TryCatch.Catches>
+                  </TryCatch>
+                </ActivityAction>
+              </ui:RetryScope.ActivityBody>
+              <ui:RetryScope.Condition>
+                <ActivityFunc x:TypeArguments="x:Boolean">
+                  <p:IsTrue DisplayName="Is true" sap2010:WorkflowViewState.IdRef="IsTrue_2" Input="[textClicked]" />
+                </ActivityFunc>
+              </ui:RetryScope.Condition>
+            </ui:RetryScope>
+            <ui:GetVisibleText WordsInfo="{x:Null}" DisplayName="Get Visible Text 'uPaneClass'" FormattedText="False" sap2010:WorkflowViewState.IdRef="GetVisibleText_2">
+              <ui:GetVisibleText.Target>
+                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="d175a1baa57d11310037b6a5e6956e86" Selector="&lt;wnd cls='uPaneClass' idx='28' /&gt;" WaitForReady="COMPLETE" />
+              </ui:GetVisibleText.Target>
+              <ui:GetVisibleText.Text>
+                <OutArgument x:TypeArguments="x:String">[placementDetailText]</OutArgument>
+              </ui:GetVisibleText.Text>
+            </ui:GetVisibleText>
+            <Assign DisplayName="Assign out_payPointCode" sap2010:WorkflowViewState.IdRef="Assign_1">
+              <Assign.To>
+                <OutArgument x:TypeArguments="x:String">[out_payPointCode]</OutArgument>
+              </Assign.To>
+              <Assign.Value>
+                <InArgument x:TypeArguments="x:String">[System.Text.RegularExpressions.Regex.Match(placementDetailText,"(?&lt;=External Name).*").Groups(0).ToString.Trim]</InArgument>
+              </Assign.Value>
+            </Assign>
+            <WriteLine DisplayName="Write Line" sap2010:WorkflowViewState.IdRef="WriteLine_1" Text="[&quot;*&quot; + out_payPointCode + &quot;*&quot;]" />
+            <ui:ForEachRow CurrentIndex="{x:Null}" DataTable="[in_payPointDT]" DisplayName="For Each Row" sap2010:WorkflowViewState.IdRef="ForEachRow_1">
+              <ui:ForEachRow.Body>
+                <ActivityAction x:TypeArguments="sd:DataRow">
+                  <ActivityAction.Argument>
+                    <DelegateInArgument x:TypeArguments="sd:DataRow" Name="row" />
+                  </ActivityAction.Argument>
+                  <If Condition="[row.Item(&quot;Pay Entity&quot;).ToString = out_payPointCode]" DisplayName="If row.Item(&quot;Pay Entity&quot;).ToString = out_payPointCode" sap2010:WorkflowViewState.IdRef="If_2">
+                    <If.Then>
+                      <Sequence sap2010:WorkflowViewState.IdRef="Sequence_2">
+                        <Assign DisplayName="Assign out_payPointUsername" sap2010:WorkflowViewState.IdRef="Assign_2">
+                          <Assign.To>
+                            <OutArgument x:TypeArguments="x:String">[out_payPointUsername]</OutArgument>
+                          </Assign.To>
+                          <Assign.Value>
+                            <InArgument x:TypeArguments="x:String">[row.Item("UQ Username").ToString]</InArgument>
+                          </Assign.Value>
+                        </Assign>
+                        <ui:Break sap2010:WorkflowViewState.IdRef="Break_1" />
+                      </Sequence>
+                    </If.Then>
+                  </If>
+                </ActivityAction>
+              </ui:ForEachRow.Body>
+            </ui:ForEachRow>
+            <WriteLine DisplayName="Write Line" sap2010:WorkflowViewState.IdRef="WriteLine_2" Text="[&quot;*&quot; + out_payPointUsername + &quot;*&quot;]" />
+            <ui:Click DelayBefore="{x:Null}" DelayMS="{x:Null}" ClickType="CLICK_SINGLE" DisplayName="Click 'Update'" sap2010:WorkflowViewState.IdRef="Click_3" KeyModifiers="None" MouseButton="BTN_LEFT" SendWindowMessages="False" SimulateClick="False">
+              <ui:Click.CursorPosition>
+                <ui:CursorPosition Position="Center">
+                  <ui:CursorPosition.OffsetX>
+                    <InArgument x:TypeArguments="x:Int32" />
+                  </ui:CursorPosition.OffsetX>
+                  <ui:CursorPosition.OffsetY>
+                    <InArgument x:TypeArguments="x:Int32" />
+                  </ui:CursorPosition.OffsetY>
+                </ui:CursorPosition>
+              </ui:Click.CursorPosition>
+              <ui:Click.Target>
+                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="bc9e598a6dd47da6abd3bcced6d1823f" Selector="&lt;wnd cls='Button' title='Update' /&gt;" WaitForReady="INTERACTIVE" />
+              </ui:Click.Target>
+            </ui:Click>
+            <ui:GetVisibleText WordsInfo="{x:Null}" DisplayName="Get Visible Text 'Placement Processing' dates" FormattedText="False" sap2010:WorkflowViewState.IdRef="GetVisibleText_3">
+              <ui:GetVisibleText.Target>
+                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="8eaf0368da02950e7f4046c26c026a20" Selector="&lt;wnd app='aurion.exe' cls='UniForm' title='Placement Processing' /&gt;&lt;wnd cls='AfxWnd140u' idx='2' /&gt;" WaitForReady="COMPLETE" />
+              </ui:GetVisibleText.Target>
+              <ui:GetVisibleText.Text>
+                <OutArgument x:TypeArguments="x:String">[placementProcessingDates]</OutArgument>
+              </ui:GetVisibleText.Text>
+            </ui:GetVisibleText>
+            <ui:GenerateDataTable ColumnSizes="{x:Null}" NewLineSeparator="{x:Null}" Positions="{x:Null}" CSVParsing="True" ColumnSeparators=" " DataTable="[datesDT]" DisplayName="Generate Data Table" sap2010:WorkflowViewState.IdRef="GenerateDataTable_1" Input="[placementProcessingDates]" />
+            <ui:SortDataTable ColumnIndex="{x:Null}" DataColumn="{x:Null}" ColumnName="Column1" DataTable="[datesDT]" DisplayName="Sort Data Table" sap2010:WorkflowViewState.IdRef="SortDataTable_1" Order="Decending" OutputDataTable="[sortedDatesDT]" />
+            <WriteLine DisplayName="Write Line" sap2010:WorkflowViewState.IdRef="WriteLine_3" Text="[CDate(CStr(sortedDatesDT.Rows(0)(&quot;Column1&quot;))).ToString(&quot;dd-MMM-yyyy&quot;).ToUpper]" />
+            <ui:ClickText ContinueOnError="{x:Null}" DelayBefore="{x:Null}" DelayMS="{x:Null}" ClickType="CLICK_SINGLE" DisplayName="Click Text 'Date' (Newest placement by date)" FormattedText="False" sap2010:WorkflowViewState.IdRef="ClickText_3" KeyModifiers="None" MouseButton="BTN_LEFT" Occurrence="1" SendWindowMessages="False" Text="[CDate(CStr(sortedDatesDT.Rows(0)(&quot;Column1&quot;))).ToString(&quot;dd-MMM-yyyy&quot;).ToUpper]">
+              <ui:ClickText.CursorPosition>
+                <ui:CursorPosition Position="Center">
+                  <ui:CursorPosition.OffsetX>
+                    <InArgument x:TypeArguments="x:Int32" />
+                  </ui:CursorPosition.OffsetX>
+                  <ui:CursorPosition.OffsetY>
+                    <InArgument x:TypeArguments="x:Int32" />
+                  </ui:CursorPosition.OffsetY>
+                </ui:CursorPosition>
+              </ui:ClickText.CursorPosition>
+              <ui:ClickText.Target>
+                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="0837b5a33d78ec1d936ef11f4b1fe5d9" Selector="&lt;wnd app='aurion.exe' cls='UniForm' title='Placement Processing' /&gt;&lt;wnd cls='AfxWnd140u' idx='2' /&gt;" WaitForReady="INTERACTIVE" />
+              </ui:ClickText.Target>
+            </ui:ClickText>
+            <ui:Click DelayBefore="{x:Null}" DelayMS="{x:Null}" ClickType="CLICK_SINGLE" DisplayName="Click 'Copy'" sap2010:WorkflowViewState.IdRef="Click_4" KeyModifiers="None" MouseButton="BTN_LEFT" SendWindowMessages="False" SimulateClick="False">
+              <ui:Click.CursorPosition>
+                <ui:CursorPosition Position="Center">
+                  <ui:CursorPosition.OffsetX>
+                    <InArgument x:TypeArguments="x:Int32" />
+                  </ui:CursorPosition.OffsetX>
+                  <ui:CursorPosition.OffsetY>
+                    <InArgument x:TypeArguments="x:Int32" />
+                  </ui:CursorPosition.OffsetY>
+                </ui:CursorPosition>
+              </ui:Click.CursorPosition>
+              <ui:Click.Target>
+                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="cd643ebe2e95f14d4d2f5531d005f43c" Selector="&lt;wnd app='aurion.exe' cls='UniForm' title='Placement Processing' /&gt;&lt;wnd cls='Button' title='Copy' /&gt;" WaitForReady="INTERACTIVE" />
+              </ui:Click.Target>
+            </ui:Click>
+            <ui:SetToClipboard DisplayName="Set To Clipboard (in_proposedContractStartDate)" sap2010:WorkflowViewState.IdRef="SetToClipboard_1" Text="[DateTime.ParseExact(in_proposedContractStartDate, &quot;dd-MM-yyyy&quot;, System.Globalization.CultureInfo.InvariantCulture).ToString(&quot;dd-MMM-yyyy&quot;).ToUpper]" />
+            <ui:SendHotkey DelayBefore="{x:Null}" DelayBetweenKeys="{x:Null}" DelayMS="{x:Null}" Activate="True" ClickBeforeTyping="False" DisplayName="Send Hotkey 'ctrl + v'" EmptyField="False" sap2010:WorkflowViewState.IdRef="SendHotkey_1" Key="v" KeyModifiers="Ctrl" SendWindowMessages="False" SpecialKey="False">
+              <ui:SendHotkey.Target>
+                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="b9a2bae68ea2fe454d6bd6faf59156cc" Selector="&lt;wnd app='aurion.exe' cls='UniForm' title='Placement Processing' /&gt;&lt;wnd cls='uPaneClass' idx='2' /&gt;&lt;ctrl role='client' /&gt;" WaitForReady="INTERACTIVE" />
+              </ui:SendHotkey.Target>
+            </ui:SendHotkey>
+            <ui:SendHotkey DelayBefore="{x:Null}" DelayBetweenKeys="{x:Null}" DelayMS="{x:Null}" Activate="True" ClickBeforeTyping="False" DisplayName="Send Hotkey &quot;tab'" EmptyField="False" sap2010:WorkflowViewState.IdRef="SendHotkey_2" Key="tab" KeyModifiers="None" SendWindowMessages="False" SpecialKey="True">
+              <ui:SendHotkey.Target>
+                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="b9a2bae68ea2fe454d6bd6faf59156cc" Selector="&lt;wnd app='aurion.exe' cls='UniForm' title='Placement Processing' /&gt;&lt;wnd cls='uPaneClass' idx='2' /&gt;&lt;ctrl role='client' /&gt;" WaitForReady="INTERACTIVE" />
+              </ui:SendHotkey.Target>
+            </ui:SendHotkey>
+            <ui:SetToClipboard DisplayName="Set To Clipboard (in_proposedContractEndDate)" sap2010:WorkflowViewState.IdRef="SetToClipboard_2" Text="[DateTime.ParseExact(in_proposedContractEndDate, &quot;dd-MM-yyyy&quot;, System.Globalization.CultureInfo.InvariantCulture).ToString(&quot;dd-MMM-yyyy&quot;).ToUpper]" />
+            <ui:SendHotkey DelayBefore="{x:Null}" DelayBetweenKeys="{x:Null}" DelayMS="{x:Null}" Activate="True" ClickBeforeTyping="False" DisplayName="Send Hotkey 'ctrl + v'" EmptyField="False" sap2010:WorkflowViewState.IdRef="SendHotkey_3" Key="v" KeyModifiers="Ctrl" SendWindowMessages="False" SpecialKey="False">
+              <ui:SendHotkey.Target>
+                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="b9a2bae68ea2fe454d6bd6faf59156cc" Selector="&lt;wnd app='aurion.exe' cls='UniForm' title='Placement Processing' /&gt;&lt;wnd cls='uPaneClass' idx='2' /&gt;&lt;ctrl role='client' /&gt;" WaitForReady="INTERACTIVE" />
+              </ui:SendHotkey.Target>
+            </ui:SendHotkey>
+            <ui:SendHotkey DelayBefore="{x:Null}" DelayBetweenKeys="{x:Null}" DelayMS="{x:Null}" Activate="True" ClickBeforeTyping="False" DisplayName="Send Hotkey &quot;tab'" EmptyField="False" sap2010:WorkflowViewState.IdRef="SendHotkey_4" Key="tab" KeyModifiers="None" SendWindowMessages="False" SpecialKey="True">
+              <ui:SendHotkey.Target>
+                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="b9a2bae68ea2fe454d6bd6faf59156cc" Selector="&lt;wnd app='aurion.exe' cls='UniForm' title='Placement Processing' /&gt;&lt;wnd cls='uPaneClass' idx='2' /&gt;&lt;ctrl role='client' /&gt;" WaitForReady="INTERACTIVE" />
+              </ui:SendHotkey.Target>
+            </ui:SendHotkey>
+            <Delay DisplayName="Delay 00:00:02" Duration="00:00:02" sap2010:WorkflowViewState.IdRef="Delay_1" />
+            <ui:CommentOut DisplayName="Comment Out" sap2010:WorkflowViewState.IdRef="CommentOut_3">
+              <ui:CommentOut.Body>
+                <Sequence DisplayName="Ignored Activities" sap2010:WorkflowViewState.IdRef="Sequence_9">
+                  <ui:MessageBox Caption="{x:Null}" ChosenButton="{x:Null}" Buttons="Ok" DisplayName="Message Box" sap2010:WorkflowViewState.IdRef="MessageBox_1" Text="[&quot;Pause&quot;]" TopMost="True" />
+                </Sequence>
+              </ui:CommentOut.Body>
+            </ui:CommentOut>
+            <If Condition="[in_Config(&quot;OperatingEnvironment&quot;).ToString.ToUpper.Equals(&quot;DEV&quot;)]" DisplayName="If Operating Environment = DEV don't save proposed contract" sap2010:WorkflowViewState.IdRef="If_3">
               <If.Then>
                 <Sequence sap2010:WorkflowViewState.IdRef="Sequence_7">
                   <ui:Click DelayBefore="{x:Null}" DelayMS="{x:Null}" ClickType="CLICK_SINGLE" DisplayName="Click 'Cancel'" sap2010:WorkflowViewState.IdRef="Click_5" KeyModifiers="None" MouseButton="BTN_LEFT" SendWindowMessages="False" SimulateClick="False">
@@ -423,6 +496,23 @@
                   </ui:Click>
                 </Sequence>
               </If.Then>
+              <If.Else>
+                <ui:Click DelayBefore="{x:Null}" DelayMS="{x:Null}" ClickType="CLICK_SINGLE" DisplayName="Click 'Accept'" sap2010:WorkflowViewState.IdRef="Click_9" KeyModifiers="None" MouseButton="BTN_LEFT" SendWindowMessages="False" SimulateClick="False">
+                  <ui:Click.CursorPosition>
+                    <ui:CursorPosition Position="Center">
+                      <ui:CursorPosition.OffsetX>
+                        <InArgument x:TypeArguments="x:Int32" />
+                      </ui:CursorPosition.OffsetX>
+                      <ui:CursorPosition.OffsetY>
+                        <InArgument x:TypeArguments="x:Int32" />
+                      </ui:CursorPosition.OffsetY>
+                    </ui:CursorPosition>
+                  </ui:Click.CursorPosition>
+                  <ui:Click.Target>
+                    <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="667d055e482b4cd073e61b5cf2772531" Selector="&lt;wnd app='aurion.exe' cls='UniForm' title='Placement Processing' /&gt;&lt;wnd cls='Button' title='Accept' /&gt;" WaitForReady="COMPLETE" />
+                  </ui:Click.Target>
+                </ui:Click>
+              </If.Else>
             </If>
             <ui:Click DelayBefore="{x:Null}" DelayMS="{x:Null}" sap2010:Annotation.AnnotationText="Magnifying glass located upper right" ClickType="CLICK_SINGLE" DisplayName="Click 'Search'" sap2010:WorkflowViewState.IdRef="Click_6" KeyModifiers="None" MouseButton="BTN_LEFT" SendWindowMessages="False" SimulateClick="False">
               <ui:Click.CursorPosition>
@@ -443,11 +533,12 @@
         </ActivityAction>
       </ui:WindowScope.Body>
     </ui:WindowScope>
-    <sads:DebugSymbol.Symbol>d3lDOlxVc2Vyc1x1cXNkZWJiZVxEb2N1bWVudHNcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcSFJfRml4ZWRUZXJtQXBwb2ludG1lbnRFeHBpcnlcQXVyaW9uXEF1cmlvbl9DcmVhdGVOZXdDb250cmFjdC54YW1scAF7AZcBAQJYA78DDgIBAV44XlUCAQJhBb0DFgIBA2GUAmHZAgMBgwFnC7oDFgIBBGgNbBsDAYIBbQ2HAR0DAYEBiAENjAEbAgF9jQENlAEhAgF5lQENowEcAgF0pAENuAEdAgFzuQENhgMYAgEPhwMNqgMSAgEHqwMNuQMYAgEFigGgAYoBhwIDAYABiAGcAogBygICAX6PAaABjwHIAQIBfJIBOZIBTQIBepUB0AKVAeUCAgF2lQGsApUBrwICAXWhAaABoQHIAQIBeLoBD/IBHwIBXvMBD/oBIwIBWvsBD4ICGAIBVYMCD4MCngECAVKEAg+bAh8CAUecAg+cAqIBAgFEnQIPqwIaAgFCrAIPvgIUAgE8vwIPxgIjAgE4xwIPxwKnAgIBMcgCD8gC/wECASvJAg/JAs4BAgEpygIP2AIeAgEl2QIP5wIaAgEj6AIP6ALFAgIBIekCD+0CHwIBHu4CD/ICHwIBG/MCD/MCwQICARn0Ag/4Ah8CARb5Ag/9Ah8CARP+Ag/+AnMCARH/Ag+FAx8CARCHAxuHA3MCAQiJAxGoAxwCAQq3A6ABtwOKAgIBBroBqwG6AbUBAgFyugGYAboBnAECAXG9ARXqASACAWLvARXvAXgCAV/1AaIB9QHLAQIBXfgBO/gBUAIBW4ACOoACrQECAVj9ATv9AU4CAVaDAmaDApsBAgFThAJAhAJSAgFQigIVmAIaAgFInAJmnAKfAQIBRakCogGpAs0BAgFDrAIdrAJcAgE9rgITvAIeAgE/wQKiAcECkwICATvEAjvEAlUCATnHAogCxwKkAgIBNscCkAHHApMBAgE1xwKeAccCqQECATPHAnjHAn4CATLIAlnIAmICATDIAusByAL8AQIBLsgCbcgCeAIBLMkCZskCywECASrKAtQCygK5AwIBJ8oCsALKArMCAgEm1gKiAdYCkwICASjlAqIB5QKUAgIBJOgCmAHoAsICAgEi6wKiAesCrwICASDpAvkB6QL8AQIBH/ACogHwAq8CAgEd7gL5Ae4C/gECARzzApYB8wK+AgIBGvYCogH2Aq8CAgEY9AL5AfQC/AECARf7AqIB+wKvAgIBFfkC+QH5Av4BAgEU/gI8/gJGAgESigMTmAMeAgENmQMTpwMeAgELvwEZ1wEkAgFn3wEd5gEmAgFj7wFm7wF1AgFgigIjigJkAgFJjAIZlgIkAgFKugKRAboC+gECAUG6AoUCugKLAgIBQJYDpgGWA5oCAgEOpQOmAaUD+wECAQzAARvOASoCAWzPARvWASQCAWjkAUnkAU4CAWbhAUrhAVcCAWSNAhuUAiQCAUyVAhuVAlECAUvAAdICwAHlAgIBbsABrgLAAbECAgFtzAGZAcwBwgECAXDMAc0BzAHTAQIBb9QBR9QBSwIBa9EBSNEBVQIBaZICRpICaAIBT48CR48CXgIBTQ==</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d3lDOlxVc2Vyc1x1cXNkZWJiZVxEb2N1bWVudHNcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcSFJfRml4ZWRUZXJtQXBwb2ludG1lbnRFeHBpcnlcQXVyaW9uXEF1cmlvbl9DcmVhdGVOZXdDb250cmFjdC54YW1slAEBegGWAQECXAOZBA4CAQFiOGJVAgECZgWXBBYCAQNmlAJm2QIDAbgBbAuUBBYCAQRtDXQWAwG0AXUNeRsDAbMBeg2UAR0DAbIBlQENmQEbAwGuAZoBDaEBIQMBqgGiAQ3IARIDAYQByQEN3QEdAwGDAd4BDZYCHQIBbpcCDc8CHQIBWdACDdcCIQIBVdgCDd8CFgIBUOACDeACmwECAU3hAg34Ah0CAUL5Ag35Ap8BAgE/+gINiAMYAgE9iQMNkAMhAgE5kQMNkQOlAgIBMpIDDZID/QECASyTAw2TA8wBAgEqlAMNogMcAgEmowMNsQMYAgEksgMNsgPDAgIBIrMDDbcDHQIBH7gDDbwDHQIBHL0DDb0DvwICARq+Aw3CAx0CARfDAw3HAx0CARTIAw3IA3ECARLJAw3PAx0CARHQAw2EBBICAQeFBA2TBBgCAQVyOXI+AwG3AW86b0sDAbUBlwGgAZcBhwIDAbEBlQGcApUBygIDAa8BnAGgAZwByAEDAa0BnwE5nwFNAwGrAaIBG6IBWgMBhQGkARHGARwDAYcB3gG1Ad4BvwEDAYIB3gGiAd4BpgEDAYEB4QETjgIeAgFykwITkwJ2AgFvlwKpAZcCswECAW2XApYBlwKaAQIBbJoCE8cCHgIBXcwCE8wCdgIBWtICoAHSAskBAgFY1QI51QJOAgFW3QI43QKrAQIBU9oCOdoCSwIBUeACZOACmAECAU7hAj7hAk8CAUvnAhP1AhgCAUP5AmT5ApwBAgFAhgOgAYYDywECAT6LA6ABiwORAgIBPI4DOY4DUwIBOpEDhgKRA6ICAgE3kQOOAZEDkQECATaRA5wBkQOnAQIBNJEDdpEDfAIBM5IDV5IDYAIBMZID6QGSA/oBAgEvkgNrkgN2AgEtkwNkkwPJAQIBK5QD0gKUA7cDAgEolAOuApQDsQICASegA6ABoAORAgIBKa8DoAGvA5ICAgElsgOWAbIDwAICASO1A6ABtQOtAgIBIbMD9wGzA/oBAgEgugOgAboDrQICAR64A/cBuAP8AQIBHb0DlAG9A7wCAgEbwAOgAcADrQICARm+A/cBvgP6AQIBGMUDoAHFA60CAgEWwwP3AcMD/AECARXIAzrIA0QCARPQAxvQA3MCAQjSAxHxAxwCAQz0AxGCBBwCAQqRBKABkQSKAgIBBqUBE6wBHAMBpgGtARO0ARwDAaIBtQETxAErAwGKAcUBE8UBqwEDAYgB4wEX+wEiAgF3gwIbigIkAgFzkwJkkwJzAgFwnAIXtAIiAgFivAIbwwIkAgFezAJkzAJzAgFb5wIh5wJhAgFE6QIX8wIiAgFF0wMT4QMeAgEP4gMT8AMeAgENgASkAYAEmAICAQuqAT+qAUMDAakBpwFApwFRAwGnAbIBPrIBZQMBpQGvAT+vAVQDAaMBwQFWwQFoAwGgAcIBWsIBcAMBngG8AWO8AYEBAwGcAb0BYb0BfQMBmgG/AVq/AW8DAZgBugFWugFnAwGWAbkBWbkBZgMBlAG3AWq3AXUDAZIBuwFYuwFrAwGQAbgBXbgBcQMBjgG1AccBtQHhAQMBjQG+AVq+AWsDAYsBxQFMxQF+AwGJAeQBGfIBKAIBfPMBGfoBIgIBeIgCR4gCTAIBdoUCSIUCVQIBdJ0CGasCKAIBZ6wCGbMCIgIBY8ECR8ECTAIBYb4CSL4CVQIBX+oCGfECIgIBR/ICGfICTwIBRt8DpgHfA5oCAgEQ7gOmAe4D+wECAQ7kAdwC5AHxAgIBfuQBuALkAbsCAgF98AGsAfAB1AEDAYAB+AFF+AFJAgF79QFG9QFTAgF5nQLQAp0C4wICAWmdAqwCnQKvAgIBaKkClwGpAsABAgFrqQLLAakC0QECAWqxAkWxAkkCAWauAkauAlMCAWTvAkTvAmYCAUrsAkXsAlsCAUg=</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
-      <sap2010:ViewStateData Id="Activate_1" sap:VirtualizedContainerService.HintSize="516,51">
+      <sap2010:ViewStateData Id="Assign_6" sap:VirtualizedContainerService.HintSize="675,60" />
+      <sap2010:ViewStateData Id="Activate_1" sap:VirtualizedContainerService.HintSize="675,51">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">False</x:Boolean>
@@ -484,7 +575,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="CommentOut_1" sap:VirtualizedContainerService.HintSize="516,51">
+      <sap2010:ViewStateData Id="CommentOut_1" sap:VirtualizedContainerService.HintSize="675,51">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">False</x:Boolean>
@@ -492,11 +583,23 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TypeInto_2" sap:VirtualizedContainerService.HintSize="516,134" />
-      <sap2010:ViewStateData Id="GetVisibleText_1" sap:VirtualizedContainerService.HintSize="516,106" />
-      <sap2010:ViewStateData Id="ClickText_1" sap:VirtualizedContainerService.HintSize="516,134">
+      <sap2010:ViewStateData Id="TypeInto_2" sap:VirtualizedContainerService.HintSize="675,134" />
+      <sap2010:ViewStateData Id="GetVisibleText_1" sap:VirtualizedContainerService.HintSize="675,106" />
+      <sap2010:ViewStateData Id="Assign_7" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="Assign_8" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_1" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="Throw_1" sap:VirtualizedContainerService.HintSize="314,22" />
+      <sap2010:ViewStateData Id="Sequence_11" sap:VirtualizedContainerService.HintSize="336,473">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="675,620">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
             <x:Boolean x:Key="IsPinned">False</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
@@ -509,7 +612,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="CommentOut_2" sap:VirtualizedContainerService.HintSize="516,51">
+      <sap2010:ViewStateData Id="CommentOut_2" sap:VirtualizedContainerService.HintSize="675,51">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">False</x:Boolean>
@@ -517,7 +620,13 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="ClickText_2" sap:VirtualizedContainerService.HintSize="314,134" />
+      <sap2010:ViewStateData Id="ClickText_1" sap:VirtualizedContainerService.HintSize="314,134">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="Assign_4" sap:VirtualizedContainerService.HintSize="314,60" />
       <sap2010:ViewStateData Id="Sequence_8" sap:VirtualizedContainerService.HintSize="336,358">
         <sap:WorkflowViewStateService.ViewState>
@@ -537,10 +646,45 @@
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="418,585" />
       <sap2010:ViewStateData Id="IsTrue_1" sap:VirtualizedContainerService.HintSize="200,22" />
-      <sap2010:ViewStateData Id="RetryScope_1" sap:VirtualizedContainerService.HintSize="494,766" />
-      <sap2010:ViewStateData Id="GetVisibleText_2" sap:VirtualizedContainerService.HintSize="494,106" />
-      <sap2010:ViewStateData Id="Assign_1" sap:VirtualizedContainerService.HintSize="494,60" />
-      <sap2010:ViewStateData Id="WriteLine_1" sap:VirtualizedContainerService.HintSize="494,61" />
+      <sap2010:ViewStateData Id="RetryScope_1" sap:VirtualizedContainerService.HintSize="675,766">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="ClickText_4" sap:VirtualizedContainerService.HintSize="314,134" />
+      <sap2010:ViewStateData Id="Assign_9" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="Sequence_13" sap:VirtualizedContainerService.HintSize="336,358">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Assign_10" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="Catch`1_2" sap:VirtualizedContainerService.HintSize="404,21">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="TryCatch_2" sap:VirtualizedContainerService.HintSize="418,585" />
+      <sap2010:ViewStateData Id="IsTrue_2" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="RetryScope_2" sap:VirtualizedContainerService.HintSize="675,766">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="GetVisibleText_2" sap:VirtualizedContainerService.HintSize="675,106" />
+      <sap2010:ViewStateData Id="Assign_1" sap:VirtualizedContainerService.HintSize="675,60" />
+      <sap2010:ViewStateData Id="WriteLine_1" sap:VirtualizedContainerService.HintSize="675,61" />
       <sap2010:ViewStateData Id="Assign_2" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="Break_1" sap:VirtualizedContainerService.HintSize="242,22" />
       <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="264,246">
@@ -551,7 +695,7 @@
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="If_2" sap:VirtualizedContainerService.HintSize="464,393" />
-      <sap2010:ViewStateData Id="ForEachRow_1" sap:VirtualizedContainerService.HintSize="494,540">
+      <sap2010:ViewStateData Id="ForEachRow_1" sap:VirtualizedContainerService.HintSize="675,540">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -559,30 +703,21 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="WriteLine_2" sap:VirtualizedContainerService.HintSize="494,61" />
-      <sap2010:ViewStateData Id="Click_3" sap:VirtualizedContainerService.HintSize="494,106" />
-      <sap2010:ViewStateData Id="Click_2" sap:VirtualizedContainerService.HintSize="314,106" />
-      <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="494,51">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
-            <x:Boolean x:Key="IsPinned">False</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="GetVisibleText_3" sap:VirtualizedContainerService.HintSize="494,106" />
-      <sap2010:ViewStateData Id="GenerateDataTable_1" sap:VirtualizedContainerService.HintSize="494,59" />
-      <sap2010:ViewStateData Id="SortDataTable_1" sap:VirtualizedContainerService.HintSize="494,22" />
-      <sap2010:ViewStateData Id="WriteLine_3" sap:VirtualizedContainerService.HintSize="494,61" />
-      <sap2010:ViewStateData Id="ClickText_3" sap:VirtualizedContainerService.HintSize="494,134" />
-      <sap2010:ViewStateData Id="Click_4" sap:VirtualizedContainerService.HintSize="494,106" />
-      <sap2010:ViewStateData Id="SetToClipboard_1" sap:VirtualizedContainerService.HintSize="494,59" />
-      <sap2010:ViewStateData Id="SendHotkey_1" sap:VirtualizedContainerService.HintSize="494,154" />
-      <sap2010:ViewStateData Id="SendHotkey_2" sap:VirtualizedContainerService.HintSize="494,154" />
-      <sap2010:ViewStateData Id="SetToClipboard_2" sap:VirtualizedContainerService.HintSize="494,59" />
-      <sap2010:ViewStateData Id="SendHotkey_3" sap:VirtualizedContainerService.HintSize="494,154" />
-      <sap2010:ViewStateData Id="SendHotkey_4" sap:VirtualizedContainerService.HintSize="494,154" />
-      <sap2010:ViewStateData Id="Delay_1" sap:VirtualizedContainerService.HintSize="494,22" />
+      <sap2010:ViewStateData Id="WriteLine_2" sap:VirtualizedContainerService.HintSize="675,61" />
+      <sap2010:ViewStateData Id="Click_3" sap:VirtualizedContainerService.HintSize="675,106" />
+      <sap2010:ViewStateData Id="GetVisibleText_3" sap:VirtualizedContainerService.HintSize="675,106" />
+      <sap2010:ViewStateData Id="GenerateDataTable_1" sap:VirtualizedContainerService.HintSize="675,59" />
+      <sap2010:ViewStateData Id="SortDataTable_1" sap:VirtualizedContainerService.HintSize="675,22" />
+      <sap2010:ViewStateData Id="WriteLine_3" sap:VirtualizedContainerService.HintSize="675,61" />
+      <sap2010:ViewStateData Id="ClickText_3" sap:VirtualizedContainerService.HintSize="675,134" />
+      <sap2010:ViewStateData Id="Click_4" sap:VirtualizedContainerService.HintSize="675,106" />
+      <sap2010:ViewStateData Id="SetToClipboard_1" sap:VirtualizedContainerService.HintSize="675,59" />
+      <sap2010:ViewStateData Id="SendHotkey_1" sap:VirtualizedContainerService.HintSize="675,154" />
+      <sap2010:ViewStateData Id="SendHotkey_2" sap:VirtualizedContainerService.HintSize="675,154" />
+      <sap2010:ViewStateData Id="SetToClipboard_2" sap:VirtualizedContainerService.HintSize="675,59" />
+      <sap2010:ViewStateData Id="SendHotkey_3" sap:VirtualizedContainerService.HintSize="675,154" />
+      <sap2010:ViewStateData Id="SendHotkey_4" sap:VirtualizedContainerService.HintSize="675,154" />
+      <sap2010:ViewStateData Id="Delay_1" sap:VirtualizedContainerService.HintSize="675,22" />
       <sap2010:ViewStateData Id="MessageBox_1" sap:VirtualizedContainerService.HintSize="314,59" />
       <sap2010:ViewStateData Id="Sequence_9" sap:VirtualizedContainerService.HintSize="336,183">
         <sap:WorkflowViewStateService.ViewState>
@@ -591,11 +726,11 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="CommentOut_3" sap:VirtualizedContainerService.HintSize="494,261" />
-      <sap2010:ViewStateData Id="Sequence_3" sap:VirtualizedContainerService.HintSize="516,4220">
+      <sap2010:ViewStateData Id="CommentOut_3" sap:VirtualizedContainerService.HintSize="675,51">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
@@ -608,15 +743,23 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_3" sap:VirtualizedContainerService.HintSize="516,523" />
-      <sap2010:ViewStateData Id="Click_6" sap:VirtualizedContainerService.HintSize="516,133">
+      <sap2010:ViewStateData Id="Click_9" sap:VirtualizedContainerService.HintSize="314,106" />
+      <sap2010:ViewStateData Id="If_3" sap:VirtualizedContainerService.HintSize="675,523">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Click_6" sap:VirtualizedContainerService.HintSize="675,133">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsAnnotationDocked">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_4" sap:VirtualizedContainerService.HintSize="538,5847">
+      <sap2010:ViewStateData Id="Sequence_4" sap:VirtualizedContainerService.HintSize="697,6814">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -624,21 +767,21 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="WindowScope_1" sap:VirtualizedContainerService.HintSize="552,5993">
+      <sap2010:ViewStateData Id="WindowScope_1" sap:VirtualizedContainerService.HintSize="711,6960">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsPinned">False</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_5" sap:VirtualizedContainerService.HintSize="574,6117">
+      <sap2010:ViewStateData Id="Sequence_5" sap:VirtualizedContainerService.HintSize="733,7084">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Aurion_CreateNewContract_1" sap:VirtualizedContainerService.HintSize="614,6237" />
+      <sap2010:ViewStateData Id="Aurion_CreateNewContract_1" sap:VirtualizedContainerService.HintSize="773,7164" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>

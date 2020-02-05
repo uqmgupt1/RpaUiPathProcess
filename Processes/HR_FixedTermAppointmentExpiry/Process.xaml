@@ -15,8 +15,16 @@
     <x:Property Name="in_Config" Type="InArgument(scg:Dictionary(x:String, x:Object))" />
     <x:Property Name="in_uqCustomWorklistBrowser" Type="InArgument(ui:Browser)" />
     <x:Property Name="in_AurionWindow" Type="InArgument(ui:Window)" />
-    <x:Property Name="in_payEntityDT" Type="InArgument(sd:DataTable)" />
     <x:Property Name="io_reportDT" Type="InOutArgument(sd:DataTable)" />
+    <x:Property Name="io_employeeName" Type="InOutArgument(x:String)" />
+    <x:Property Name="io_employeeNumber" Type="InOutArgument(x:String)" />
+    <x:Property Name="io_proposedContractStartDate" Type="InOutArgument(x:String)" />
+    <x:Property Name="io_proposedContractEndDate" Type="InOutArgument(x:String)" />
+    <x:Property Name="io_systemErrorNotes" Type="InOutArgument(x:String)" />
+    <x:Property Name="io_DTasHTML" Type="InOutArgument(x:String)" />
+    <x:Property Name="io_payPointUsername" Type="InOutArgument(x:String)" />
+    <x:Property Name="io_payPointCode" Type="InOutArgument(x:String)" />
+    <x:Property Name="in_payPointDT" Type="InArgument(sd:DataTable)" />
   </x:Members>
   <mva:VisualBasic.Settings>
     <x:Null />
@@ -74,23 +82,23 @@
       <AssemblyReference>System.ValueTuple</AssemblyReference>
       <AssemblyReference>System.Data.DataSetExtensions</AssemblyReference>
       <AssemblyReference>System.Data.Entity</AssemblyReference>
+      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence sap2010:Annotation.AnnotationText="Description: In this file all other process specific files will be invoked. If an application exception occurs, the current transaction can be retried. If a BRE is thrown, the transaction will be skipped. Can be a flowchart or sequence. " DisplayName="ProcessTransaction" sap2010:WorkflowViewState.IdRef="Sequence_1">
     <Sequence.Variables>
-      <Variable x:TypeArguments="x:String" Name="EmployeeNumber" />
-      <Variable x:TypeArguments="x:String" Name="CurrentContractEndDate" />
       <Variable x:TypeArguments="ui:Browser" Name="UnitaskWorklistBrowser" />
-      <Variable x:TypeArguments="x:String" Name="employeeName" />
-      <Variable x:TypeArguments="x:String" Name="proposedContractStartDate" />
-      <Variable x:TypeArguments="x:String" Name="proposedContractEndDate" />
       <Variable x:TypeArguments="x:Boolean" Name="systemErrorFlag" />
-      <Variable x:TypeArguments="x:String" Name="systemErrorNotes" />
-      <Variable x:TypeArguments="x:String" Name="payEntityUsername" />
-      <Variable x:TypeArguments="sd:DataTable" Name="reportDT" />
-      <Variable x:TypeArguments="x:String" Name="payEntityCode" />
-      <Variable x:TypeArguments="x:String" Name="DTasHTML" />
+      <Variable x:TypeArguments="sd:DataTable" Default="[New System.Data.DataTable]" Name="reportDT" />
     </Sequence.Variables>
+    <Assign sap2010:WorkflowViewState.IdRef="Assign_4">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:Boolean">[systemErrorFlag]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:Boolean">False</InArgument>
+      </Assign.Value>
+    </Assign>
     <ui:CommentOut DisplayName="Comment Out" sap2010:WorkflowViewState.IdRef="CommentOut_1">
       <ui:CommentOut.Body>
         <Sequence DisplayName="Ignored Activities" sap2010:WorkflowViewState.IdRef="Sequence_2">
@@ -126,6 +134,19 @@
       </Assign.Value>
     </Assign>
     <ui:AddDataRow DataRow="{x:Null}" sap2010:Annotation.AnnotationText="Case ID added to ReportDT" ArrayRow="[{in_TransactionItem.Reference}]" DataTable="[io_ReportDT]" DisplayName="Add Data Row" sap2010:WorkflowViewState.IdRef="AddDataRow_1" />
+    <Sequence DisplayName="Write reportDT" sap2010:WorkflowViewState.IdRef="Sequence_3">
+      <ui:WriteCsvFile Encoding="{x:Null}" AddHeaders="True" DataTable="[io_ReportDT]" Delimitator="Comma" DisplayName="Write CSV" FilePath="Data\Case IDs Report.csv" sap2010:WorkflowViewState.IdRef="WriteCsvFile_1" />
+      <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke DataTableToHtmlText workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_9" UnSafe="False" WorkflowFileName="Utilities\DataTableToHtmlText.xaml">
+        <ui:InvokeWorkflowFile.Arguments>
+          <InArgument x:TypeArguments="sd:DataTable" x:Key="in_InputDatatable">[io_ReportDT]</InArgument>
+          <OutArgument x:TypeArguments="x:String" x:Key="out_HtmlText">[io_DTasHTML]</OutArgument>
+          <InArgument x:TypeArguments="x:String" x:Key="in_HeaderTag_th" />
+          <InArgument x:TypeArguments="x:String" x:Key="in_TdTag" />
+          <InArgument x:TypeArguments="x:String" x:Key="in_TableTag_td" />
+        </ui:InvokeWorkflowFile.Arguments>
+      </ui:InvokeWorkflowFile>
+      <ui:WriteTextFile DisplayName="Write Text File" FileName="Data\Report.html" sap2010:WorkflowViewState.IdRef="WriteTextFile_1" Text="[io_DTasHTML]" />
+    </Sequence>
     <Assign sap2010:WorkflowViewState.IdRef="Assign_2">
       <Assign.To>
         <OutArgument x:TypeArguments="sd:DataTable">[reportDT]</OutArgument>
@@ -137,43 +158,61 @@
     <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke Unitask_ExtractEmployeeNameAndProposedContractDates workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_4" UnSafe="False" WorkflowFileName="Unitask\Unitask_ExtractEmployeeNameAndProposedContractDates.xaml">
       <ui:InvokeWorkflowFile.Arguments>
         <InArgument x:TypeArguments="ui:QueueItem" x:Key="in_TransactionItem">[in_TransactionItem]</InArgument>
-        <OutArgument x:TypeArguments="x:String" x:Key="out_employeeName">[employeeName]</OutArgument>
-        <OutArgument x:TypeArguments="x:String" x:Key="out_employeeNumber">[EmployeeNumber]</OutArgument>
-        <OutArgument x:TypeArguments="x:String" x:Key="out_proposedContractStartDate">[proposedContractStartDate]</OutArgument>
-        <OutArgument x:TypeArguments="x:String" x:Key="out_proposedContractEndDate">[proposedContractEndDate]</OutArgument>
-        <OutArgument x:TypeArguments="x:Boolean" x:Key="out_systemErrorFlag">[systemErrorFlag]</OutArgument>
-        <OutArgument x:TypeArguments="x:String" x:Key="out_systemErrorNotes">[systemErrorNotes]</OutArgument>
+        <OutArgument x:TypeArguments="x:String" x:Key="out_employeeName">[io_employeeName]</OutArgument>
+        <OutArgument x:TypeArguments="x:String" x:Key="out_employeeNumber">[io_EmployeeNumber]</OutArgument>
+        <OutArgument x:TypeArguments="x:String" x:Key="out_proposedContractStartDate">[io_proposedContractStartDate]</OutArgument>
+        <OutArgument x:TypeArguments="x:String" x:Key="out_proposedContractEndDate">[io_proposedContractEndDate]</OutArgument>
+        <OutArgument x:TypeArguments="x:String" x:Key="out_systemErrorNotes">[io_systemErrorNotes]</OutArgument>
         <InArgument x:TypeArguments="scg:Dictionary(x:String, x:Object)" x:Key="in_Config">[in_Config]</InArgument>
       </ui:InvokeWorkflowFile.Arguments>
     </ui:InvokeWorkflowFile>
-    <WriteLine DisplayName="Write Line" sap2010:WorkflowViewState.IdRef="WriteLine_2" Text="[&quot;Case ID is &quot; + in_TransactionItem.Reference + vbNewLine +&quot;Employee name is &quot; + employeeName + vbNewLine + &quot;Employee number is &quot; + employeeNumber + vbNewLine + &quot;Proposed start date &quot; + proposedContractStartDate + vbNewLine + &quot;Proposed end date &quot; + proposedContractEndDate + vbNewLine + &quot;System Error Flag is &quot; + systemErrorFlag.ToString + vbNewLine + &quot;--------------------&quot;]" />
+    <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke UpdateReport workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_10" UnSafe="False" WorkflowFileName="Report\UpdateReport.xaml">
+      <ui:InvokeWorkflowFile.Arguments>
+        <InArgument x:TypeArguments="scg:Dictionary(x:String, x:Object)" x:Key="in_Config">[in_Config]</InArgument>
+        <InArgument x:TypeArguments="ui:QueueItem" x:Key="in_TransactionItem">[in_TransactionItem]</InArgument>
+        <InOutArgument x:TypeArguments="sd:DataTable" x:Key="io_ReportDT">[io_reportDT]</InOutArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="in_employeeName">[io_employeeName]</InArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="in_employeeNumber">[io_EmployeeNumber]</InArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="in_proposedContractStartDate">[io_proposedContractStartDate]</InArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="in_proposedContractEndDate">[io_proposedContractEndDate]</InArgument>
+        <InArgument x:TypeArguments="x:Boolean" x:Key="in_systemErrorFlag">[systemErrorFlag]</InArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="in_systemErrorNotes">[io_systemErrorNotes]</InArgument>
+        <InOutArgument x:TypeArguments="x:String" x:Key="io_DTasHTML">[io_DTasHTML]</InOutArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="in_payPointCode">[io_payPointCode]</InArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="in_payPointUsername">[io_payPointUsername]</InArgument>
+      </ui:InvokeWorkflowFile.Arguments>
+    </ui:InvokeWorkflowFile>
     <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke Aurion_CreateNewContract workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_8" UnSafe="False" WorkflowFileName="Aurion\Aurion_CreateNewContract.xaml">
       <ui:InvokeWorkflowFile.Arguments>
         <InArgument x:TypeArguments="ui:QueueItem" x:Key="in_TransactionItem">[in_TransactionItem]</InArgument>
         <InArgument x:TypeArguments="ui:Window" x:Key="in_AurionWindow">[in_AurionWindow]</InArgument>
-        <InArgument x:TypeArguments="x:String" x:Key="in_employeeNumber">[EmployeeNumber]</InArgument>
-        <InArgument x:TypeArguments="sd:DataTable" x:Key="in_payEntityDT">[in_payEntityDT]</InArgument>
-        <OutArgument x:TypeArguments="x:String" x:Key="out_payEntityUsername">[payEntityUsername]</OutArgument>
-        <InArgument x:TypeArguments="x:String" x:Key="in_proposedContractStartDate">[proposedContractStartDate]</InArgument>
-        <InArgument x:TypeArguments="x:String" x:Key="in_proposedContractEndDate">[proposedContractEndDate]</InArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="in_employeeNumber">[io_EmployeeNumber]</InArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="in_proposedContractStartDate">[io_proposedContractStartDate]</InArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="in_proposedContractEndDate">[io_proposedContractEndDate]</InArgument>
         <InArgument x:TypeArguments="scg:Dictionary(x:String, x:Object)" x:Key="in_Config">[in_Config]</InArgument>
-        <OutArgument x:TypeArguments="x:String" x:Key="out_payEntityCode">[payEntityCode]</OutArgument>
+        <InOutArgument x:TypeArguments="sd:DataTable" x:Key="io_reportDT">[io_reportDT]</InOutArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="in_employeeName">[io_employeeName]</InArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="in_systemErrorNotes">[io_systemErrorNotes]</InArgument>
+        <OutArgument x:TypeArguments="x:String" x:Key="out_payPointUsername">[io_payPointUsername]</OutArgument>
+        <OutArgument x:TypeArguments="x:String" x:Key="out_payPointCode">[io_payPointCode]</OutArgument>
+        <InArgument x:TypeArguments="sd:DataTable" x:Key="in_payPointDT">[in_payPointDT]</InArgument>
       </ui:InvokeWorkflowFile.Arguments>
     </ui:InvokeWorkflowFile>
-    <WriteLine DisplayName="Write Line" sap2010:WorkflowViewState.IdRef="WriteLine_3" Text="[&quot;payEntityUsername = &quot; + payEntityUsername]" />
+    <WriteLine DisplayName="Write Line" sap2010:WorkflowViewState.IdRef="WriteLine_3" Text="[&quot;payPointUsername = &quot; + io_payPointUsername]" />
     <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke UpdateReport workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_6" UnSafe="False" WorkflowFileName="Report\UpdateReport.xaml">
       <ui:InvokeWorkflowFile.Arguments>
         <InArgument x:TypeArguments="scg:Dictionary(x:String, x:Object)" x:Key="in_Config">[in_Config]</InArgument>
         <InArgument x:TypeArguments="ui:QueueItem" x:Key="in_TransactionItem">[in_TransactionItem]</InArgument>
         <InOutArgument x:TypeArguments="sd:DataTable" x:Key="io_ReportDT">[io_reportDT]</InOutArgument>
-        <InArgument x:TypeArguments="x:String" x:Key="in_employeeName">[employeeName]</InArgument>
-        <InArgument x:TypeArguments="x:String" x:Key="in_employeeNumber">[EmployeeNumber]</InArgument>
-        <InArgument x:TypeArguments="x:String" x:Key="in_proposedContractStartDate">[proposedContractStartDate]</InArgument>
-        <InArgument x:TypeArguments="x:String" x:Key="in_proposedContractEndDate">[proposedContractEndDate]</InArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="in_employeeName">[io_employeeName]</InArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="in_employeeNumber">[io_EmployeeNumber]</InArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="in_proposedContractStartDate">[io_proposedContractStartDate]</InArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="in_proposedContractEndDate">[io_proposedContractEndDate]</InArgument>
         <InArgument x:TypeArguments="x:Boolean" x:Key="in_systemErrorFlag">[systemErrorFlag]</InArgument>
-        <InArgument x:TypeArguments="x:String" x:Key="in_systemErrorNotes">[systemErrorNotes]</InArgument>
-        <InArgument x:TypeArguments="x:String" x:Key="in_payEntityUsername">[payEntityUsername]</InArgument>
-        <InArgument x:TypeArguments="x:String" x:Key="in_payEntityCode">[payEntityCode]</InArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="in_systemErrorNotes">[io_systemErrorNotes]</InArgument>
+        <InOutArgument x:TypeArguments="x:String" x:Key="io_DTasHTML">[io_DTasHTML]</InOutArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="in_payPointCode">[io_payPointCode]</InArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="in_payPointUsername">[io_payPointUsername]</InArgument>
       </ui:InvokeWorkflowFile.Arguments>
     </ui:InvokeWorkflowFile>
     <Assign sap2010:WorkflowViewState.IdRef="Assign_3">
@@ -184,22 +223,18 @@
         <InArgument x:TypeArguments="sd:DataTable">[io_reportDT]</InArgument>
       </Assign.Value>
     </Assign>
-    <ui:WriteCsvFile Encoding="{x:Null}" AddHeaders="True" DataTable="[ReportDT]" Delimitator="Comma" DisplayName="Write CSV" FilePath="Data\Case IDs Report.csv" sap2010:WorkflowViewState.IdRef="WriteCsvFile_1" />
-    <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke DataTableToHtmlText workflow" UnSafe="False" WorkflowFileName="Utilities\DataTableToHtmlText.xaml">
+    <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke Unitask_AssignTask workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_12" UnSafe="False" WorkflowFileName="Unitask\Unitask_AssignTask.xaml">
       <ui:InvokeWorkflowFile.Arguments>
-        <InArgument x:TypeArguments="sd:DataTable" x:Key="in_InputDatatable">[ReportDT]</InArgument>
-        <OutArgument x:TypeArguments="x:String" x:Key="out_HtmlText">[DTasHTML]</OutArgument>
-        <InArgument x:TypeArguments="x:String" x:Key="in_HeaderTag_th" />
-        <InArgument x:TypeArguments="x:String" x:Key="in_TdTag" />
-        <InArgument x:TypeArguments="x:String" x:Key="in_TableTag_td" />
+        <InArgument x:TypeArguments="scg:Dictionary(x:String, x:Object)" x:Key="in_Config">[in_Config]</InArgument>
+        <InArgument x:TypeArguments="ui:QueueItem" x:Key="in_TransactionItem">[in_TransactionItem]</InArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="in_payPointUsername">[io_payPointUsername]</InArgument>
       </ui:InvokeWorkflowFile.Arguments>
-      <sap2010:WorkflowViewState.IdRef>InvokeWorkflowFile_9</sap2010:WorkflowViewState.IdRef>
     </ui:InvokeWorkflowFile>
-    <ui:WriteTextFile DisplayName="Write Text File" FileName="Data\Report.html" Text="[DTasHTML]" sap2010:WorkflowViewState.IdRef="WriteTextFile_1" />
-    <sads:DebugSymbol.Symbol>d2FDOlxVc2Vyc1x1cXNkZWJiZVxEb2N1bWVudHNcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcSFJfRml4ZWRUZXJtQXBwb2ludG1lbnRFeHBpcnlcUHJvY2Vzcy54YW1sPk8DyAEOAgEBXgV3FQIBZngFfw4CAWGAAQWAAfcBAgFdgQEFiAEOAgFYiQEFlAEdAgFGlQEFlQGeBAIBRJYBBaIBHQIBMKMBBaMBlwECAS2kAQWyAR0CARWzAQW6AQ4CARC7AQW7AdYBAgEMvAEFxQEdAgEGxgEFxgGXAQIBAn00fUECAWR6NXo/AgFigAGbAYABqgECAV+AAW6AAZABAgFehgE0hgFBAgFbgwE1gwE/AgFZjwFVjwFuAgFWkAFOkAFfAgFUjAFKjAFYAgFSjgFXjgFyAgFQkQFOkQFgAgFOkgFckgFnAgFMiwFPiwFjAgFKiQHgAYkBogICAUmNAUyNAVwCAUeVAVyVAZsEAgFFoAFLoAFaAgFCmwFLmwFbAgFAnQFVnQFwAgE+ngFTngFsAgE8nAFPnAFiAgE6nwFcnwFnAgE4mgFKmgFaAgE2mAFPmAFjAgE0mQFJmQFaAgEylgHFAZYB6wECATGjAVyjAZQBAgEuqwFVqwFwAgErrwFNrwFgAgEprAFTrAFsAgEnrgFMrgFeAgElqQFIqQFWAgEjqAFLqAFYAgEhpgFcpgFnAgEfqgFKqgFaAgEdpwFPpwFjAgEbsAFJsAFYAgEZpAG5AaQB0wECARitAUytAV0CARa4ATS4AUECARO1ATW1AT8CARG7AUa7AVICAQ67AYgBuwGiAQIBDb8BRr8BUAIBCr4BTr4BWAIBCLwBiQG8Aa0BAgEHxgFWxgFiAgEExgE+xgFQAgED</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d2FDOlxVc2Vyc1x1cXNkZWJiZVxEb2N1bWVudHNcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcSFJfRml4ZWRUZXJtQXBwb2ludG1lbnRFeHBpcnlcUHJvY2Vzcy54YW1sV1gD6gEOAgEBXDhcVQIBAl4FZQ4DAY8BZgV/FQMBjgGAAQWHAQ4DAYkBiAEFiAH3AQMBhQGJAQWVARACAXaWAQWdAQ4CAXGeAQWoAR0CAWGpAQW4AR0CAUe5AQXIAR0CAS3JAQXJAZgBAgEqygEF2QEdAgEQ2gEF4QEOAgEL4gEF6AEdAgEDYzFjNgMBkgFgMmBDAwGQAYUBNIUBQQMBjAGCATWCAT8DAYoBiAGbAYgBqgEDAYcBiAFuiAGQAQMBhgGKAQeKAdsBAwGBAYsBB5MBHwIBe5QBB5QBnAECAXebATSbAUECAXSYATWYAT8CAXKkAVWkAXECAW+hAUqhAVsCAW2jAVejAXUCAWulAU6lAWMCAWmmAVymAWcCAWegAU+gAWMCAWWeAeABngGiAgIBZKIBTKIBXwIBYrUBSLUBWQIBX7YBTLYBYQIBXbABVbABcwIBW7EBU7EBbwIBWbMBTLMBYQIBV64BSK4BWQIBVa0BS60BWAIBU7QBR7QBVAIBUasBXKsBZwIBT68BSq8BXQIBTawBT6wBYwIBS6kBugGpAdQBAgFKsgFMsgFdAgFIxQFKxQFbAgFFxgFKxgFZAgFDvgFVvgFzAgFBvwFTvwFvAgE/wwFMwwFhAgE9wgFIwgFZAgE7wQFLwQFYAgE5xAFOxAFjAgE3wAFcwAFnAgE1vQFKvQFdAgEzuwFPuwFjAgExvAFJvAFaAgEvuQHFAbkB6wECAS7JAVzJAZUBAgEr1gFI1gFZAgEo1wFM1wFhAgEm0QFV0QFzAgEk0gFT0gFvAgEi1AFM1AFhAgEgzwFIzwFZAgEezgFLzgFYAgEc1QFH1QFUAgEazAFczAFnAgEY0AFK0AFdAgEWzQFPzQFjAgEUygG5AcoB0wECARPTAUzTAV0CARHfATTfAUECAQ7cATXcAT8CAQzmAUzmAWECAQnkAVzkAWcCAQflAU/lAWMCAQXiAcAB4gHhAQIBBIoBSIoBVwMBgwGKAY0BigGnAQMBggGOAUiOAVUCAX+NAVCNAV0CAX2LAcIBiwHmAQIBfJQBigGUAZkBAgF5lAFAlAFSAgF4</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
+      <sap2010:ViewStateData Id="Assign_4" sap:VirtualizedContainerService.HintSize="314,60" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_1" sap:VirtualizedContainerService.HintSize="314,87" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_2" sap:VirtualizedContainerService.HintSize="314,87" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_3" sap:VirtualizedContainerService.HintSize="314,87" />
@@ -227,19 +262,6 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Assign_2" sap:VirtualizedContainerService.HintSize="314,60" />
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_4" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="WriteLine_2" sap:VirtualizedContainerService.HintSize="314,61">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_8" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="WriteLine_3" sap:VirtualizedContainerService.HintSize="314,61" />
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_6" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="Assign_3" sap:VirtualizedContainerService.HintSize="314,60" />
       <sap2010:ViewStateData Id="WriteCsvFile_1" sap:VirtualizedContainerService.HintSize="314,87">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
@@ -263,7 +285,23 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="336,1615">
+      <sap2010:ViewStateData Id="Sequence_3" sap:VirtualizedContainerService.HintSize="314,51">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Assign_2" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_4" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_10" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_8" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="WriteLine_3" sap:VirtualizedContainerService.HintSize="314,61" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_6" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="Assign_3" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_12" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="336,1578">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -271,7 +309,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="ProcessTransaction_1" sap:VirtualizedContainerService.HintSize="376,1695" />
+      <sap2010:ViewStateData Id="ProcessTransaction_1" sap:VirtualizedContainerService.HintSize="376,1658" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
