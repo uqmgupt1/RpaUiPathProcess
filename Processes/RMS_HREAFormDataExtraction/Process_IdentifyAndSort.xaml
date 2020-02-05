@@ -71,7 +71,8 @@
       <AssemblyReference>Microsoft.VisualStudio.Services.Common</AssemblyReference>
       <AssemblyReference>System.ValueTuple</AssemblyReference>
       <AssemblyReference>System.ComponentModel.Composition</AssemblyReference>
-      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
+      <AssemblyReference>System.Collections.Immutable</AssemblyReference>
+      <AssemblyReference>System.Runtime.Serialization</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence DisplayName="Process_IdentifyAndSort" sap2010:WorkflowViewState.IdRef="Sequence_9">
@@ -79,119 +80,101 @@
       <Variable x:TypeArguments="sxl:XElement" Name="elementsFound" />
       <Variable x:TypeArguments="sd:DataTable" Name="lookupTable" />
     </Sequence.Variables>
+    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;Start IdentifyAndSort.xaml, working in '&quot; + in_SourcePath + &quot;' as '&quot; + String.Join(String.Empty, in_SourcePath.Where(function(c) XmlConvert.IsNCNameChar(c))) + &quot;'&quot;]" />
     <If Condition="[in_Config(&quot;Environment&quot;) = &quot;DEV&quot;]" DisplayName="If dev mode" sap2010:WorkflowViewState.IdRef="If_4">
       <If.Then>
         <ui:WriteTextFile DisplayName="Write Text File" FileName="hrea_1_file_paths.txt" sap2010:WorkflowViewState.IdRef="WriteTextFile_1" Text="[String.Join(vbNewLine, Directory.GetFiles(in_SourcePath, &quot;*&quot;, SearchOption.AllDirectories))]" />
       </If.Then>
     </If>
-    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[in_SourcePath + &quot; =&gt; &quot; + String.Join(String.Empty, in_SourcePath.Where(function(c) XmlConvert.IsNCNameChar(c)))]" />
-    <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke GetFilesAndFolders workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_1" UnSafe="False" WorkflowFileName="IdentifyAndSort\GetFilesAndFolders.xaml">
-      <ui:InvokeWorkflowFile.Arguments>
-        <InArgument x:TypeArguments="x:String" x:Key="in_CurrentPath">[in_SourcePath]</InArgument>
-        <InOutArgument x:TypeArguments="sxl:XElement" x:Key="io_FilesElement">[elementsFound]</InOutArgument>
-      </ui:InvokeWorkflowFile.Arguments>
-    </ui:InvokeWorkflowFile>
+    <If Condition="[Not File.Exists(&quot;hrea_2_documents.xml&quot;)]" sap2010:WorkflowViewState.IdRef="If_9">
+      <If.Then>
+        <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke GetFilesAndFolders workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_1" UnSafe="False" WorkflowFileName="IdentifyAndSort\GetFilesAndFolders.xaml">
+          <ui:InvokeWorkflowFile.Arguments>
+            <InArgument x:TypeArguments="x:String" x:Key="in_CurrentPath">[in_SourcePath]</InArgument>
+            <InOutArgument x:TypeArguments="sxl:XElement" x:Key="io_FilesElement">[elementsFound]</InOutArgument>
+          </ui:InvokeWorkflowFile.Arguments>
+        </ui:InvokeWorkflowFile>
+      </If.Then>
+      <If.Else>
+        <Assign sap2010:WorkflowViewState.IdRef="Assign_1">
+          <Assign.To>
+            <OutArgument x:TypeArguments="sxl:XElement">[elementsFound]</OutArgument>
+          </Assign.To>
+          <Assign.Value>
+            <InArgument x:TypeArguments="sxl:XElement">[XDocument.Load("hrea_2_documents.xml").Root]</InArgument>
+          </Assign.Value>
+        </Assign>
+      </If.Else>
+    </If>
+    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_4" Level="Info" Message="[&quot;Sorted &quot; &amp; elementsFound.Descendants.Where(function(e) Not e.HasElements).Count &amp; &quot; elements&quot;]" />
     <If Condition="[in_Config(&quot;Environment&quot;) = &quot;DEV&quot;]" DisplayName="If dev mode" sap2010:WorkflowViewState.IdRef="If_5">
       <If.Then>
         <ui:WriteTextFile DisplayName="Write Text File" FileName="hrea_2_documents.xml" sap2010:WorkflowViewState.IdRef="WriteTextFile_2" Text="[elementsFound.ToString]" />
       </If.Then>
     </If>
-    <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke ReadLookupTable workflow" UnSafe="False" WorkflowFileName="ReadLookupTable.xaml">
+    <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke ReadLookupTable workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_8" UnSafe="False" WorkflowFileName="ReadLookupTable.xaml">
       <ui:InvokeWorkflowFile.Arguments>
         <InArgument x:TypeArguments="x:String" x:Key="in_LookupWorkbook">[in_Config("LinkingWorkbook")]</InArgument>
         <OutArgument x:TypeArguments="sd:DataTable" x:Key="out_ReadDataTable">[lookupTable]</OutArgument>
       </ui:InvokeWorkflowFile.Arguments>
-      <sap2010:WorkflowViewState.IdRef>InvokeWorkflowFile_8</sap2010:WorkflowViewState.IdRef>
     </ui:InvokeWorkflowFile>
-    <ui:ForEach x:TypeArguments="sxl:XElement" CurrentIndex="{x:Null}" DisplayName="For Each" sap2010:WorkflowViewState.IdRef="ForEach`1_3" Values="[elementsFound.Descendants]">
-      <ui:ForEach.Body>
-        <ActivityAction x:TypeArguments="sxl:XElement">
-          <ActivityAction.Argument>
-            <DelegateInArgument x:TypeArguments="sxl:XElement" Name="item" />
-          </ActivityAction.Argument>
-          <If Condition="[Not item.HasElements]" sap2010:WorkflowViewState.IdRef="If_1">
-            <If.Then>
-              <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke IdentifyAttributes workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_2" UnSafe="False" WorkflowFileName="IdentifyAndSort\IdentifyAttributes.xaml">
-                <ui:InvokeWorkflowFile.Arguments>
-                  <InOutArgument x:TypeArguments="sxl:XElement" x:Key="io_CurrentElement">[item]</InOutArgument>
-                  <InArgument x:TypeArguments="sd:DataTable" x:Key="in_LookupDataTable">[lookupTable]</InArgument>
-                </ui:InvokeWorkflowFile.Arguments>
-              </ui:InvokeWorkflowFile>
-            </If.Then>
-          </If>
-        </ActivityAction>
-      </ui:ForEach.Body>
-    </ui:ForEach>
+    <If Condition="[Not File.Exists(&quot;hrea_3_identified.xml&quot;)]" sap2010:WorkflowViewState.IdRef="If_10">
+      <If.Then>
+        <ui:ForEach x:TypeArguments="sxl:XElement" CurrentIndex="{x:Null}" DisplayName="For Each" sap2010:WorkflowViewState.IdRef="ForEach`1_3" Values="[elementsFound.DescendantsAndSelf]">
+          <ui:ForEach.Body>
+            <ActivityAction x:TypeArguments="sxl:XElement">
+              <ActivityAction.Argument>
+                <DelegateInArgument x:TypeArguments="sxl:XElement" Name="item" />
+              </ActivityAction.Argument>
+              <If Condition="[Not item.HasElements]" sap2010:WorkflowViewState.IdRef="If_1">
+                <If.Then>
+                  <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke IdentifyAttributes workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_2" UnSafe="False" WorkflowFileName="IdentifyAndSort\IdentifyAttributes.xaml">
+                    <ui:InvokeWorkflowFile.Arguments>
+                      <InOutArgument x:TypeArguments="sxl:XElement" x:Key="io_CurrentElement">[item]</InOutArgument>
+                      <InArgument x:TypeArguments="sd:DataTable" x:Key="in_LookupDataTable">[lookupTable]</InArgument>
+                    </ui:InvokeWorkflowFile.Arguments>
+                  </ui:InvokeWorkflowFile>
+                </If.Then>
+              </If>
+            </ActivityAction>
+          </ui:ForEach.Body>
+        </ui:ForEach>
+      </If.Then>
+      <If.Else>
+        <Assign sap2010:WorkflowViewState.IdRef="Assign_2">
+          <Assign.To>
+            <OutArgument x:TypeArguments="sxl:XElement">[elementsFound]</OutArgument>
+          </Assign.To>
+          <Assign.Value>
+            <InArgument x:TypeArguments="sxl:XElement">[XDocument.Load("hrea_3_identified.xml").Root]</InArgument>
+          </Assign.Value>
+        </Assign>
+      </If.Else>
+    </If>
     <If Condition="[in_Config(&quot;Environment&quot;) = &quot;DEV&quot;]" DisplayName="If dev mode" sap2010:WorkflowViewState.IdRef="If_6">
       <If.Then>
         <ui:WriteTextFile DisplayName="Write Text File" FileName="hrea_3_identified.xml" sap2010:WorkflowViewState.IdRef="WriteTextFile_3" Text="[elementsFound.ToString]" />
       </If.Then>
     </If>
-    <ui:ForEach x:TypeArguments="sxl:XElement" CurrentIndex="{x:Null}" DisplayName="For Each" sap2010:WorkflowViewState.IdRef="ForEach`1_4" Values="[elementsFound.Descendants]">
-      <ui:ForEach.Body>
-        <ActivityAction x:TypeArguments="sxl:XElement">
-          <ActivityAction.Argument>
-            <DelegateInArgument x:TypeArguments="sxl:XElement" Name="item" />
-          </ActivityAction.Argument>
-          <Sequence DisplayName="Body" sap2010:WorkflowViewState.IdRef="Sequence_5">
-            <Sequence.Variables>
-              <Variable x:TypeArguments="scg:List(x:String)" Name="rmNumbers" />
-              <Variable x:TypeArguments="scg:List(x:String)" Name="appIDs" />
-              <Variable x:TypeArguments="x:Int32" Default="-1" Name="i" />
-            </Sequence.Variables>
-            <If Condition="[Not item.HasElements]" sap2010:WorkflowViewState.IdRef="If_2">
-              <If.Then>
-                <ui:Continue sap2010:WorkflowViewState.IdRef="Continue_1" />
-              </If.Then>
-            </If>
-            <Assign sap2010:WorkflowViewState.IdRef="Assign_1">
-              <Assign.To>
-                <OutArgument x:TypeArguments="scg:List(x:String)">[rmNumbers]</OutArgument>
-              </Assign.To>
-              <Assign.Value>
-                <InArgument x:TypeArguments="scg:List(x:String)" xml:space="preserve">[item.
-DescendantsAndSelf.
-Attributes("RMNo").
-Select(Function(a) a.Value).
-Where(Function(s) s &lt;&gt; "").
-Distinct.
-ToList]</InArgument>
-              </Assign.Value>
-            </Assign>
-            <Assign sap2010:WorkflowViewState.IdRef="Assign_2">
-              <Assign.To>
-                <OutArgument x:TypeArguments="scg:List(x:String)">[appIDs]</OutArgument>
-              </Assign.To>
-              <Assign.Value>
-                <InArgument x:TypeArguments="scg:List(x:String)" xml:space="preserve">[item.
-DescendantsAndSelf.
-Attributes("AppID").
-Select(Function(a) a.Value).
-Where(Function(s) s &lt;&gt; "").
-Distinct.
-ToList]</InArgument>
-              </Assign.Value>
-            </Assign>
-            <If Condition="[rmNumbers.Count &lt;&gt; 1 Or appIDs.Count &lt;&gt; 1]" sap2010:WorkflowViewState.IdRef="If_3">
-              <If.Then>
-                <Sequence sap2010:WorkflowViewState.IdRef="Sequence_4">
-                  <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Trace" Message="[rmNumbers.Count &amp; &quot; refs at curent position&quot;]" />
-                  <ui:Continue sap2010:WorkflowViewState.IdRef="Continue_2" />
-                </Sequence>
-              </If.Then>
-            </If>
-            <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_3" Level="Info" Message="[&quot;Setting &quot; &amp; rmNumbers.First &amp; &quot; &amp; &quot; &amp; appIDs.First]" />
-            <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke GroupItems workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_3" UnSafe="False" WorkflowFileName="IdentifyAndSort\GroupItems.xaml">
-              <ui:InvokeWorkflowFile.Arguments>
-                <InOutArgument x:TypeArguments="sxl:XElement" x:Key="io_RootElement">[item]</InOutArgument>
-                <InArgument x:TypeArguments="x:String" x:Key="in_RMNumber">[rmNumbers.First]</InArgument>
-                <InArgument x:TypeArguments="x:String" x:Key="in_ApplicationID">[appIDs.First]</InArgument>
-              </ui:InvokeWorkflowFile.Arguments>
-            </ui:InvokeWorkflowFile>
-          </Sequence>
-        </ActivityAction>
-      </ui:ForEach.Body>
-    </ui:ForEach>
+    <If Condition="[Not File.Exists(&quot;hrea_4_grouped_by_rm.xml&quot;)]" sap2010:WorkflowViewState.IdRef="If_11">
+      <If.Then>
+        <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke GroupItems workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_9" UnSafe="False" WorkflowFileName="IdentifyAndSort\GroupItems.xaml">
+          <ui:InvokeWorkflowFile.Arguments>
+            <InOutArgument x:TypeArguments="sxl:XElement" x:Key="io_RootElement">[elementsFound]</InOutArgument>
+          </ui:InvokeWorkflowFile.Arguments>
+        </ui:InvokeWorkflowFile>
+      </If.Then>
+      <If.Else>
+        <Assign sap2010:WorkflowViewState.IdRef="Assign_3">
+          <Assign.To>
+            <OutArgument x:TypeArguments="sxl:XElement">[elementsFound]</OutArgument>
+          </Assign.To>
+          <Assign.Value>
+            <InArgument x:TypeArguments="sxl:XElement">[XDocument.Load("hrea_4_grouped_by_rm.xml").Root]</InArgument>
+          </Assign.Value>
+        </Assign>
+      </If.Else>
+    </If>
     <If Condition="[in_Config(&quot;Environment&quot;) = &quot;DEV&quot;]" DisplayName="If dev mode" sap2010:WorkflowViewState.IdRef="If_7">
       <If.Then>
         <ui:WriteTextFile DisplayName="Write Text File" FileName="hrea_4_grouped_by_rm.xml" sap2010:WorkflowViewState.IdRef="WriteTextFile_4" Text="[elementsFound.ToString]" />
@@ -210,20 +193,23 @@ ToList]</InArgument>
         <InArgument x:TypeArguments="x:String" x:Key="in_RootDirectory">[in_SourcePath]</InArgument>
       </ui:InvokeWorkflowFile.Arguments>
     </ui:InvokeWorkflowFile>
-    <sads:DebugSymbol.Symbol>d1xDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUk1TX0hSRUFGb3JtRGF0YUV4dHJhY3Rpb25cUHJvY2Vzc19JZGVudGlmeUFuZFNvcnQueGFtbEhNA9YBDgIBAVIFVgoCAVpXBVf1AQIBWFgFXR0CAVJeBWIKAgFMYwVpHQIBRmoFfBICATx9BYEBCgIBNoIBBcIBEgIBFsMBBccBCgIBEMgBBc0BHQIBCs4BBdQBHQIBAlITUksCAVtUCVT9AQIBXVdyV/IBAgFZWkdaVgIBVltPW14CAVRYvwFY6AECAVNeE15LAgFNYAlgrQECAU9mT2ZcAgFKZUplaAIBSGOFAWObAQIBR2qUAWqxAQIBRXALeRACAT19E31LAgE3fwl/rgECATmCAZQBggGxAQIBNYgBC78BFgIBF8MBE8MBSwIBEcUBCcUBsQECARPKAVDKAV8CAQ7IAboByAHeAQIBDcsBUcsBYAIBC9IBSdIBWAIBCNEBRdEBVgIBBs4BuQHOAdwBAgEF0AFR0AFgAgEDVJEBVPoBAgFfVEJUWQIBXmCQAWCqAQIBUWBCYFgCAVBwGXAxAgE+cg93JwIBP3+RAX+rAQIBO39Cf1kCATqMATuMAT8CARiOAQ2SARICATKTAQ2gARYCAS6hAQ2uARYCASqvAQ22ARICASG3AQ23AdgBAgEfuAENvgElAgEZxQGUAcUBrgECARXFAULFAVwCARR1WXVmAgFDcskBcvIBAgFCdFt0YQIBQI4BG44BMwIBM5ABEZABTQIBNJUBQ5UBTgIBL6MBQ6MBSwIBK68BG68BVAIBIrEBEbQBHAIBJbcBercB1QECASC7AUy7AV0CAR66AVa6AVwCARy8AVG8AV8CARu4Ab8BuAHgAQIBGrIBE7IBwgECASezAROzAU8CASayAYEBsgG/AQIBKA==</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d1xDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUk1TX0hSRUFGb3JtRGF0YUV4dHJhY3Rpb25cUHJvY2Vzc19JZGVudGlmeUFuZFNvcnQueGFtbEROA8UBDgIBAVMFU7sCAgFWVAVYCgIBUFkFbAoCAURtBW3zAQIBQm4FcgoCATxzBXgdAgE2eQWZAQoCASaaAQWeAQoCASCfAQWxAQoCARayAQW2AQoCARC3AQW8AR0CAQq9AQXDAR0CAQJTclO4AgIBV1QTVEsCAVFWCVb9AQIBU1kTWUgCAUVbCWAhAgFKYwlqEgIBRm1ybfABAgFDbhNuSwIBPXAJcK0BAgE/dk92XAIBOnVKdWgCAThzvAFz0gECATd5E3lJAgEnewmNARYCASyQAQmXARICASiaAROaAUsCASGcAQmcAa4BAgEjnwETnwFMAgEXoQEJpQEhAgEcqAEJrwESAgEYsgETsgFLAgERtAEJtAGxAQIBE7kBULkBXwIBDrcBugG3Ad4BAgENugFRugFgAgELwQFJwQFYAgEIwAFFwAFWAgEGvQG5Ab0B3AECAQW/AVG/AWACAQNWkQFW+gECAVVWQlZZAgFUXUtdWgIBTl5TXmICAUxbwwFb7AECAUtoOGhlAgFJZTllSAIBR3CQAXCqAQIBQXBCcFgCAUB7mAF7vAECATWBAQ+KARQCAS2VATiVAWYCASuSATmSAUgCASmcAZEBnAGrAQIBJZwBQpwBWQIBJKMBUqMBYQIBHqEBuwGhAdwBAgEdrQE4rQFpAgEbqgE5qgFIAgEZtAGUAbQBrgECARW0AUK0AVwCARSBAR2BATUCAS6DAROIASsCAS+GAV2GAWoCATODAc0BgwH2AQIBMoUBX4UBZQIBMA==</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
+      <sap2010:ViewStateData Id="LogMessage_1" sap:VirtualizedContainerService.HintSize="747,91" />
       <sap2010:ViewStateData Id="WriteTextFile_1" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="If_4" sap:VirtualizedContainerService.HintSize="502,235" />
-      <sap2010:ViewStateData Id="LogMessage_1" sap:VirtualizedContainerService.HintSize="502,91" />
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_1" sap:VirtualizedContainerService.HintSize="502,87" />
+      <sap2010:ViewStateData Id="If_4" sap:VirtualizedContainerService.HintSize="747,235" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_1" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="Assign_1" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="If_9" sap:VirtualizedContainerService.HintSize="747,235" />
+      <sap2010:ViewStateData Id="LogMessage_4" sap:VirtualizedContainerService.HintSize="747,91" />
       <sap2010:ViewStateData Id="WriteTextFile_2" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="If_5" sap:VirtualizedContainerService.HintSize="502,235" />
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_8" sap:VirtualizedContainerService.HintSize="502,87" />
+      <sap2010:ViewStateData Id="If_5" sap:VirtualizedContainerService.HintSize="747,235" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_8" sap:VirtualizedContainerService.HintSize="747,87" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_2" sap:VirtualizedContainerService.HintSize="314,87" />
       <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="464,235" />
-      <sap2010:ViewStateData Id="ForEach`1_3" sap:VirtualizedContainerService.HintSize="502,369">
+      <sap2010:ViewStateData Id="ForEach`1_3" sap:VirtualizedContainerService.HintSize="480,369">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -231,52 +217,25 @@ ToList]</InArgument>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Assign_2" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="If_10" sap:VirtualizedContainerService.HintSize="747,517" />
       <sap2010:ViewStateData Id="WriteTextFile_3" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="If_6" sap:VirtualizedContainerService.HintSize="502,235" />
-      <sap2010:ViewStateData Id="Continue_1" sap:VirtualizedContainerService.HintSize="200,22" />
-      <sap2010:ViewStateData Id="If_2" sap:VirtualizedContainerService.HintSize="464,208" />
-      <sap2010:ViewStateData Id="Assign_1" sap:VirtualizedContainerService.HintSize="464,64" />
-      <sap2010:ViewStateData Id="Assign_2" sap:VirtualizedContainerService.HintSize="464,64" />
-      <sap2010:ViewStateData Id="LogMessage_2" sap:VirtualizedContainerService.HintSize="314,91" />
-      <sap2010:ViewStateData Id="Continue_2" sap:VirtualizedContainerService.HintSize="314,22" />
-      <sap2010:ViewStateData Id="Sequence_4" sap:VirtualizedContainerService.HintSize="336,277">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_3" sap:VirtualizedContainerService.HintSize="464,425" />
-      <sap2010:ViewStateData Id="LogMessage_3" sap:VirtualizedContainerService.HintSize="464,91" />
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_3" sap:VirtualizedContainerService.HintSize="464,87" />
-      <sap2010:ViewStateData Id="Sequence_5" sap:VirtualizedContainerService.HintSize="486,1263">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-            <x:Boolean x:Key="IsPinned">False</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="ForEach`1_4" sap:VirtualizedContainerService.HintSize="502,1397">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-            <x:Boolean x:Key="IsPinned">False</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="If_6" sap:VirtualizedContainerService.HintSize="747,235" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_9" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="Assign_3" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="If_11" sap:VirtualizedContainerService.HintSize="747,235" />
       <sap2010:ViewStateData Id="WriteTextFile_4" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="If_7" sap:VirtualizedContainerService.HintSize="502,235" />
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_4" sap:VirtualizedContainerService.HintSize="502,87" />
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_5" sap:VirtualizedContainerService.HintSize="502,87" />
-      <sap2010:ViewStateData Id="Sequence_9" sap:VirtualizedContainerService.HintSize="524,3669">
+      <sap2010:ViewStateData Id="If_7" sap:VirtualizedContainerService.HintSize="747,235" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_4" sap:VirtualizedContainerService.HintSize="747,87" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_5" sap:VirtualizedContainerService.HintSize="747,87" />
+      <sap2010:ViewStateData Id="Sequence_9" sap:VirtualizedContainerService.HintSize="769,2934">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Process_IdentifyAndSort_1" sap:VirtualizedContainerService.HintSize="564,3749" />
+      <sap2010:ViewStateData Id="Process_IdentifyAndSort_1" sap:VirtualizedContainerService.HintSize="809,3014" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>

@@ -11,6 +11,7 @@
  xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=mscorlib"
  xmlns:sd="clr-namespace:System.Data;assembly=System.Data"
  xmlns:si="clr-namespace:System.IO;assembly=mscorlib"
+ xmlns:sxl="clr-namespace:System.Xml.Linq;assembly=System.Xml.Linq"
  xmlns:this="clr-namespace:"
  xmlns:ui="http://schemas.uipath.com/workflow/activities"
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
@@ -50,6 +51,8 @@
       <x:String>UiPath.Core.Activities</x:String>
       <x:String>ICSharpCode.SharpZipLib.Core</x:String>
       <x:String>ICSharpCode.SharpZipLib.Zip</x:String>
+      <x:String>System.Text</x:String>
+      <x:String>Microsoft.VisualBasic.CompilerServices</x:String>
     </sco:Collection>
   </TextExpression.NamespacesForImplementation>
   <TextExpression.ReferencesForImplementation>
@@ -78,6 +81,9 @@
       <AssemblyReference>System.ValueTuple</AssemblyReference>
       <AssemblyReference>UiPath.Studio.Plugin.Workflow</AssemblyReference>
       <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
+      <AssemblyReference>System.Collections.Immutable</AssemblyReference>
+      <AssemblyReference>System.Runtime.Serialization</AssemblyReference>
+      <AssemblyReference>Microsoft.VisualStudio.Services.Common</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence sap2010:Annotation.AnnotationText="This workflow outputs a settings Dictionary with key/value pairs to be used in the project. Settings are read from local config file then fetched from Orchestrator assets. &#xA;Assets will overwrite the config file settings" DisplayName="Get All Settings" sap2010:WorkflowViewState.IdRef="Sequence_2">
@@ -89,116 +95,118 @@
         <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)">[new Dictionary(of String, String)]</InArgument>
       </Assign.Value>
     </Assign>
-    <ui:CommentOut DisplayName="Comment Out">
-      <ui:CommentOut.Body>
-        <Sequence DisplayName="Ignored Activities">
-          <If Condition="[in_ConfigSheets Is Nothing]" DisplayName="If get config sheets if not set" sap2010:WorkflowViewState.IdRef="If_9">
-            <If.Then>
-              <TryCatch DisplayName="Try Catch" sap2010:WorkflowViewState.IdRef="TryCatch_8">
-                <TryCatch.Try>
-                  <Sequence DisplayName="Getting Worksheets" sap2010:WorkflowViewState.IdRef="Sequence_14">
-                    <Sequence.Variables>
-                      <Variable x:TypeArguments="isz:ZipFile" Name="archive" />
-                      <Variable x:TypeArguments="s:String[]" Name="sheets" />
-                      <Variable x:TypeArguments="isz:ZipEntry" Name="entry" />
-                      <Variable x:TypeArguments="si:Stream" Name="stream" />
-                      <Variable x:TypeArguments="s:Byte[]" Name="bytes" />
-                    </Sequence.Variables>
-                    <Assign DisplayName="Assign excel workbook as archive" sap2010:WorkflowViewState.IdRef="Assign_28">
-                      <Assign.To>
-                        <OutArgument x:TypeArguments="isz:ZipFile">[archive]</OutArgument>
-                      </Assign.To>
-                      <Assign.Value>
-                        <InArgument x:TypeArguments="isz:ZipFile">[New ZipFile(in_ConfigFile)]</InArgument>
-                      </Assign.Value>
-                    </Assign>
-                    <Assign DisplayName="Assign zip entry" sap2010:WorkflowViewState.IdRef="Assign_32">
-                      <Assign.To>
-                        <OutArgument x:TypeArguments="isz:ZipEntry">[entry]</OutArgument>
-                      </Assign.To>
-                      <Assign.Value>
-                        <InArgument x:TypeArguments="isz:ZipEntry">[archive.GetEntry("xl/workbook.xml")]</InArgument>
-                      </Assign.Value>
-                    </Assign>
-                    <Assign sap2010:WorkflowViewState.IdRef="Assign_31">
-                      <Assign.To>
-                        <OutArgument x:TypeArguments="si:Stream">[stream]</OutArgument>
-                      </Assign.To>
-                      <Assign.Value>
-                        <InArgument x:TypeArguments="si:Stream">[archive.GetInputStream(entry)]</InArgument>
-                      </Assign.Value>
-                    </Assign>
-                    <Assign sap2010:WorkflowViewState.IdRef="Assign_34">
-                      <Assign.To>
-                        <OutArgument x:TypeArguments="s:Byte[]">[bytes]</OutArgument>
-                      </Assign.To>
-                      <Assign.Value>
-                        <InArgument x:TypeArguments="s:Byte[]">[stream.]</InArgument>
-                      </Assign.Value>
-                    </Assign>
-                    <Assign DisplayName="Assign unpack manifest, parse and read sheets" sap2010:WorkflowViewState.IdRef="Assign_33">
-                      <Assign.To>
-                        <OutArgument x:TypeArguments="s:String[]">[sheets]</OutArgument>
-                      </Assign.To>
-                      <Assign.Value>
-                        <InArgument x:TypeArguments="s:String[]">[archive.GetInputStream(archive.GetEntry("xl/workbook.xml")).ReadToEnd]</InArgument>
-                      </Assign.Value>
-                    </Assign>
-                    <ui:CommentOut DisplayName="Comment Out" sap2010:WorkflowViewState.IdRef="CommentOut_1">
-                      <ui:CommentOut.Body>
-                        <Sequence DisplayName="Ignored Activities" sap2010:WorkflowViewState.IdRef="Sequence_15">
-                          <Assign DisplayName="Assign unpack manifest, parse and read sheets" sap2010:WorkflowViewState.IdRef="Assign_29">
-                            <Assign.To>
-                              <OutArgument x:TypeArguments="s:String[]">[sheets]</OutArgument>
-                            </Assign.To>
-                            <Assign.Value>
-                              <InArgument x:TypeArguments="s:String[]" xml:space="preserve">[XDocument.Parse(Encoding.UTF8.GetString(
-  archive.GetInputStream(archive.GetEntry("xl/workbook.xml")).ReadToEnd
-)).Descendants.
-Where(Function(e) e.Name.LocalName = "sheet").
-Select(Function(e) e.Attribute("name").Value).ToArray]</InArgument>
-                            </Assign.Value>
-                          </Assign>
-                        </Sequence>
-                      </ui:CommentOut.Body>
-                    </ui:CommentOut>
-                    <Assign DisplayName="Assign updated sheets" sap2010:WorkflowViewState.IdRef="Assign_30">
-                      <Assign.To>
-                        <OutArgument x:TypeArguments="scg:List(x:String)">[in_ConfigSheets]</OutArgument>
-                      </Assign.To>
-                      <Assign.Value>
-                        <InArgument x:TypeArguments="scg:List(x:String)">[sheets.Where(function(s) s &lt;&gt; "Assets").ToList]</InArgument>
-                      </Assign.Value>
-                    </Assign>
-                  </Sequence>
-                </TryCatch.Try>
-                <TryCatch.Catches>
-                  <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch`1_8">
-                    <ActivityAction x:TypeArguments="s:Exception">
+    <If Condition="[in_ConfigSheets Is Nothing]" DisplayName="If get config sheets if not set" sap2010:WorkflowViewState.IdRef="If_9">
+      <If.Then>
+        <TryCatch DisplayName="Try Catch" sap2010:WorkflowViewState.IdRef="TryCatch_8">
+          <TryCatch.Try>
+            <Sequence DisplayName="Getting Worksheets" sap2010:WorkflowViewState.IdRef="Sequence_14">
+              <Sequence.Variables>
+                <Variable x:TypeArguments="isz:ZipFile" Name="archive" />
+                <Variable x:TypeArguments="s:String[]" Name="sheets" />
+                <Variable x:TypeArguments="isz:ZipEntry" Name="entry" />
+                <Variable x:TypeArguments="si:Stream" Name="stream" />
+                <Variable x:TypeArguments="s:Byte[]" Name="bytes" />
+                <Variable x:TypeArguments="x:Int32" Name="status" />
+                <Variable x:TypeArguments="x:String" Name="utf8" />
+                <Variable x:TypeArguments="sxl:XDocument" Name="document" />
+                <Variable x:TypeArguments="scg:IEnumerable(sxl:XElement)" Name="elements" />
+              </Sequence.Variables>
+              <Assign DisplayName="Assign excel workbook as archive" sap2010:WorkflowViewState.IdRef="Assign_28">
+                <Assign.To>
+                  <OutArgument x:TypeArguments="isz:ZipFile">[archive]</OutArgument>
+                </Assign.To>
+                <Assign.Value>
+                  <InArgument x:TypeArguments="isz:ZipFile">[New ZipFile(in_ConfigFile)]</InArgument>
+                </Assign.Value>
+              </Assign>
+              <Assign DisplayName="Assign zip entry" sap2010:WorkflowViewState.IdRef="Assign_32">
+                <Assign.To>
+                  <OutArgument x:TypeArguments="isz:ZipEntry">[entry]</OutArgument>
+                </Assign.To>
+                <Assign.Value>
+                  <InArgument x:TypeArguments="isz:ZipEntry">[archive.GetEntry("xl/workbook.xml")]</InArgument>
+                </Assign.Value>
+              </Assign>
+              <Assign DisplayName="Assign file stream" sap2010:WorkflowViewState.IdRef="Assign_31">
+                <Assign.To>
+                  <OutArgument x:TypeArguments="si:Stream">[stream]</OutArgument>
+                </Assign.To>
+                <Assign.Value>
+                  <InArgument x:TypeArguments="si:Stream">[archive.GetInputStream(entry)]</InArgument>
+                </Assign.Value>
+              </Assign>
+              <Assign DisplayName="Assign read status" sap2010:WorkflowViewState.IdRef="Assign_34">
+                <Assign.To>
+                  <OutArgument x:TypeArguments="x:Int32">[status]</OutArgument>
+                </Assign.To>
+                <Assign.Value>
+                  <InArgument x:TypeArguments="x:Int32">[stream.Read(bytes, 0, CInt(stream.Length))]</InArgument>
+                </Assign.Value>
+              </Assign>
+              <Assign DisplayName="Assign file string" sap2010:WorkflowViewState.IdRef="Assign_33">
+                <Assign.To>
+                  <OutArgument x:TypeArguments="x:String">[utf8]</OutArgument>
+                </Assign.To>
+                <Assign.Value>
+                  <InArgument x:TypeArguments="x:String">[Encoding.UTF8.GetString(bytes)]</InArgument>
+                </Assign.Value>
+              </Assign>
+              <Assign DisplayName="Assign document" sap2010:WorkflowViewState.IdRef="Assign_35">
+                <Assign.To>
+                  <OutArgument x:TypeArguments="sxl:XDocument">[document]</OutArgument>
+                </Assign.To>
+                <Assign.Value>
+                  <InArgument x:TypeArguments="sxl:XDocument">[XDocument.Parse(utf8)]</InArgument>
+                </Assign.Value>
+              </Assign>
+              <Assign DisplayName="Assign worksheet elements" sap2010:WorkflowViewState.IdRef="Assign_36">
+                <Assign.To>
+                  <OutArgument x:TypeArguments="scg:IEnumerable(sxl:XElement)">[elements]</OutArgument>
+                </Assign.To>
+                <Assign.Value>
+                  <InArgument x:TypeArguments="scg:IEnumerable(sxl:XElement)">[document.Descendants.Where(Function(e) e.Name.LocalName = "sheet")]</InArgument>
+                </Assign.Value>
+              </Assign>
+              <Assign DisplayName="Assign worksheet names" sap2010:WorkflowViewState.IdRef="Assign_37">
+                <Assign.To>
+                  <OutArgument x:TypeArguments="s:String[]">[sheets]</OutArgument>
+                </Assign.To>
+                <Assign.Value>
+                  <InArgument x:TypeArguments="s:String[]">[elements.Select(Function(e) e.Attribute("name").Value).ToArray]</InArgument>
+                </Assign.Value>
+              </Assign>
+              <Assign DisplayName="Assign non assets sheets" sap2010:WorkflowViewState.IdRef="Assign_30">
+                <Assign.To>
+                  <OutArgument x:TypeArguments="scg:List(x:String)">[in_ConfigSheets]</OutArgument>
+                </Assign.To>
+                <Assign.Value>
+                  <InArgument x:TypeArguments="scg:List(x:String)">[sheets.Where(function(s) s &lt;&gt; "Assets").ToList]</InArgument>
+                </Assign.Value>
+              </Assign>
+            </Sequence>
+          </TryCatch.Try>
+          <TryCatch.Catches>
+            <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch`1_8">
+              <ActivityAction x:TypeArguments="s:Exception">
+                <ActivityAction.Argument>
+                  <DelegateInArgument x:TypeArguments="s:Exception" Name="exception" />
+                </ActivityAction.Argument>
+                <ui:ExcelApplicationScope Password="{x:Null}" AutoSave="False" CreateNewFile="False" DisplayName="Excel Worksheets Scope" sap2010:WorkflowViewState.IdRef="ExcelApplicationScope_3" MacroSetting="DisableAll" ReadOnly="True" Visible="False" WorkbookPath="[in_configFile]">
+                  <ui:ExcelApplicationScope.Body>
+                    <ActivityAction x:TypeArguments="ui:WorkbookApplication">
                       <ActivityAction.Argument>
-                        <DelegateInArgument x:TypeArguments="s:Exception" Name="exception" />
+                        <DelegateInArgument x:TypeArguments="ui:WorkbookApplication" Name="ExcelWorkbookScope" />
                       </ActivityAction.Argument>
-                      <ui:ExcelApplicationScope Password="{x:Null}" AutoSave="False" CreateNewFile="False" DisplayName="Excel Worksheets Scope" sap2010:WorkflowViewState.IdRef="ExcelApplicationScope_3" MacroSetting="DisableAll" ReadOnly="True" Visible="False" WorkbookPath="[in_configFile]">
-                        <ui:ExcelApplicationScope.Body>
-                          <ActivityAction x:TypeArguments="ui:WorkbookApplication">
-                            <ActivityAction.Argument>
-                              <DelegateInArgument x:TypeArguments="ui:WorkbookApplication" Name="ExcelWorkbookScope" />
-                            </ActivityAction.Argument>
-                            <ui:ExcelGetWorkbookSheets DisplayName="Get Workbook Sheets" sap2010:WorkflowViewState.IdRef="ExcelGetWorkbookSheets_1" Sheets="[in_ConfigSheets]" />
-                          </ActivityAction>
-                        </ui:ExcelApplicationScope.Body>
-                      </ui:ExcelApplicationScope>
+                      <ui:ExcelGetWorkbookSheets DisplayName="Get Workbook Sheets" sap2010:WorkflowViewState.IdRef="ExcelGetWorkbookSheets_1" Sheets="[in_ConfigSheets]" />
                     </ActivityAction>
-                  </Catch>
-                </TryCatch.Catches>
-              </TryCatch>
-            </If.Then>
-          </If>
-          <sap2010:WorkflowViewState.IdRef>Sequence_16</sap2010:WorkflowViewState.IdRef>
-        </Sequence>
-      </ui:CommentOut.Body>
-      <sap2010:WorkflowViewState.IdRef>CommentOut_2</sap2010:WorkflowViewState.IdRef>
-    </ui:CommentOut>
+                  </ui:ExcelApplicationScope.Body>
+                </ui:ExcelApplicationScope>
+              </ActivityAction>
+            </Catch>
+          </TryCatch.Catches>
+        </TryCatch>
+      </If.Then>
+    </If>
     <ui:ForEach x:TypeArguments="x:String" CurrentIndex="{x:Null}" DisplayName="For each sheet &lt;string&gt;" sap2010:WorkflowViewState.IdRef="ForEach`1_3" Values="[in_configSheets]">
       <ui:ForEach.Body>
         <ActivityAction x:TypeArguments="x:String">
@@ -373,27 +381,21 @@ Select(Function(e) e.Attribute("name").Value).ToArray]</InArgument>
     </Sequence>
     <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Trace" Message="[&quot;Got configuration values for:&quot; + vbNewLine + String.Join(vbNewLine, out_Config.Select(function(kvp) kvp.Key))]" />
     <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;Finished loading &quot; &amp; out_Config.Count &amp; &quot; settings...&quot;]" />
-    <sads:DebugSymbol.Symbol>d15DOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUk1TX0hSRUFGb3JtRGF0YUV4dHJhY3Rpb25cRnJhbWV3b3JrXEluaXRBbGxTZXR0aW5ncy54YW1sSgFqAXsBAlMD+QIOAgEBVAVbDgIBXFwFyQEVAgFbygEFhAISAgE/hQIF9QIQAgEH9gIF9gLyAQIBBfcCBfcCzAECAQJZSlltAgFfVktWVwIBXcoBpQHKAbgBAgFZ0AELgQIWAgFAiQIHoAISAgExoQIH9AIXAgEI9gJz9gLvAQIBBvcCcvcCyQECAQPUAQ3rARgCAUnsAQ2AAh0CAUGLAguLAtMBAgE5kwIPnAIqAgEyoQI4oQJCAgEvpwIN8QIYAgEJ1gER1gHhAQIBUt4BFecBMAIBSuwBPuwBTQIBR/IBE/0BGAIBQosCRosCUAIBPYsCqQGLArEBAgE8iwK/AYsC0AECATqTAosCkwKcAgIBN5kCFZkCzAECATOrAkurAmUCAQqtAg+xAhQCASyyAg/EAhoCASLFAg/TAhoCARjUAg/wAhQCAQvWAUzWAVsCAVfWAbYB1gG/AQIBVdYBzQHWAd4BAgFT3gGRAt4BogICAVDkARvkAdoBAgFL8gEh8gFiAgFD9AEX+wEgAgFEmQJVmQJfAgE1mQLBAZkCyQECATStAh2tAloCAS2vAhOvAk8CAS60AhO4AiYCASjAAhfAAt0BAgEjxwITxwL3AQIBHs8CF88C4gECARnUAh3UAjkCAQzWAhPdAhwCARXgAhPuAhgCAQ3kAVvkAWoCAU7kAc4B5AHXAQIBTPkBQvkBWQIBRvYBQ/YBagIBRbYCRrYCUgIBKrQCRLQCZwIBKcACUcACawIBJsACzQHAAtoBAgEkxwJdxwKAAQIBIccC3gHHAvQBAgEfzwJRzwJrAgEczwLSAc8C3wECARrbAj7bAlMCARfYAj/YAmECARbgAiHgAkUCAQ7iAhfpAiACARLsAhfsAr8CAgEQ5wJC5wJZAgEU5AJD5AJlAgET7AJG7AKSAgIBEQ==</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d15DOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUk1TX0hSRUFGb3JtRGF0YUV4dHJhY3Rpb25cRnJhbWV3b3JrXEluaXRBbGxTZXR0aW5ncy54YW1sbAFqAXsBAlkDgQMOAgEBWgVhDgMBjQFiBdEBCgIBW9IBBYwCEgIBP40CBf0CEAIBB/4CBf4C8gECAQX/AgX/AswBAgECX0pfbQMBkAFcS1xXAwGOAWITYjECAVxkCc8BFAIBXtIBpQHSAbgBAgFZ2AELiQIWAgFAkQIHqAISAgExqQIH/AIXAgEI/gJz/gLvAQIBBv8Ccv8CyQECAQNmDboBGAIBZcIBEcsBLAIBX9wBDfMBGAIBSfQBDYgCHQIBQZMCC5MC0wECATmbAg+kAioCATKpAjipAkICAS+vAg35AhgCAQlyD3kYAwGJAXoPgQEYAwGEAYIBD4kBGAMBgAGKAQ+RARgCAXmSAQ+ZARgCAXWaAQ+hARgCAXGiAQ+pARgCAW6qAQ+xARgCAWqyAQ+5ARgCAWbCAYwCwgGdAgIBY8gBF8gBrAECAWDeARHeAeEBAgFS5gEV7wEwAgFK9AE+9AFNAgFH+gEThQIYAgFCkwJGkwJQAgE9kwKpAZMCsQECATyTAr8BkwLQAQIBOpsCiwKbApwCAgE3oQIVoQLMAQIBM7MCS7MCZQIBCrUCD7kCFAIBLLoCD8wCGgIBIs0CD9sCGgIBGNwCD/gCFAIBC3c9d1kDAYwBdD50RwMBigF/Pn9jAwGHAXw/fEYDAYUBhwE7hwFaAwGDAYQBPIQBRAMBgQGPATmPAWUCAXyMATqMAUICAXqXATqXAVoCAXiUATuUAUECAXafAT+fAVYCAXScAUCcAUoCAXKnAU+nAZMBAgFwpAFQpAFaAgFvrwE8rwF8AgFtrAE9rAFFAgFrtwFEtwF6AgFptAFFtAFWAgFnyAGWAcgBqQECAWHeAUzeAVsCAVfeAbYB3gG/AQIBVd4BzQHeAd4BAgFT5gGRAuYBogICAVDsARvsAdoBAgFL+gEh+gFiAgFD/AEXgwIgAgFEoQJVoQJfAgE1oQLBAaECyQECATS1Ah21AloCAS23AhO3Ak8CAS68AhPAAiYCASjIAhfIAt0BAgEjzwITzwL3AQIBHtcCF9cC4gECARncAh3cAjkCAQzeAhPlAhwCARXoAhP2AhgCAQ3sAVvsAWoCAU7sAc4B7AHXAQIBTIECQoECWQIBRv4BQ/4BagIBRb4CRr4CUgIBKrwCRLwCZwIBKcgCUcgCawIBJsgCzQHIAtoBAgEkzwJdzwKAAQIBIc8C3gHPAvQBAgEf1wJR1wJrAgEc1wLSAdcC3wECARrjAj7jAlMCARfgAj/gAmECARboAiHoAkUCAQ7qAhfxAiACARL0Ahf0Ar8CAgEQ7wJC7wJZAgEU7AJD7AJlAgET9AJG9AKSAgIBEQ==</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
       <sap2010:ViewStateData Id="Assign_1" sap:VirtualizedContainerService.HintSize="808,60" />
-      <sap2010:ViewStateData Id="Assign_28" sap:VirtualizedContainerService.HintSize="416,60" />
-      <sap2010:ViewStateData Id="Assign_32" sap:VirtualizedContainerService.HintSize="416,60" />
-      <sap2010:ViewStateData Id="Assign_31" sap:VirtualizedContainerService.HintSize="416,60" />
-      <sap2010:ViewStateData Id="Assign_34" sap:VirtualizedContainerService.HintSize="416,60" />
-      <sap2010:ViewStateData Id="Assign_33" sap:VirtualizedContainerService.HintSize="416,60" />
-      <sap2010:ViewStateData Id="Assign_29" sap:VirtualizedContainerService.HintSize="242,64" />
-      <sap2010:ViewStateData Id="Sequence_15" sap:VirtualizedContainerService.HintSize="264,188">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="CommentOut_1" sap:VirtualizedContainerService.HintSize="416,266" />
-      <sap2010:ViewStateData Id="Assign_30" sap:VirtualizedContainerService.HintSize="416,60" />
-      <sap2010:ViewStateData Id="Sequence_14" sap:VirtualizedContainerService.HintSize="438,990">
+      <sap2010:ViewStateData Id="Assign_28" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="Assign_32" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="Assign_31" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="Assign_34" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="Assign_33" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="Assign_35" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="Assign_36" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="Assign_37" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="Assign_30" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="Sequence_14" sap:VirtualizedContainerService.HintSize="264,984">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -402,7 +404,7 @@ Select(Function(e) e.Attribute("name").Value).ToArray]</InArgument>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="ExcelGetWorkbookSheets_1" sap:VirtualizedContainerService.HintSize="200,22" />
       <sap2010:ViewStateData Id="ExcelApplicationScope_3" sap:VirtualizedContainerService.HintSize="414,131" />
-      <sap2010:ViewStateData Id="Catch`1_8" sap:VirtualizedContainerService.HintSize="442,21">
+      <sap2010:ViewStateData Id="Catch`1_8" sap:VirtualizedContainerService.HintSize="404,21">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">False</x:Boolean>
@@ -410,23 +412,8 @@ Select(Function(e) e.Attribute("name").Value).ToArray]</InArgument>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_8" sap:VirtualizedContainerService.HintSize="456,1217" />
-      <sap2010:ViewStateData Id="If_9" sap:VirtualizedContainerService.HintSize="581,1364" />
-      <sap2010:ViewStateData Id="Sequence_16" sap:VirtualizedContainerService.HintSize="603,1488">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="CommentOut_2" sap:VirtualizedContainerService.HintSize="808,51">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
-            <x:Boolean x:Key="IsPinned">False</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="TryCatch_8" sap:VirtualizedContainerService.HintSize="418,1211" />
+      <sap2010:ViewStateData Id="If_9" sap:VirtualizedContainerService.HintSize="808,1359" />
       <sap2010:ViewStateData Id="ReadRange_2" sap:VirtualizedContainerService.HintSize="314,87" />
       <sap2010:ViewStateData Id="ExcelReadRange_1" sap:VirtualizedContainerService.HintSize="314,59" />
       <sap2010:ViewStateData Id="ExcelApplicationScope_1" sap:VirtualizedContainerService.HintSize="414,168" />
@@ -545,7 +532,7 @@ Select(Function(e) e.Attribute("name").Value).ToArray]</InArgument>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="LogMessage_2" sap:VirtualizedContainerService.HintSize="808,91" />
       <sap2010:ViewStateData Id="LogMessage_1" sap:VirtualizedContainerService.HintSize="808,91" />
-      <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="830,3650">
+      <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="830,4958">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -553,7 +540,7 @@ Select(Function(e) e.Attribute("name").Value).ToArray]</InArgument>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="GetAllSettings_1" sap:VirtualizedContainerService.HintSize="870,3730" />
+      <sap2010:ViewStateData Id="GetAllSettings_1" sap:VirtualizedContainerService.HintSize="870,5038" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>

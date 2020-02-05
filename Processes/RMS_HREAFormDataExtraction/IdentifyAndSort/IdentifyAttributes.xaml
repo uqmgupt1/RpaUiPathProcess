@@ -93,6 +93,9 @@
       <AssemblyReference>System.ValueTuple</AssemblyReference>
       <AssemblyReference>System.ComponentModel.Composition</AssemblyReference>
       <AssemblyReference>System.Data.Entity</AssemblyReference>
+      <AssemblyReference>Microsoft.VisualStudio.Services.Common</AssemblyReference>
+      <AssemblyReference>System.Collections.Immutable</AssemblyReference>
+      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence sap2010:WorkflowViewState.IdRef="Sequence_1">
@@ -100,10 +103,11 @@
       <Variable x:TypeArguments="x:String" Name="applicationIdentifier" />
       <Variable x:TypeArguments="x:String" Name="researchMasterNumber" />
       <Variable x:TypeArguments="sxl:XAttribute" Name="attribute" />
+      <Variable x:TypeArguments="scg:List(x:String)" Name="names" />
     </Sequence.Variables>
     <Switch x:TypeArguments="x:String" DisplayName="Switch" Expression="[Path.GetExtension(io_CurrentElement.Value).ToUpper]" sap2010:WorkflowViewState.IdRef="Switch`1_2">
       <Switch.Default>
-        <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_18" Level="Trace" Message="[&quot;End Process.xaml, not handling &quot; + Path.GetExtension(io_CurrentElement.Value).ToUpper]" />
+        <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_18" Level="Warn" Message="[&quot;End IdenitfyAttributes.xaml, not handling &quot; + Path.GetExtension(io_CurrentElement.Value).ToUpper]" />
       </Switch.Default>
       <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" x:Key=".XML" DisplayName="Invoke XmlApplication workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_6" UnSafe="False" WorkflowFileName="DocumentHandlers\XmlApplication.xaml">
         <ui:InvokeWorkflowFile.Arguments>
@@ -125,7 +129,51 @@
           <InArgument x:TypeArguments="x:String" x:Key="in_ApprovalFilename">[io_CurrentElement.Value]</InArgument>
         </ui:InvokeWorkflowFile.Arguments>
       </ui:InvokeWorkflowFile>
+      <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" x:Key=".DOC" DisplayName="Invoke WordDocxForms workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_9" UnSafe="False" WorkflowFileName="DocumentHandlers\WordDocxForms.xaml">
+        <ui:InvokeWorkflowFile.Arguments>
+          <OutArgument x:TypeArguments="x:String" x:Key="out_ApplicationIdentifier">[applicationIdentifier]</OutArgument>
+          <OutArgument x:TypeArguments="x:String" x:Key="out_ResearchMasterNumber">[researchMasterNumber]</OutArgument>
+          <InArgument x:TypeArguments="x:String" x:Key="in_ApprovalFilename">[io_CurrentElement.Value]</InArgument>
+        </ui:InvokeWorkflowFile.Arguments>
+      </ui:InvokeWorkflowFile>
+      <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" x:Key=".RTF" DisplayName="Invoke WordDocxForms workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_10" UnSafe="False" WorkflowFileName="DocumentHandlers\WordDocxForms.xaml">
+        <ui:InvokeWorkflowFile.Arguments>
+          <OutArgument x:TypeArguments="x:String" x:Key="out_ApplicationIdentifier">[applicationIdentifier]</OutArgument>
+          <OutArgument x:TypeArguments="x:String" x:Key="out_ResearchMasterNumber">[researchMasterNumber]</OutArgument>
+          <InArgument x:TypeArguments="x:String" x:Key="in_ApprovalFilename">[io_CurrentElement.Value]</InArgument>
+        </ui:InvokeWorkflowFile.Arguments>
+      </ui:InvokeWorkflowFile>
     </Switch>
+    <Assign DisplayName="Assign list of path names" sap2010:WorkflowViewState.IdRef="Assign_7">
+      <Assign.To>
+        <OutArgument x:TypeArguments="scg:List(x:String)">[names]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="scg:List(x:String)">[io_CurrentElement.AncestorsAndSelf.Select(function(a) a.Name.LocalName).ToList]</InArgument>
+      </Assign.Value>
+    </Assign>
+    <If Condition="[names.Any(function(n) n = &quot;docsnotneeded&quot;)]" DisplayName="If ignored folder" sap2010:WorkflowViewState.IdRef="If_19">
+      <If.Then>
+        <Sequence sap2010:WorkflowViewState.IdRef="Sequence_6">
+          <Assign DisplayName="Reset rm num" sap2010:WorkflowViewState.IdRef="Assign_8">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:String">[researchMasterNumber]</OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:String">[Nothing]</InArgument>
+            </Assign.Value>
+          </Assign>
+          <Assign DisplayName="Reset app ID" sap2010:WorkflowViewState.IdRef="Assign_9">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:String">[applicationIdentifier]</OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:String">[Nothing]</InArgument>
+            </Assign.Value>
+          </Assign>
+        </Sequence>
+      </If.Then>
+    </If>
     <If Condition="[applicationIdentifier Is Nothing And researchMasterNumber IsNot Nothing]" sap2010:WorkflowViewState.IdRef="If_12">
       <If.Then>
         <Sequence sap2010:WorkflowViewState.IdRef="Sequence_2">
@@ -134,7 +182,7 @@
               <OutArgument x:TypeArguments="x:String">[applicationIdentifier]</OutArgument>
             </ui:LookupDataTable.CellValue>
           </ui:LookupDataTable>
-          <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_19" Level="Info" Message="[&quot;Lookup: &quot; + researchMasterNumber + &quot; got: &quot; + If(applicationIdentifier Is Nothing, &quot;Nothing&quot;, applicationIdentifier)]" />
+          <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_19" Level="Trace" Message="[&quot;Lookup: &quot; + researchMasterNumber + &quot; got: &quot; + If(applicationIdentifier Is Nothing, &quot;Nothing&quot;, applicationIdentifier)]" />
         </Sequence>
       </If.Then>
     </If>
@@ -146,7 +194,7 @@
               <OutArgument x:TypeArguments="x:String">[researchMasterNumber]</OutArgument>
             </ui:LookupDataTable.CellValue>
           </ui:LookupDataTable>
-          <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_20" Level="Info" Message="[&quot;Lookup: &quot; + applicationIdentifier + &quot; got: &quot; + If(researchMasterNumber Is Nothing, &quot;Nothing&quot;, researchMasterNumber)]" />
+          <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_20" Level="Trace" Message="[&quot;Lookup: &quot; + applicationIdentifier + &quot; got: &quot; + If(researchMasterNumber Is Nothing, &quot;Nothing&quot;, researchMasterNumber)]" />
         </Sequence>
       </If.Then>
     </If>
@@ -238,7 +286,7 @@
         </Assign>
       </If.Else>
     </If>
-    <sads:DebugSymbol.Symbol>d2dDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUk1TX0hSRUFGb3JtRGF0YUV4dHJhY3Rpb25cSWRlbnRpZnlBbmRTb3J0XElkZW50aWZ5QXR0cmlidXRlcy54YW1sS2ID8gEOAgEBaAWAAQ4CAVSBAQWMAQoCAUGNAQWYAQoCAS6ZAQWmAQoCASenAQW0AQoCASC1AQXSAQoCARHTAQXwAQoCAQJoSGh+AgFVbAdxHwIBZnIHeB8CAV95B38fAgFYaglq3wECAVaBAROBAV4CAUKDAQmKARQCAUWNARONAV4CAS+PAQmWARQCATKZAROZATcCASibAQmkARICASqnAROnATYCASGpAQmyARICASO1ARO1AVACARK3AQnGARQCARfJAQnQARICARPTARPTAU8CAQPVAQnkARQCAQjnAQnuARICAQRvVW9sAgFpbMoBbPABAgFoblFuagIBZ3VVdWwCAWR2VHZqAgFidE50ZwIBYXLHAXLqAQIBYHtVe2wCAV18VHxqAgFbfU59ZwIBWnnKAXnvAQIBWWp4atwBAgFXhAELiAEgAgFLiQELiQGTAgIBRpABC5QBIAIBOJUBC5UBkgICATOhAQ+hAT4CAS2dATWdAUwCASuvAQ+vAT4CASarATWrAUsCASS4AQu/ARQCARzAAQvFARoCARjOATTOAUsCARXLATXLAWECARTWAQvdARQCAQ3eAQvjARoCAQnsATTsAUoCAQbpATXpAWACAQWEAdMChAHrAgIBUoYBN4YBTgIBUIQBqwKEAcYCAgFPhAH9AoQBhgMCAU6EAa8BhAHFAQIBTIkBeYkBkAICAUeQAcECkAHaAgIBP5IBN5IBTQIBPZABqwKQAbQCAgE8kAHsApABhwMCATuQAa8BkAHFAQIBOZUBeZUBjwICATS9ATy9AWwCAR+6AT26AUgCAR3EATTEAT8CARvCATrCAU0CARnbATzbAWoCARDYAT3YAUgCAQ7iATTiAT8CAQzgATrgAU0CAQo=</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d2dDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUk1TX0hSRUFGb3JtRGF0YUV4dHJhY3Rpb25cSWRlbnRpZnlBbmRTb3J0XElkZW50aWZ5QXR0cmlidXRlcy54YW1sYWUDogIOAgEBbAWSAQ4CAWOTAQWaAQ4CAV+bAQWwAQoCAVSxAQW8AQoCAUG9AQXIAQoCAS7JAQXWAQoCASfXAQXkAQoCASDlAQWCAgoCARGDAgWgAgoCAQJsSGx+AgFkcAd1HwMBgwF2B3wfAgF8fQeDAR8CAXWEAQeKAR8CAW6LAQeRAR8CAWduCW7pAQIBZZgBOpgBigECAWKVATuVAUICAWCbARObAUsCAVWdAQmuARQCAVaxAROxAV4CAUKzAQm6ARQCAUW9ARO9AV4CAS+/AQnGARQCATLJARPJATcCASjLAQnUARICASrXARPXATYCASHZAQniARICASPlARPlAVACARLnAQn2ARQCARf5AQmAAhICARODAhODAk8CAQOFAgmUAhQCAQiXAgmeAhICAQRzVXNsAwGGAXDKAXDwAQMBhQFyUXJqAwGEAXlVeWwDAYEBelR6agIBf3hOeGcCAX52xwF26gECAX1/VX9sAgF6gAFUgAFqAgF4gQFOgQFnAgF3fcoBfe8BAgF2hgFVhgFsAgFzhwFUhwFqAgFxiAFOiAFnAgFwhAHJAYQB7gECAW+NAVWNAWwCAWyOAVSOAWoCAWqPAU6PAWcCAWmLAcoBiwHvAQIBaG53buYBAgFmngELpQEUAgFbpgELrQEUAgFXtAELuAEgAgFLuQELuQGUAgIBRsABC8QBIAIBOMUBC8UBkwICATPRAQ/RAT4CAS3NATXNAUwCASvfAQ/fAT4CASbbATXbAUsCASToAQvvARQCARzwAQv1ARoCARj+ATT+AUsCARX7ATX7AWECARSGAguNAhQCAQ2OAguTAhoCAQmcAjScAkoCAQaZAjWZAmACAQWjATajAT8CAV6gATegAU0CAVyrATarAT8CAVqoATeoAU4CAVi0AdMCtAHrAgIBUrYBN7YBTgIBULQBqwK0AcYCAgFPtAH9ArQBhgMCAU60Aa8BtAHFAQIBTLkBerkBkQICAUfAAcECwAHaAgIBP8IBN8IBTQIBPcABqwLAAbQCAgE8wAHsAsABhwMCATvAAa8BwAHFAQIBOcUBesUBkAICATTtATztAWwCAR/qAT3qAUgCAR30ATT0AT8CARvyATryAU0CARmLAjyLAmoCARCIAj2IAkgCAQ6SAjSSAj8CAQyQAjqQAk0CAQo=</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -246,7 +294,38 @@
       <sap2010:ViewStateData Id="InvokeWorkflowFile_6" sap:VirtualizedContainerService.HintSize="314,87" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_7" sap:VirtualizedContainerService.HintSize="314,87" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_8" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="Switch`1_2" sap:VirtualizedContainerService.HintSize="531,315" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_9" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_10" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="Switch`1_2" sap:VirtualizedContainerService.HintSize="531,226" />
+      <sap2010:ViewStateData Id="Assign_7" sap:VirtualizedContainerService.HintSize="531,60">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Assign_8" sap:VirtualizedContainerService.HintSize="242,60">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Assign_9" sap:VirtualizedContainerService.HintSize="242,60">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Sequence_6" sap:VirtualizedContainerService.HintSize="264,284">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="If_19" sap:VirtualizedContainerService.HintSize="531,432" />
       <sap2010:ViewStateData Id="LookupDataTable_1" sap:VirtualizedContainerService.HintSize="314,22" />
       <sap2010:ViewStateData Id="LogMessage_19" sap:VirtualizedContainerService.HintSize="314,91" />
       <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="336,277">
@@ -293,14 +372,14 @@
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="Assign_6" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="If_18" sap:VirtualizedContainerService.HintSize="531,504" />
-      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="553,2953">
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="553,3436">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="IdentifyAttributes_1" sap:VirtualizedContainerService.HintSize="593,3033" />
+      <sap2010:ViewStateData Id="IdentifyAttributes_1" sap:VirtualizedContainerService.HintSize="593,3516" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>

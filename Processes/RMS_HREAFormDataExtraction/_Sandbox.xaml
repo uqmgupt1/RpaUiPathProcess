@@ -1,6 +1,5 @@
 ﻿<Activity mc:Ignorable="sap sap2010 sads" x:Class="Sequence" mva:VisualBasic.Settings="{x:Null}" sap2010:WorkflowViewState.IdRef="Sequence_2"
  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
- xmlns:isz="clr-namespace:ICSharpCode.SharpZipLib.Zip;assembly=ICSharpCode.SharpZipLib"
  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
  xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities"
  xmlns:s="clr-namespace:System;assembly=mscorlib"
@@ -9,6 +8,7 @@
  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
  xmlns:scg="clr-namespace:System.Collections.Generic;assembly=mscorlib"
  xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=mscorlib"
+ xmlns:sd="clr-namespace:System.Drawing;assembly=System.Drawing"
  xmlns:ss="clr-namespace:System.Security;assembly=mscorlib"
  xmlns:ui="http://schemas.uipath.com/workflow/activities"
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
@@ -79,38 +79,120 @@
     <Sequence sap2010:WorkflowViewState.IdRef="Sequence_5">
       <Sequence.Variables>
         <Variable x:TypeArguments="x:String" Name="filename" />
-        <Variable x:TypeArguments="isz:ZipFile" Name="archive" />
-        <Variable x:TypeArguments="s:String[]" Name="sheets" />
+        <Variable x:TypeArguments="x:String" Name="content">
+          <Variable.Default>
+            <Literal x:TypeArguments="x:String" Value="" />
+          </Variable.Default>
+        </Variable>
+        <Variable x:TypeArguments="scg:List(x:String)" Name="lines" />
       </Sequence.Variables>
-      <Assign sap2010:WorkflowViewState.IdRef="Assign_1">
+      <Assign sap2010:WorkflowViewState.IdRef="Assign_8">
         <Assign.To>
           <OutArgument x:TypeArguments="x:String">[filename]</OutArgument>
         </Assign.To>
         <Assign.Value>
-          <InArgument x:TypeArguments="x:String">Data\Config.xlsx</InArgument>
+          <InArgument x:TypeArguments="x:String">["Z:\Sorted\2017000240\2017000240 - Approval Form.pdf"]</InArgument>
         </Assign.Value>
       </Assign>
-      <Assign DisplayName="Assign excel workbook as archive" sap2010:WorkflowViewState.IdRef="Assign_2">
+      <TryCatch DisplayName="Try Catch" sap2010:WorkflowViewState.IdRef="TryCatch_2">
+        <TryCatch.Try>
+          <ui:ReadPDFText PreserveFormatting="{x:Null}" DisplayName="Read PDF Text" FileName="[filename]" sap2010:WorkflowViewState.IdRef="ReadPDFText_1" Range="All" Text="[content]" />
+        </TryCatch.Try>
+        <TryCatch.Catches>
+          <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch`1_2">
+            <ActivityAction x:TypeArguments="s:Exception">
+              <ActivityAction.Argument>
+                <DelegateInArgument x:TypeArguments="s:Exception" Name="exception1" />
+              </ActivityAction.Argument>
+              <Sequence sap2010:WorkflowViewState.IdRef="Sequence_6">
+                <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_3" Level="Trace" Message="[exception1.Message]" />
+                <TryCatch DisplayName="Try Catch" sap2010:WorkflowViewState.IdRef="TryCatch_1">
+                  <TryCatch.Try>
+                    <ui:ReadPDFWithOCR DegreeOfParallelism="-1" DisplayName="Read PDF With OCR" FileName="[filename]" sap2010:WorkflowViewState.IdRef="ReadPDFWithOCR_1" ImageDpi="150" Range="All" Text="[content]">
+                      <ui:ReadPDFWithOCR.OCREngine>
+                        <ActivityFunc x:TypeArguments="sd:Image, scg:IEnumerable(scg:KeyValuePair(sd:Rectangle, x:String))">
+                          <ActivityFunc.Argument>
+                            <DelegateInArgument x:TypeArguments="sd:Image" Name="Image" />
+                          </ActivityFunc.Argument>
+                          <ui:MicrosoftOCR FilterRegion="{x:Null}" Output="{x:Null}" Text="{x:Null}" ComputeSkewAngle="False" DisplayName="Microsoft OCR" ExtractWords="False" sap2010:WorkflowViewState.IdRef="MicrosoftOCR_1" Image="[Image]" Language="en" Profile="Legacy" Scale="1" />
+                        </ActivityFunc>
+                      </ui:ReadPDFWithOCR.OCREngine>
+                    </ui:ReadPDFWithOCR>
+                  </TryCatch.Try>
+                  <TryCatch.Catches>
+                    <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch`1_1">
+                      <ActivityAction x:TypeArguments="s:Exception">
+                        <ActivityAction.Argument>
+                          <DelegateInArgument x:TypeArguments="s:Exception" Name="exception2" />
+                        </ActivityAction.Argument>
+                        <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_4" Level="Error" Message="[exception1.Message + vbNewLine + exception2.Message]" />
+                      </ActivityAction>
+                    </Catch>
+                  </TryCatch.Catches>
+                </TryCatch>
+              </Sequence>
+            </ActivityAction>
+          </Catch>
+        </TryCatch.Catches>
+      </TryCatch>
+      <Assign DisplayName="Assign lines with content between comments and note" sap2010:WorkflowViewState.IdRef="Assign_13">
         <Assign.To>
-          <OutArgument x:TypeArguments="isz:ZipFile">[archive]</OutArgument>
+          <OutArgument x:TypeArguments="scg:List(x:String)">[lines]</OutArgument>
         </Assign.To>
         <Assign.Value>
-          <InArgument x:TypeArguments="isz:ZipFile">[New Zip.ZipFile(filename)]</InArgument>
+          <InArgument x:TypeArguments="scg:List(x:String)" xml:space="preserve">[content.Split(vbNewLine.ToCharArray).
+Where(Function(s) Not String.IsNullOrWhiteSpace(s)).
+SkipWhile(Function(s) Not s.Contains("Comments/Conditions:")).
+TakeWhile(Function(s) Not s.Contains("Note:")).
+Skip(1).ToList]</InArgument>
         </Assign.Value>
       </Assign>
-      <Assign DisplayName="Assign unpack manifest, parse and read sheets" sap2010:WorkflowViewState.IdRef="Assign_7">
-        <Assign.To>
-          <OutArgument x:TypeArguments="s:String[]">[sheets]</OutArgument>
-        </Assign.To>
-        <Assign.Value>
-          <InArgument x:TypeArguments="s:String[]" xml:space="preserve">[XDocument.Parse(Encoding.UTF8.GetString(
-  archive.GetInputStream(archive.GetEntry("xl/workbook.xml")).ReadToEnd
-)).Descendants.
-Where(Function(e) e.Name.LocalName = "sheet").
-Select(Function(e) e.Attribute("name").Value).ToArray]</InArgument>
-        </Assign.Value>
-      </Assign>
-      <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[String.Join(vbNewLine, sheets)]" />
+      <ui:CommentOut DisplayName="Comment Out" sap2010:WorkflowViewState.IdRef="CommentOut_8">
+        <ui:CommentOut.Body>
+          <Sequence DisplayName="Ignored Activities" sap2010:WorkflowViewState.IdRef="Sequence_8">
+            <ui:ForEach x:TypeArguments="x:String" CurrentIndex="{x:Null}" DisplayName="For Each" sap2010:WorkflowViewState.IdRef="ForEach`1_2">
+              <ui:ForEach.Body>
+                <ActivityAction x:TypeArguments="x:String">
+                  <ActivityAction.Argument>
+                    <DelegateInArgument x:TypeArguments="x:String" Name="line" />
+                  </ActivityAction.Argument>
+                  <Sequence DisplayName="Body" sap2010:WorkflowViewState.IdRef="Sequence_7">
+                    <If Condition="[String.IsNullOrWhiteSpace(line)]" sap2010:WorkflowViewState.IdRef="If_3">
+                      <If.Then>
+                        <ui:Continue sap2010:WorkflowViewState.IdRef="Continue_1" />
+                      </If.Then>
+                    </If>
+                    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_8" Level="Trace" Message="[line]" />
+                    <If Condition="[line.Contains(&quot;Note:&quot;)]" sap2010:WorkflowViewState.IdRef="If_2">
+                      <If.Then>
+                        <ui:Break sap2010:WorkflowViewState.IdRef="Break_1" />
+                      </If.Then>
+                    </If>
+                    <If Condition="[keep]" sap2010:WorkflowViewState.IdRef="If_5">
+                      <If.Then>
+                        <AddToCollection x:TypeArguments="x:String" Collection="[lines]" DisplayName="Add To Collection" sap2010:WorkflowViewState.IdRef="AddToCollection`1_1" Item="[line]" />
+                      </If.Then>
+                    </If>
+                    <If Condition="[line.Contains(&quot;Comments/Conditions:&quot;)]" sap2010:WorkflowViewState.IdRef="If_1">
+                      <If.Then>
+                        <Assign sap2010:WorkflowViewState.IdRef="Assign_12">
+                          <Assign.To>
+                            <OutArgument x:TypeArguments="x:Boolean">[keep]</OutArgument>
+                          </Assign.To>
+                          <Assign.Value>
+                            <InArgument x:TypeArguments="x:Boolean">True</InArgument>
+                          </Assign.Value>
+                        </Assign>
+                      </If.Then>
+                    </If>
+                  </Sequence>
+                </ActivityAction>
+              </ui:ForEach.Body>
+            </ui:ForEach>
+          </Sequence>
+        </ui:CommentOut.Body>
+      </ui:CommentOut>
+      <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_10" Level="Info" Message="[String.Join(vbNewLine, lines)]" />
     </Sequence>
     <ui:CommentOut DisplayName="Comment Out" sap2010:WorkflowViewState.IdRef="CommentOut_6">
       <ui:CommentOut.Body>
@@ -153,22 +235,51 @@ Select(Function(e) e.Attribute("name").Value).ToArray]</InArgument>
         </Sequence>
       </ui:CommentOut.Body>
     </ui:CommentOut>
-    <sads:DebugSymbol.Symbol>d01DOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUk1TX0hSRUFGb3JtRGF0YUV4dHJhY3Rpb25cX1NhbmRib3gueGFtbA5OA50BDgIBAU8FchACAQRzBYQBFQIBA4UBBZsBFQIBAlUHXBACAQ9dB2QQAgELZQdwEAIBB3EHcZkBAgEFWjJaQgIBElczVz0CARBiNWJQAgEOXzZfPwIBDGc1Zz0CAQhxdHGWAQIBBg==</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d01DOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUk1TX0hSRUFGb3JtRGF0YUV4dHJhY3Rpb25cX1NhbmRib3gueGFtbCFOA+8BDgIBAU8FxAEQAgEExQEF1gEVAgED1wEF7QEVAgECVA1UPAIBBVkHYBACASdhB4kBEgIBDYoBB5UBEAIBCZYBB8IBFwIBCMMBB8MBmQECAQZeMl5pAgEqWzNbPQIBKGMLY7oBAgEhaw+FARoCAQ6MAT2MAUQCAQrDAXXDAZYBAgEHY6wBY7cBAgElY15jagIBI2OhAWOmAQIBImwRbJgBAgEebRGEARwCAQ9sf2yVAQIBH28VeCkCARKAARmAAcEBAgEQbzxvQAIBHW/KAW/VAQIBG29qb3YCARlvvwFvxAECARh1G3WcAgIBE4ABhwGAAb4BAgERdZYCdZkCAgEXdecBdfABAgEVdfoBdf4BAgEU</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
-      <sap2010:ViewStateData Id="Assign_1" sap:VirtualizedContainerService.HintSize="314,60" />
-      <sap2010:ViewStateData Id="Assign_2" sap:VirtualizedContainerService.HintSize="314,60" />
-      <sap2010:ViewStateData Id="Assign_7" sap:VirtualizedContainerService.HintSize="314,64" />
-      <sap2010:ViewStateData Id="LogMessage_2" sap:VirtualizedContainerService.HintSize="314,91" />
-      <sap2010:ViewStateData Id="Sequence_5" sap:VirtualizedContainerService.HintSize="336,519">
+      <sap2010:ViewStateData Id="Assign_8" sap:VirtualizedContainerService.HintSize="418,60" />
+      <sap2010:ViewStateData Id="ReadPDFText_1" sap:VirtualizedContainerService.HintSize="314,59" />
+      <sap2010:ViewStateData Id="LogMessage_3" sap:VirtualizedContainerService.HintSize="418,91" />
+      <sap2010:ViewStateData Id="MicrosoftOCR_1" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="ReadPDFWithOCR_1" sap:VirtualizedContainerService.HintSize="314,131" />
+      <sap2010:ViewStateData Id="LogMessage_4" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="Catch`1_1" sap:VirtualizedContainerService.HintSize="404,21">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="418,358" />
+      <sap2010:ViewStateData Id="Sequence_6" sap:VirtualizedContainerService.HintSize="358,335">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_6" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="Catch`1_2" sap:VirtualizedContainerService.HintSize="404,21">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="TryCatch_2" sap:VirtualizedContainerService.HintSize="418,287" />
+      <sap2010:ViewStateData Id="Assign_13" sap:VirtualizedContainerService.HintSize="418,64" />
+      <sap2010:ViewStateData Id="Continue_1" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="If_3" sap:VirtualizedContainerService.HintSize="464,207" />
+      <sap2010:ViewStateData Id="LogMessage_8" sap:VirtualizedContainerService.HintSize="464,91" />
+      <sap2010:ViewStateData Id="Break_1" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="If_2" sap:VirtualizedContainerService.HintSize="464,208" />
+      <sap2010:ViewStateData Id="AddToCollection`1_1" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="If_5" sap:VirtualizedContainerService.HintSize="464,208" />
+      <sap2010:ViewStateData Id="Assign_12" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="464,208" />
       <sap2010:ViewStateData Id="Sequence_7" sap:VirtualizedContainerService.HintSize="336,211">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
@@ -176,14 +287,32 @@ Select(Function(e) e.Attribute("name").Value).ToArray]</InArgument>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_6" sap:VirtualizedContainerService.HintSize="358,337">
+      <sap2010:ViewStateData Id="ForEach`1_2" sap:VirtualizedContainerService.HintSize="502,1339" />
+      <sap2010:ViewStateData Id="Sequence_8" sap:VirtualizedContainerService.HintSize="524,1463">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="CommentOut_6" sap:VirtualizedContainerService.HintSize="336,51">
+      <sap2010:ViewStateData Id="CommentOut_8" sap:VirtualizedContainerService.HintSize="418,51">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="LogMessage_10" sap:VirtualizedContainerService.HintSize="418,91" />
+      <sap2010:ViewStateData Id="Sequence_5" sap:VirtualizedContainerService.HintSize="440,837">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_6" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="CommentOut_6" sap:VirtualizedContainerService.HintSize="440,51">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">False</x:Boolean>
@@ -208,7 +337,7 @@ Select(Function(e) e.Attribute("name").Value).ToArray]</InArgument>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="CommentOut_5" sap:VirtualizedContainerService.HintSize="336,51">
+      <sap2010:ViewStateData Id="CommentOut_5" sap:VirtualizedContainerService.HintSize="440,51">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">False</x:Boolean>
@@ -216,14 +345,14 @@ Select(Function(e) e.Attribute("name").Value).ToArray]</InArgument>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_4" sap:VirtualizedContainerService.HintSize="358,825">
+      <sap2010:ViewStateData Id="Sequence_4" sap:VirtualizedContainerService.HintSize="462,1143">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="398,905" />
+      <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="502,1223" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>

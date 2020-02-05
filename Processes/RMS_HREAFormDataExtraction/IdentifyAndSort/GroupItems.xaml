@@ -12,8 +12,6 @@
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <x:Members>
     <x:Property Name="io_RootElement" Type="InOutArgument(sxl:XElement)" />
-    <x:Property Name="in_RMNumber" Type="InArgument(x:String)" />
-    <x:Property Name="in_ApplicationID" Type="InArgument(x:String)" />
   </x:Members>
   <mva:VisualBasic.Settings>
     <x:Null />
@@ -71,44 +69,131 @@
       <AssemblyReference>Microsoft.VisualStudio.Services.Common</AssemblyReference>
       <AssemblyReference>System.Collections.Immutable</AssemblyReference>
       <AssemblyReference>UiPath.Studio.Plugin.Workflow</AssemblyReference>
+      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence DisplayName="GroupItems" sap2010:WorkflowViewState.IdRef="Sequence_1">
-    <ui:ForEach x:TypeArguments="sxl:XElement" CurrentIndex="{x:Null}" DisplayName="For Each" sap2010:WorkflowViewState.IdRef="ForEach`1_1" Values="[io_RootElement.DescendantsAndSelf]">
-      <ui:ForEach.Body>
-        <ActivityAction x:TypeArguments="sxl:XElement">
-          <ActivityAction.Argument>
-            <DelegateInArgument x:TypeArguments="sxl:XElement" Name="item" />
-          </ActivityAction.Argument>
-          <If Condition="[Not item.HasElements]" sap2010:WorkflowViewState.IdRef="If_4">
-            <If.Then>
-              <Sequence sap2010:WorkflowViewState.IdRef="Sequence_2">
-                <Assign sap2010:WorkflowViewState.IdRef="Assign_5">
-                  <Assign.To>
-                    <OutArgument x:TypeArguments="x:String">[item.Attribute("RMNo").Value]</OutArgument>
-                  </Assign.To>
-                  <Assign.Value>
-                    <InArgument x:TypeArguments="x:String">[in_RMNumber]</InArgument>
-                  </Assign.Value>
-                </Assign>
-                <Assign sap2010:WorkflowViewState.IdRef="Assign_6">
-                  <Assign.To>
-                    <OutArgument x:TypeArguments="x:String">[item.Attribute("AppID").Value]</OutArgument>
-                  </Assign.To>
-                  <Assign.Value>
-                    <InArgument x:TypeArguments="x:String">[in_ApplicationID]</InArgument>
-                  </Assign.Value>
-                </Assign>
-              </Sequence>
-            </If.Then>
-          </If>
-        </ActivityAction>
-      </ui:ForEach.Body>
-    </ui:ForEach>
-    <sads:DebugSymbol.Symbol>d09DOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUk1TX0hSRUFGb3JtRGF0YUV4dHJhY3Rpb25cR3JvdXBJdGVtcy54YW1sDEwDbQ4CAQFNBWsSAgECTZQBTbkBAgEOUwtoEAIBA1MZUzECAQRVD2YaAgEFVhFdGgIBCl4RZRoCAQZbPFtJAgEMWD1YWwIBC2M8Y04CAQhgPWBcAgEH</sads:DebugSymbol.Symbol>
+    <Sequence.Variables>
+      <Variable x:TypeArguments="scg:List(x:String)" Name="rmNumbers" />
+      <Variable x:TypeArguments="scg:List(x:String)" Name="appIDs" />
+    </Sequence.Variables>
+    <Assign DisplayName="Assign app IDs" sap2010:WorkflowViewState.IdRef="Assign_8">
+      <Assign.To>
+        <OutArgument x:TypeArguments="scg:List(x:String)">[appIDs]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="scg:List(x:String)">[io_RootElement.Descendants.Attributes("AppID").Select(Function(a) a.Value).Distinct.ToList]</InArgument>
+      </Assign.Value>
+    </Assign>
+    <Assign DisplayName="Assign rm no's" sap2010:WorkflowViewState.IdRef="Assign_7">
+      <Assign.To>
+        <OutArgument x:TypeArguments="scg:List(x:String)">[rmNumbers]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="scg:List(x:String)">[io_RootElement.Descendants.Attributes("RMNo").Select(Function(a) a.Value).Distinct.ToList]</InArgument>
+      </Assign.Value>
+    </Assign>
+    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[String.Format(&quot;Run GroupItems.xaml, on {0} as '{1}' and '{2}'&quot;,&#xD;&#xA;io_RootElement.Name.LocalName,&#xD;&#xA;String.Join(&quot;', '&quot;, appIDs),&#xD;&#xA;String.Join(&quot;', '&quot;, rmNumbers))]" />
+    <If Condition="[rmNumbers.Where(Function(s) s &lt;&gt; &quot;&quot;).Count = 1 And&#xD;&#xA;appIDs.Where(Function(s) s &lt;&gt; &quot;&quot;).Count &lt;= 1]" DisplayName="If 1 rm no and 0 or 1 app ID" sap2010:WorkflowViewState.IdRef="If_5">
+      <If.Then>
+        <Sequence sap2010:WorkflowViewState.IdRef="Sequence_3">
+          <Sequence.Variables>
+            <Variable x:TypeArguments="x:String" Name="rm" />
+            <Variable x:TypeArguments="x:String" Name="id" />
+          </Sequence.Variables>
+          <Assign sap2010:WorkflowViewState.IdRef="Assign_9">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:String">[rm]</OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:String">[rmNumbers.FirstOrDefault(function(s) s &lt;&gt; "")]</InArgument>
+            </Assign.Value>
+          </Assign>
+          <Assign sap2010:WorkflowViewState.IdRef="Assign_10">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:String">[id]</OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:String">[appIDs.FirstOrDefault(function(s) s &lt;&gt; "")]</InArgument>
+            </Assign.Value>
+          </Assign>
+          <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_3" Level="Trace" Message="[String.Format(&quot;Grouping {0} items in '{1} as RM '{2}' and ID {3}&quot;,&#xD;&#xA;io_RootElement.Descendants.Count,&#xD;&#xA;io_RootElement.Name.LocalName,&#xD;&#xA;rm, id)]" />
+          <ui:ForEach x:TypeArguments="sxl:XElement" CurrentIndex="{x:Null}" DisplayName="For Each" sap2010:WorkflowViewState.IdRef="ForEach`1_1" Values="[io_RootElement.Descendants]">
+            <ui:ForEach.Body>
+              <ActivityAction x:TypeArguments="sxl:XElement">
+                <ActivityAction.Argument>
+                  <DelegateInArgument x:TypeArguments="sxl:XElement" Name="item" />
+                </ActivityAction.Argument>
+                <If Condition="[Not item.HasElements]" sap2010:WorkflowViewState.IdRef="If_4">
+                  <If.Then>
+                    <Sequence sap2010:WorkflowViewState.IdRef="Sequence_2">
+                      <Assign sap2010:WorkflowViewState.IdRef="Assign_5">
+                        <Assign.To>
+                          <OutArgument x:TypeArguments="x:String">[item.Attribute("RMNo").Value]</OutArgument>
+                        </Assign.To>
+                        <Assign.Value>
+                          <InArgument x:TypeArguments="x:String">[rm]</InArgument>
+                        </Assign.Value>
+                      </Assign>
+                      <Assign sap2010:WorkflowViewState.IdRef="Assign_6">
+                        <Assign.To>
+                          <OutArgument x:TypeArguments="x:String">[item.Attribute("AppID").Value]</OutArgument>
+                        </Assign.To>
+                        <Assign.Value>
+                          <InArgument x:TypeArguments="x:String">[If(id Is Nothing, "", id)]</InArgument>
+                        </Assign.Value>
+                      </Assign>
+                    </Sequence>
+                  </If.Then>
+                </If>
+              </ActivityAction>
+            </ui:ForEach.Body>
+          </ui:ForEach>
+        </Sequence>
+      </If.Then>
+      <If.Else>
+        <If Condition="[io_RootElement.HasElements]" sap2010:WorkflowViewState.IdRef="If_6">
+          <If.Then>
+            <ui:ForEach x:TypeArguments="sxl:XElement" CurrentIndex="{x:Null}" DisplayName="For Each" sap2010:WorkflowViewState.IdRef="ForEach`1_2" Values="[io_RootElement.Elements]">
+              <ui:ForEach.Body>
+                <ActivityAction x:TypeArguments="sxl:XElement">
+                  <ActivityAction.Argument>
+                    <DelegateInArgument x:TypeArguments="sxl:XElement" Name="item" />
+                  </ActivityAction.Argument>
+                  <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke GroupItems workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_1" UnSafe="False" WorkflowFileName="IdentifyAndSort\GroupItems.xaml">
+                    <ui:InvokeWorkflowFile.Arguments>
+                      <InOutArgument x:TypeArguments="sxl:XElement" x:Key="io_RootElement">[item]</InOutArgument>
+                    </ui:InvokeWorkflowFile.Arguments>
+                  </ui:InvokeWorkflowFile>
+                </ActivityAction>
+              </ui:ForEach.Body>
+            </ui:ForEach>
+          </If.Then>
+        </If>
+      </If.Else>
+    </If>
+    <sads:DebugSymbol.Symbol>d19DOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUk1TX0hSRUFGb3JtRGF0YUV4dHJhY3Rpb25cSWRlbnRpZnlBbmRTb3J0XEdyb3VwSXRlbXMueGFtbCZLA7ABDgIBAVAFVw4CAStYBV8OAgEnYAVgzQICASVhBa4BCgIBAlU6VZYBAgEuUjtSQwIBLF06XZUBAgEqWjtaRgIBKGByYMoCAgEmYRNhogECAQNjCZgBFAIBDJsBCawBDgIBBGgLbxQCASFwC3cUAgEdeAt4sAICARt5C5cBGAIBDZsBF5sBNQIBBZ0BDaoBGgIBBm02bWsCASRqN2o7AgEidTZ1aAIBIHI3cjsCAR54eXitAgIBHHmaAXm4AQIBGn8RlAEWAgEOnQGcAZ0BtwECAQujAROnASsCAQd/H383AgEPgQEVkgEgAgEQpQFcpQFiAgEJowHFAaMB5gECAQiCAReJASACARaKAReRASACARGHAUKHAUYCARiEAUOEAWECARePAUKPAV0CAROMAUOMAWICARI=</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
+      <sap2010:ViewStateData Id="Assign_8" sap:VirtualizedContainerService.HintSize="991,60">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Assign_7" sap:VirtualizedContainerService.HintSize="991,60">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="LogMessage_2" sap:VirtualizedContainerService.HintSize="991,91" />
+      <sap2010:ViewStateData Id="Assign_9" sap:VirtualizedContainerService.HintSize="480,60" />
+      <sap2010:ViewStateData Id="Assign_10" sap:VirtualizedContainerService.HintSize="480,60" />
+      <sap2010:ViewStateData Id="LogMessage_3" sap:VirtualizedContainerService.HintSize="480,91" />
       <sap2010:ViewStateData Id="Assign_5" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="Assign_6" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="264,284">
@@ -119,15 +204,40 @@
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="If_4" sap:VirtualizedContainerService.HintSize="464,432" />
-      <sap2010:ViewStateData Id="ForEach`1_1" sap:VirtualizedContainerService.HintSize="480,566" />
-      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="502,690">
+      <sap2010:ViewStateData Id="ForEach`1_1" sap:VirtualizedContainerService.HintSize="480,566">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Sequence_3" sap:VirtualizedContainerService.HintSize="502,1021">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="GroupItems_1" sap:VirtualizedContainerService.HintSize="542,770" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_1" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="ForEach`1_2" sap:VirtualizedContainerService.HintSize="330,221">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="If_6" sap:VirtualizedContainerService.HintSize="464,369" />
+      <sap2010:ViewStateData Id="If_5" sap:VirtualizedContainerService.HintSize="991,1173" />
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="1013,1628">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="GroupItems_1" sap:VirtualizedContainerService.HintSize="1053,1708" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
