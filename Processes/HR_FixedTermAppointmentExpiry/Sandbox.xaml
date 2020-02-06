@@ -74,6 +74,7 @@
       <AssemblyReference>UiPath.Studio.Plugin.Workflow</AssemblyReference>
       <AssemblyReference>Newtonsoft.Json</AssemblyReference>
       <AssemblyReference>System.Data.Entity</AssemblyReference>
+      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Flowchart DisplayName="Sandbox" sap2010:WorkflowViewState.IdRef="Flowchart_1">
@@ -109,31 +110,129 @@
       <Variable x:TypeArguments="x:String" Name="payPointUsername" />
       <Variable x:TypeArguments="sd:DataTable" Name="payPointDT" />
       <Variable x:TypeArguments="x:Int32" Name="count" />
+      <Variable x:TypeArguments="x:String" Name="ReportEmailTemplate" />
+      <Variable x:TypeArguments="x:Int32" Name="caseIDindex" />
     </Flowchart.Variables>
     <Flowchart.StartNode>
-      <FlowStep x:Name="__ReferenceID0" sap2010:WorkflowViewState.IdRef="FlowStep_15">
-        <Sequence DisplayName="Reset queue items" sap2010:WorkflowViewState.IdRef="Sequence_20">
-          <Sequence.Variables>
-            <Variable x:TypeArguments="scg:IEnumerable(ui:QueueItem)" Name="QueueItems" />
-          </Sequence.Variables>
-          <ui:GetQueueItems Duration="{x:Null}" From="{x:Null}" Priority="{x:Null}" Reference="{x:Null}" Skip="{x:Null}" TimeoutMS="{x:Null}" To="{x:Null}" Top="{x:Null}" DisplayName="Get Queue Items" FilterStrategy="StartsWith" sap2010:WorkflowViewState.IdRef="GetQueueItems_1" QueueItemStates="InProgress" QueueName="HR_FixedTermAppointmentExpiry" Result="[QueueItems]" />
-          <ui:ForEach x:TypeArguments="ui:QueueItem" CurrentIndex="{x:Null}" DisplayName="For Each" sap2010:WorkflowViewState.IdRef="ForEach`1_1" Values="[QueueItems]">
-            <ui:ForEach.Body>
-              <ActivityAction x:TypeArguments="ui:QueueItem">
+      <FlowStep x:Name="__ReferenceID8" sap2010:WorkflowViewState.IdRef="FlowStep_82">
+        <Sequence DisplayName="Populate queue" sap2010:WorkflowViewState.IdRef="Sequence_85">
+          <ui:ReadRange Range="{x:Null}" AddHeaders="True" DataTable="[CaseIDsDT]" DisplayName="Read Range" sap2010:WorkflowViewState.IdRef="ReadRange_4" SheetName="Sheet1" WorkbookPath="Data\Case IDs.xlsx" />
+          <ui:ForEachRow CurrentIndex="{x:Null}" DataTable="[CaseIDsDT]" DisplayName="For Each Row" sap2010:WorkflowViewState.IdRef="ForEachRow_6">
+            <ui:ForEachRow.Body>
+              <ActivityAction x:TypeArguments="sd:DataRow">
                 <ActivityAction.Argument>
-                  <DelegateInArgument x:TypeArguments="ui:QueueItem" Name="item" />
+                  <DelegateInArgument x:TypeArguments="sd:DataRow" Name="row" />
                 </ActivityAction.Argument>
-                <Sequence DisplayName="Body" sap2010:WorkflowViewState.IdRef="Sequence_19">
-                  <ui:SetTransactionStatus ContinueOnError="{x:Null}" ServiceBaseAddress="{x:Null}" TimeoutMS="{x:Null}" DisplayName="Set Transaction Status" ErrorType="Business" sap2010:WorkflowViewState.IdRef="SetTransactionStatus_1" Reason="Item reset" Status="Failed" TransactionItem="[item]">
-                    <ui:SetTransactionStatus.Output>
+                <Sequence DisplayName="Body" sap2010:WorkflowViewState.IdRef="Sequence_84">
+                  <ui:AddQueueItem ServiceBaseAddress="{x:Null}" TimeoutMS="{x:Null}" DisplayName="Add Queue Item" sap2010:WorkflowViewState.IdRef="AddQueueItem_3" Priority="Normal" QueueType="HR_FixedTermAppointmentExpiry" Reference="[row.Item(&quot;Case ID&quot;).ToString]">
+                    <ui:AddQueueItem.ItemInformation>
                       <scg:Dictionary x:TypeArguments="x:String, InArgument" />
-                    </ui:SetTransactionStatus.Output>
-                  </ui:SetTransactionStatus>
+                    </ui:AddQueueItem.ItemInformation>
+                  </ui:AddQueueItem>
+                  <Assign sap2010:WorkflowViewState.IdRef="Assign_80">
+                    <Assign.To>
+                      <OutArgument x:TypeArguments="x:Int32">[count]</OutArgument>
+                    </Assign.To>
+                    <Assign.Value>
+                      <InArgument x:TypeArguments="x:Int32">[count + 1]</InArgument>
+                    </Assign.Value>
+                  </Assign>
                 </Sequence>
               </ActivityAction>
-            </ui:ForEach.Body>
-          </ui:ForEach>
+            </ui:ForEachRow.Body>
+          </ui:ForEachRow>
+          <WriteLine DisplayName="Write Line" sap2010:WorkflowViewState.IdRef="WriteLine_26" Text="[count.ToString]" />
         </Sequence>
+        <FlowStep.Next>
+          <FlowStep x:Name="__ReferenceID9" sap2010:WorkflowViewState.IdRef="FlowStep_83">
+            <Sequence DisplayName="Reset Unitask tasks" sap2010:WorkflowViewState.IdRef="Sequence_94">
+              <ui:ReadRange Range="{x:Null}" AddHeaders="True" DataTable="[CaseIDsDT]" DisplayName="Read Range" sap2010:WorkflowViewState.IdRef="ReadRange_5" SheetName="Sheet1" WorkbookPath="Data\Case IDs.xlsx" />
+              <ui:SelectItem ContinueOnError="{x:Null}" DelayAfter="{x:Null}" DelayBefore="{x:Null}" DisplayName="Select Item 'SELECT  userType'" sap2010:WorkflowViewState.IdRef="SelectItem_1" Item="Process manager">
+                <ui:SelectItem.Items>
+                  <scg:List x:TypeArguments="x:String" Capacity="4">
+                    <x:String>User</x:String>
+                    <x:String>Process manager</x:String>
+                  </scg:List>
+                </ui:SelectItem.Items>
+                <ui:SelectItem.Target>
+                  <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="a126b4eaaa37b5d3b75992897f0d6e16" Selector="&lt;html app='chrome.exe' title='UQ Custom Worklist' /&gt;&lt;webctrl tag='IFRAME' /&gt;&lt;webctrl id='userType' tag='SELECT' /&gt;" WaitForReady="INTERACTIVE" />
+                </ui:SelectItem.Target>
+              </ui:SelectItem>
+              <ui:Click DelayBefore="{x:Null}" DelayMS="{x:Null}" ClickType="CLICK_SINGLE" DisplayName="Click 'A'" sap2010:WorkflowViewState.IdRef="Click_22" KeyModifiers="None" MouseButton="BTN_LEFT" SendWindowMessages="False" SimulateClick="True">
+                <ui:Click.CursorPosition>
+                  <ui:CursorPosition Position="Center">
+                    <ui:CursorPosition.OffsetX>
+                      <InArgument x:TypeArguments="x:Int32" />
+                    </ui:CursorPosition.OffsetX>
+                    <ui:CursorPosition.OffsetY>
+                      <InArgument x:TypeArguments="x:Int32" />
+                    </ui:CursorPosition.OffsetY>
+                  </ui:CursorPosition>
+                </ui:Click.CursorPosition>
+                <ui:Click.Target>
+                  <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="e9b3178ff4d1e7f83e6ff1b447816ca7" Selector="&lt;html app='chrome.exe' title='UQ Custom Worklist' /&gt;&lt;webctrl tag='IFRAME' /&gt;&lt;webctrl aaname='Assigned' parentid='radioBtn' tag='A' /&gt;" WaitForReady="COMPLETE" />
+                </ui:Click.Target>
+              </ui:Click>
+              <ui:ForEachRow CurrentIndex="[caseIDindex]" DataTable="[CaseIDsDT]" DisplayName="For Each Row" sap2010:WorkflowViewState.IdRef="ForEachRow_7">
+                <ui:ForEachRow.Body>
+                  <ActivityAction x:TypeArguments="sd:DataRow">
+                    <ActivityAction.Argument>
+                      <DelegateInArgument x:TypeArguments="sd:DataRow" Name="row" />
+                    </ActivityAction.Argument>
+                    <Sequence DisplayName="Body" sap2010:WorkflowViewState.IdRef="Sequence_93">
+                      <ui:TypeInto DelayBefore="{x:Null}" DelayBetweenKeys="{x:Null}" DelayMS="{x:Null}" Activate="True" ClickBeforeTyping="False" DisplayName="Type Into 'INPUT  caseid'" EmptyField="True" sap2010:WorkflowViewState.IdRef="TypeInto_14" SendWindowMessages="False" SimulateType="True" Text="[row.Item(&quot;Case ID&quot;).ToString]">
+                        <ui:TypeInto.Target>
+                          <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="e2b7ceb03897d435b30f6d35ad97f817" Selector="&lt;html app='chrome.exe' title='UQ Custom Worklist' /&gt;&lt;webctrl src='../../../portal/resource/app/worklist/worklist/content/' tag='IFRAME' /&gt;&lt;webctrl id='caseid' tag='INPUT' /&gt;" WaitForReady="COMPLETE" />
+                        </ui:TypeInto.Target>
+                      </ui:TypeInto>
+                      <ui:Click DelayBefore="{x:Null}" DelayMS="{x:Null}" ClickType="CLICK_SINGLE" DisplayName="Click 'BUTTON  search'" sap2010:WorkflowViewState.IdRef="Click_17" KeyModifiers="None" MouseButton="BTN_LEFT" SendWindowMessages="False" SimulateClick="True">
+                        <ui:Click.CursorPosition>
+                          <ui:CursorPosition Position="Center">
+                            <ui:CursorPosition.OffsetX>
+                              <InArgument x:TypeArguments="x:Int32" />
+                            </ui:CursorPosition.OffsetX>
+                            <ui:CursorPosition.OffsetY>
+                              <InArgument x:TypeArguments="x:Int32" />
+                            </ui:CursorPosition.OffsetY>
+                          </ui:CursorPosition>
+                        </ui:Click.CursorPosition>
+                        <ui:Click.Target>
+                          <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="c0f6013f04dd6e4057f864dcc3e69672" Selector="&lt;html app='chrome.exe' title='UQ Custom Worklist' /&gt;&lt;webctrl tag='IFRAME' /&gt;&lt;webctrl id='search' tag='BUTTON' aaname='           Search         ' /&gt;" WaitForReady="COMPLETE" />
+                        </ui:Click.Target>
+                      </ui:Click>
+                      <ui:UiElementExists Exists="{x:Null}" DisplayName="Element Exists 'INPUT'" sap2010:WorkflowViewState.IdRef="UiElementExists_1">
+                        <ui:UiElementExists.Target>
+                          <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="13a7e01d020fe06f829619d1bd250867" Selector="&lt;html app='chrome.exe' title='UQ Custom Worklist' /&gt;&lt;webctrl tag='IFRAME' /&gt;&lt;webctrl tableRow='2' tag='INPUT' type='checkbox' /&gt;" WaitForReady="COMPLETE" />
+                        </ui:UiElementExists.Target>
+                      </ui:UiElementExists>
+                      <ui:Check ContinueOnError="{x:Null}" DelayAfter="{x:Null}" DelayBefore="{x:Null}" Action="Check" DisplayName="Check 'INPUT'" sap2010:WorkflowViewState.IdRef="Check_7">
+                        <ui:Check.Target>
+                          <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="d10c19fa776e5e18ca1946df7935ffcb" Selector="&lt;html app='chrome.exe' title='UQ Custom Worklist' /&gt;&lt;webctrl tag='IFRAME' /&gt;&lt;webctrl tableRow='2' tag='INPUT' type='checkbox' /&gt;" WaitForReady="COMPLETE" />
+                        </ui:Check.Target>
+                      </ui:Check>
+                      <ui:Click DelayBefore="{x:Null}" DelayMS="{x:Null}" ClickType="CLICK_SINGLE" DisplayName="Click 'INPUT'" sap2010:WorkflowViewState.IdRef="Click_21" KeyModifiers="None" MouseButton="BTN_LEFT" SendWindowMessages="False" SimulateClick="True">
+                        <ui:Click.CursorPosition>
+                          <ui:CursorPosition Position="Center">
+                            <ui:CursorPosition.OffsetX>
+                              <InArgument x:TypeArguments="x:Int32" />
+                            </ui:CursorPosition.OffsetX>
+                            <ui:CursorPosition.OffsetY>
+                              <InArgument x:TypeArguments="x:Int32" />
+                            </ui:CursorPosition.OffsetY>
+                          </ui:CursorPosition>
+                        </ui:Click.CursorPosition>
+                        <ui:Click.Target>
+                          <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="e70b0ddeb2f74c1420b28bf5a3b3daa1" Selector="&lt;html app='chrome.exe' title='UQ Custom Worklist' /&gt;&lt;webctrl tag='IFRAME' /&gt;&lt;webctrl aaname='Assign to me' tag='INPUT' type='button' /&gt;" WaitForReady="COMPLETE" />
+                        </ui:Click.Target>
+                      </ui:Click>
+                      <WriteLine DisplayName="Write Line" sap2010:WorkflowViewState.IdRef="WriteLine_27" Text="[(caseIDindex+1).ToString]" />
+                    </Sequence>
+                  </ActivityAction>
+                </ui:ForEachRow.Body>
+              </ui:ForEachRow>
+            </Sequence>
+          </FlowStep>
+        </FlowStep.Next>
       </FlowStep>
     </Flowchart.StartNode>
     <FlowStep sap2010:WorkflowViewState.IdRef="FlowStep_8">
@@ -167,7 +266,30 @@
         </ui:AddQueueItem.ItemInformation>
       </ui:AddQueueItem>
     </FlowStep>
-    <x:Reference>__ReferenceID0</x:Reference>
+    <FlowStep sap2010:WorkflowViewState.IdRef="FlowStep_15">
+      <Sequence DisplayName="Reset queue items" sap2010:WorkflowViewState.IdRef="Sequence_20">
+        <Sequence.Variables>
+          <Variable x:TypeArguments="scg:IEnumerable(ui:QueueItem)" Name="QueueItems" />
+        </Sequence.Variables>
+        <ui:GetQueueItems Duration="{x:Null}" From="{x:Null}" Priority="{x:Null}" Reference="{x:Null}" Skip="{x:Null}" TimeoutMS="{x:Null}" To="{x:Null}" Top="{x:Null}" DisplayName="Get Queue Items" FilterStrategy="StartsWith" sap2010:WorkflowViewState.IdRef="GetQueueItems_1" QueueItemStates="InProgress" QueueName="HR_FixedTermAppointmentExpiry" Result="[QueueItems]" />
+        <ui:ForEach x:TypeArguments="ui:QueueItem" CurrentIndex="{x:Null}" DisplayName="For Each" sap2010:WorkflowViewState.IdRef="ForEach`1_1" Values="[QueueItems]">
+          <ui:ForEach.Body>
+            <ActivityAction x:TypeArguments="ui:QueueItem">
+              <ActivityAction.Argument>
+                <DelegateInArgument x:TypeArguments="ui:QueueItem" Name="item" />
+              </ActivityAction.Argument>
+              <Sequence DisplayName="Body" sap2010:WorkflowViewState.IdRef="Sequence_19">
+                <ui:SetTransactionStatus ContinueOnError="{x:Null}" ServiceBaseAddress="{x:Null}" TimeoutMS="{x:Null}" DisplayName="Set Transaction Status" ErrorType="Business" sap2010:WorkflowViewState.IdRef="SetTransactionStatus_1" Reason="Item reset" Status="Failed" TransactionItem="[item]">
+                  <ui:SetTransactionStatus.Output>
+                    <scg:Dictionary x:TypeArguments="x:String, InArgument" />
+                  </ui:SetTransactionStatus.Output>
+                </ui:SetTransactionStatus>
+              </Sequence>
+            </ActivityAction>
+          </ui:ForEach.Body>
+        </ui:ForEach>
+      </Sequence>
+    </FlowStep>
     <FlowStep sap2010:WorkflowViewState.IdRef="FlowStep_19">
       <ui:HttpClient Body="{x:Null}" ClientCertificate="{x:Null}" ClientCertificatePassword="{x:Null}" ConsumerKey="{x:Null}" ConsumerSecret="{x:Null}" ContinueOnError="{x:Null}" EndPoint="{x:Null}" OAuth1Token="{x:Null}" OAuth1TokenSecret="{x:Null}" OAuth2Token="{x:Null}" Password="{x:Null}" ResourcePath="{x:Null}" ResponseHeaders="{x:Null}" Result="{x:Null}" StatusCode="{x:Null}" Username="{x:Null}" AcceptFormat="ANY" BodyFormat="application/xml" DisplayName="HTTP Request" sap2010:WorkflowViewState.IdRef="HttpClient_1" Method="GET" TimeoutMS="6000">
         <ui:HttpClient.Attachments>
@@ -432,13 +554,13 @@
     <FlowStep sap2010:WorkflowViewState.IdRef="FlowStep_50">
       <ui:ReadRange Range="{x:Null}" AddHeaders="True" DataTable="[CaseIDsDT]" DisplayName="Read Range" sap2010:WorkflowViewState.IdRef="ReadRange_1" SheetName="Sheet1" WorkbookPath="Data\Case IDs.xlsx" />
       <FlowStep.Next>
-        <FlowStep x:Name="__ReferenceID2" sap2010:WorkflowViewState.IdRef="FlowStep_53">
+        <FlowStep x:Name="__ReferenceID1" sap2010:WorkflowViewState.IdRef="FlowStep_53">
           <ui:BuildDataTable DataTable="[ReportDT]" DisplayName="Build Data Table" sap2010:WorkflowViewState.IdRef="BuildDataTable_1" TableInfo="&lt;NewDataSet&gt;&#xA;  &lt;xs:schema id=&quot;NewDataSet&quot; xmlns=&quot;&quot; xmlns:xs=&quot;http://www.w3.org/2001/XMLSchema&quot; xmlns:msdata=&quot;urn:schemas-microsoft-com:xml-msdata&quot;&gt;&#xA;    &lt;xs:element name=&quot;NewDataSet&quot; msdata:IsDataSet=&quot;true&quot; msdata:MainDataTable=&quot;TableName&quot; msdata:UseCurrentLocale=&quot;true&quot;&gt;&#xA;      &lt;xs:complexType&gt;&#xA;        &lt;xs:choice minOccurs=&quot;0&quot; maxOccurs=&quot;unbounded&quot;&gt;&#xA;          &lt;xs:element name=&quot;TableName&quot;&gt;&#xA;            &lt;xs:complexType&gt;&#xA;              &lt;xs:sequence&gt;&#xA;                &lt;xs:element name=&quot;Case_x0020_ID&quot; type=&quot;xs:string&quot; minOccurs=&quot;0&quot; /&gt;&#xA;                &lt;xs:element name=&quot;Employee_x0020_Name&quot; type=&quot;xs:string&quot; minOccurs=&quot;0&quot; /&gt;&#xA;                &lt;xs:element name=&quot;Employee_x0020_Number&quot; type=&quot;xs:string&quot; minOccurs=&quot;0&quot; /&gt;&#xA;                &lt;xs:element name=&quot;Proposed_x0020_Start_x0020_Date&quot; type=&quot;xs:string&quot; minOccurs=&quot;0&quot; /&gt;&#xA;                &lt;xs:element name=&quot;Proposed_x0020_End_x0020_Date&quot; type=&quot;xs:string&quot; minOccurs=&quot;0&quot; /&gt;&#xA;                &lt;xs:element name=&quot;Pay_x0020_Point_x0020_Code&quot; type=&quot;xs:string&quot; minOccurs=&quot;0&quot; /&gt;&#xA;                &lt;xs:element name=&quot;Status&quot; type=&quot;xs:string&quot; minOccurs=&quot;0&quot; /&gt;&#xA;                &lt;xs:element name=&quot;Notes&quot; type=&quot;xs:string&quot; minOccurs=&quot;0&quot; /&gt;&#xA;              &lt;/xs:sequence&gt;&#xA;            &lt;/xs:complexType&gt;&#xA;          &lt;/xs:element&gt;&#xA;        &lt;/xs:choice&gt;&#xA;      &lt;/xs:complexType&gt;&#xA;    &lt;/xs:element&gt;&#xA;  &lt;/xs:schema&gt;&#xA;&lt;/NewDataSet&gt;" />
           <FlowStep.Next>
-            <FlowStep x:Name="__ReferenceID4" sap2010:WorkflowViewState.IdRef="FlowStep_54">
+            <FlowStep x:Name="__ReferenceID3" sap2010:WorkflowViewState.IdRef="FlowStep_54">
               <WriteLine DisplayName="Write Line" sap2010:WorkflowViewState.IdRef="WriteLine_13" Text="--------------------" />
               <FlowStep.Next>
-                <FlowStep x:Name="__ReferenceID1" sap2010:WorkflowViewState.IdRef="FlowStep_49">
+                <FlowStep x:Name="__ReferenceID0" sap2010:WorkflowViewState.IdRef="FlowStep_49">
                   <ui:ForEachRow CurrentIndex="{x:Null}" DataTable="[CaseIDsDT]" DisplayName="For Each Row" sap2010:WorkflowViewState.IdRef="ForEachRow_1">
                     <ui:ForEachRow.Body>
                       <ActivityAction x:TypeArguments="sd:DataRow">
@@ -901,10 +1023,10 @@
                     </ui:ForEachRow.Body>
                   </ui:ForEachRow>
                   <FlowStep.Next>
-                    <FlowStep x:Name="__ReferenceID3" sap2010:WorkflowViewState.IdRef="FlowStep_52">
+                    <FlowStep x:Name="__ReferenceID2" sap2010:WorkflowViewState.IdRef="FlowStep_52">
                       <ui:WriteCsvFile Encoding="{x:Null}" AddHeaders="True" DataTable="[ReportDT]" Delimitator="Comma" DisplayName="Write CSV" FilePath="Data\Case IDs Report.csv" sap2010:WorkflowViewState.IdRef="WriteCsvFile_1" />
                       <FlowStep.Next>
-                        <FlowStep x:Name="__ReferenceID5" sap2010:WorkflowViewState.IdRef="FlowStep_56">
+                        <FlowStep x:Name="__ReferenceID4" sap2010:WorkflowViewState.IdRef="FlowStep_56">
                           <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke DataTableToHtmlText workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_1" UnSafe="False" WorkflowFileName="Utilities\DataTableToHtmlText.xaml">
                             <ui:InvokeWorkflowFile.Arguments>
                               <InArgument x:TypeArguments="sd:DataTable" x:Key="in_InputDatatable">[ReportDT]</InArgument>
@@ -915,7 +1037,7 @@
                             </ui:InvokeWorkflowFile.Arguments>
                           </ui:InvokeWorkflowFile>
                           <FlowStep.Next>
-                            <FlowStep x:Name="__ReferenceID6" sap2010:WorkflowViewState.IdRef="FlowStep_60">
+                            <FlowStep x:Name="__ReferenceID5" sap2010:WorkflowViewState.IdRef="FlowStep_60">
                               <ui:WriteTextFile DisplayName="Write Text File" FileName="Data\Report.html" sap2010:WorkflowViewState.IdRef="WriteTextFile_1" Text="[DTasHTML]" />
                             </FlowStep>
                           </FlowStep.Next>
@@ -930,11 +1052,11 @@
         </FlowStep>
       </FlowStep.Next>
     </FlowStep>
+    <x:Reference>__ReferenceID0</x:Reference>
     <x:Reference>__ReferenceID1</x:Reference>
     <x:Reference>__ReferenceID2</x:Reference>
     <x:Reference>__ReferenceID3</x:Reference>
     <x:Reference>__ReferenceID4</x:Reference>
-    <x:Reference>__ReferenceID5</x:Reference>
     <FlowStep sap2010:WorkflowViewState.IdRef="FlowStep_58">
       <ui:SendOutlookMail Account="{x:Null}" Bcc="{x:Null}" Cc="{x:Null}" MailMessage="{x:Null}" TimeoutMS="{x:Null}" Body="[DTasHTML]" DisplayName="Send Outlook Mail Message" sap2010:WorkflowViewState.IdRef="SendOutlookMail_1" IsBodyHtml="True" IsDraft="False" Subject="Report Test" To="s.debbe@uq.edu.au">
         <ui:SendOutlookMail.Files>
@@ -942,7 +1064,7 @@
         </ui:SendOutlookMail.Files>
       </ui:SendOutlookMail>
     </FlowStep>
-    <x:Reference>__ReferenceID6</x:Reference>
+    <x:Reference>__ReferenceID5</x:Reference>
     <FlowStep sap2010:WorkflowViewState.IdRef="FlowStep_61">
       <Sequence sap2010:WorkflowViewState.IdRef="Sequence_42">
         <Sequence.Variables>
@@ -968,7 +1090,7 @@
             <OutArgument x:TypeArguments="x:Int32">[TableRow]</OutArgument>
           </ui:GetAttribute.Result>
           <ui:GetAttribute.Target>
-            <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="279847ddf529f6f18df46755881861ff" Selector="[&quot;&lt;tag='IFRAME' /&gt;&lt;webctrl aaname='&quot; + CaseID + &quot;' parentid='main' tag='A' /&gt;&quot;]" WaitForReady="INTERACTIVE" />
+            <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="3536ab13c5f62a7d24bb92321cbd49a0" Selector="[&quot;&lt;html app='chrome.exe' title='UQ Custom Worklist' /&gt;&lt;webctrl tag='IFRAME' /&gt;&lt;webctrl aaname='&quot; + CaseID + &quot;' parentid='main' tag='A' /&gt;&quot;]" WaitForReady="INTERACTIVE" />
           </ui:GetAttribute.Target>
         </ui:GetAttribute>
         <WriteLine DisplayName="Write Line" sap2010:WorkflowViewState.IdRef="WriteLine_15" Text="[&quot;TableRow = &quot; + TableRow.ToString]" />
@@ -1030,7 +1152,7 @@
         </ui:CommentOut>
       </Sequence>
       <FlowStep.Next>
-        <FlowStep x:Name="__ReferenceID7" sap2010:WorkflowViewState.IdRef="FlowStep_67">
+        <FlowStep x:Name="__ReferenceID6" sap2010:WorkflowViewState.IdRef="FlowStep_67">
           <Sequence DisplayName="Select Pay Point Admin" sap2010:WorkflowViewState.IdRef="Sequence_49">
             <ui:BrowserScope Browser="{x:Null}" SearchScope="{x:Null}" TimeoutMS="{x:Null}" UiBrowser="{x:Null}" BrowserType="Chrome" DisplayName="Attach Browser 'UQCustomW Page'" sap2010:WorkflowViewState.IdRef="BrowserScope_1" InformativeScreenshot="333bc223dbd14c1c5508b0767f58d6af" Selector="&lt;html app='chrome.exe' title='UQ Custom Worklist' /&gt;">
               <ui:BrowserScope.Body>
@@ -1189,55 +1311,83 @@
                 </Sequence>
               </ui:CommentOut.Body>
             </ui:CommentOut>
-            <If Condition="[in_Config(&quot;OperatingEnvironment&quot;).ToString.ToUpper.Equals(&quot;DEV&quot;)]" DisplayName="If Operating Environment = DEV don't assign task" sap2010:WorkflowViewState.IdRef="If_15">
-              <If.Then>
-                <Sequence sap2010:WorkflowViewState.IdRef="Sequence_90">
-                  <ui:Highlight Color="Blue" DisplayName="Highlight 'Assign'" HighlightTime="1000" sap2010:WorkflowViewState.IdRef="Highlight_1">
-                    <ui:Highlight.Target>
-                      <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="59391466851ff7908177959d377b4580" Selector="[&quot;&lt;html app='chrome.exe' title='UQ Custom Worklist' /&gt;&lt;webctrl tag='IFRAME' /&gt;&lt;webctrl aaname='Assign' parentid='main' rowName='&quot; + payPointUsername + &quot;' tag='A' /&gt;&quot;]" WaitForReady="COMPLETE" />
-                    </ui:Highlight.Target>
-                  </ui:Highlight>
-                  <ui:Click DelayBefore="{x:Null}" DelayMS="{x:Null}" ClickType="CLICK_SINGLE" ContinueOnError="True" DisplayName="Click 'x' (Close) " sap2010:WorkflowViewState.IdRef="Click_14" KeyModifiers="None" MouseButton="BTN_LEFT" SendWindowMessages="False" SimulateClick="True">
-                    <ui:Click.CursorPosition>
-                      <ui:CursorPosition Position="Center">
-                        <ui:CursorPosition.OffsetX>
-                          <InArgument x:TypeArguments="x:Int32" />
-                        </ui:CursorPosition.OffsetX>
-                        <ui:CursorPosition.OffsetY>
-                          <InArgument x:TypeArguments="x:Int32" />
-                        </ui:CursorPosition.OffsetY>
-                      </ui:CursorPosition>
-                    </ui:Click.CursorPosition>
-                    <ui:Click.Target>
-                      <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" InformativeScreenshot="bea156d535031931ad5affaabcbb4174" Selector="&lt;webctrl tag='IFRAME' /&gt;&lt;webctrl aaname='×' parentid='main' tag='SPAN' idx='2' /&gt;" TimeoutMS="1000" WaitForReady="COMPLETE" />
-                    </ui:Click.Target>
-                  </ui:Click>
+            <Sequence sap2010:WorkflowViewState.IdRef="Sequence_90">
+              <ui:Highlight Color="Blue" DisplayName="Highlight 'Assign'" HighlightTime="1000" sap2010:WorkflowViewState.IdRef="Highlight_1">
+                <ui:Highlight.Target>
+                  <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="59391466851ff7908177959d377b4580" Selector="[&quot;&lt;html app='chrome.exe' title='UQ Custom Worklist' /&gt;&lt;webctrl tag='IFRAME' /&gt;&lt;webctrl aaname='Assign' parentid='main' rowName='&quot; + payPointUsername + &quot;' tag='A' /&gt;&quot;]" WaitForReady="COMPLETE" />
+                </ui:Highlight.Target>
+              </ui:Highlight>
+              <ui:Click DelayBefore="{x:Null}" DelayMS="{x:Null}" ClickType="CLICK_SINGLE" ContinueOnError="True" DisplayName="Click 'x' (Close) " sap2010:WorkflowViewState.IdRef="Click_14" KeyModifiers="None" MouseButton="BTN_LEFT" SendWindowMessages="False" SimulateClick="True">
+                <ui:Click.CursorPosition>
+                  <ui:CursorPosition Position="Center">
+                    <ui:CursorPosition.OffsetX>
+                      <InArgument x:TypeArguments="x:Int32" />
+                    </ui:CursorPosition.OffsetX>
+                    <ui:CursorPosition.OffsetY>
+                      <InArgument x:TypeArguments="x:Int32" />
+                    </ui:CursorPosition.OffsetY>
+                  </ui:CursorPosition>
+                </ui:Click.CursorPosition>
+                <ui:Click.Target>
+                  <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" InformativeScreenshot="bea156d535031931ad5affaabcbb4174" Selector="&lt;html app='chrome.exe' title='UQ Custom Worklist' /&gt;&lt;webctrl tag='IFRAME' /&gt;&lt;webctrl aaname='×' parentid='main' tag='SPAN' idx='2' /&gt;" TimeoutMS="1000" WaitForReady="COMPLETE" />
+                </ui:Click.Target>
+              </ui:Click>
+            </Sequence>
+            <ui:CommentOut DisplayName="Comment Out" sap2010:WorkflowViewState.IdRef="CommentOut_12">
+              <ui:CommentOut.Body>
+                <Sequence DisplayName="Ignored Activities" sap2010:WorkflowViewState.IdRef="Sequence_92">
+                  <If Condition="[in_Config(&quot;OperatingEnvironment&quot;).ToString.ToUpper.Equals(&quot;DEV&quot;)]" DisplayName="If Operating Environment = DEV don't assign task" sap2010:WorkflowViewState.IdRef="If_15">
+                    <If.Then>
+                      <Sequence sap2010:WorkflowViewState.IdRef="Sequence_91">
+                        <ui:Highlight Color="Blue" DisplayName="Highlight 'Assign'" HighlightTime="1000" sap2010:WorkflowViewState.IdRef="Highlight_2">
+                          <ui:Highlight.Target>
+                            <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="59391466851ff7908177959d377b4580" Selector="[&quot;&lt;html app='chrome.exe' title='UQ Custom Worklist' /&gt;&lt;webctrl tag='IFRAME' /&gt;&lt;webctrl aaname='Assign' parentid='main' rowName='&quot; + payPointUsername + &quot;' tag='A' /&gt;&quot;]" WaitForReady="COMPLETE" />
+                          </ui:Highlight.Target>
+                        </ui:Highlight>
+                        <ui:Click DelayBefore="{x:Null}" DelayMS="{x:Null}" ClickType="CLICK_SINGLE" ContinueOnError="True" DisplayName="Click 'x' (Close) " sap2010:WorkflowViewState.IdRef="Click_16" KeyModifiers="None" MouseButton="BTN_LEFT" SendWindowMessages="False" SimulateClick="True">
+                          <ui:Click.CursorPosition>
+                            <ui:CursorPosition Position="Center">
+                              <ui:CursorPosition.OffsetX>
+                                <InArgument x:TypeArguments="x:Int32" />
+                              </ui:CursorPosition.OffsetX>
+                              <ui:CursorPosition.OffsetY>
+                                <InArgument x:TypeArguments="x:Int32" />
+                              </ui:CursorPosition.OffsetY>
+                            </ui:CursorPosition>
+                          </ui:Click.CursorPosition>
+                          <ui:Click.Target>
+                            <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" InformativeScreenshot="bea156d535031931ad5affaabcbb4174" Selector="&lt;webctrl tag='IFRAME' /&gt;&lt;webctrl aaname='×' parentid='main' tag='SPAN' idx='2' /&gt;" TimeoutMS="1000" WaitForReady="COMPLETE" />
+                          </ui:Click.Target>
+                        </ui:Click>
+                      </Sequence>
+                    </If.Then>
+                    <If.Else>
+                      <ui:Click DelayBefore="{x:Null}" DelayMS="{x:Null}" ClickType="CLICK_SINGLE" DisplayName="Click 'Accept'" sap2010:WorkflowViewState.IdRef="Click_15" KeyModifiers="None" MouseButton="BTN_LEFT" SendWindowMessages="False" SimulateClick="False">
+                        <ui:Click.CursorPosition>
+                          <ui:CursorPosition Position="Center">
+                            <ui:CursorPosition.OffsetX>
+                              <InArgument x:TypeArguments="x:Int32" />
+                            </ui:CursorPosition.OffsetX>
+                            <ui:CursorPosition.OffsetY>
+                              <InArgument x:TypeArguments="x:Int32" />
+                            </ui:CursorPosition.OffsetY>
+                          </ui:CursorPosition>
+                        </ui:Click.CursorPosition>
+                        <ui:Click.Target>
+                          <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="c6f99e0e23bbce9b77da05770e38f12f" Selector="&lt;html app='chrome.exe' title='UQ Custom Worklist' /&gt;&lt;webctrl tag='IFRAME' /&gt;&lt;webctrl aaname='Assign' parentid='main' tag='A' /&gt;" WaitForReady="COMPLETE" />
+                        </ui:Click.Target>
+                      </ui:Click>
+                    </If.Else>
+                  </If>
                 </Sequence>
-              </If.Then>
-              <If.Else>
-                <ui:Click DelayBefore="{x:Null}" DelayMS="{x:Null}" ClickType="CLICK_SINGLE" DisplayName="Click 'Accept'" sap2010:WorkflowViewState.IdRef="Click_15" KeyModifiers="None" MouseButton="BTN_LEFT" SendWindowMessages="False" SimulateClick="False">
-                  <ui:Click.CursorPosition>
-                    <ui:CursorPosition Position="Center">
-                      <ui:CursorPosition.OffsetX>
-                        <InArgument x:TypeArguments="x:Int32" />
-                      </ui:CursorPosition.OffsetX>
-                      <ui:CursorPosition.OffsetY>
-                        <InArgument x:TypeArguments="x:Int32" />
-                      </ui:CursorPosition.OffsetY>
-                    </ui:CursorPosition>
-                  </ui:Click.CursorPosition>
-                  <ui:Click.Target>
-                    <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="c6f99e0e23bbce9b77da05770e38f12f" Selector="&lt;html app='chrome.exe' title='UQ Custom Worklist' /&gt;&lt;webctrl tag='IFRAME' /&gt;&lt;webctrl aaname='Assign' parentid='main' tag='A' /&gt;" WaitForReady="COMPLETE" />
-                  </ui:Click.Target>
-                </ui:Click>
-              </If.Else>
-            </If>
+              </ui:CommentOut.Body>
+            </ui:CommentOut>
             <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;Found pay point admin &quot;&quot;&quot; + payPointUsername + &quot;&quot;&quot;&quot;]" />
           </Sequence>
         </FlowStep>
       </FlowStep.Next>
     </FlowStep>
-    <x:Reference>__ReferenceID7</x:Reference>
+    <x:Reference>__ReferenceID6</x:Reference>
     <FlowStep sap2010:WorkflowViewState.IdRef="FlowStep_70">
       <Sequence DisplayName="Map network drives" sap2010:WorkflowViewState.IdRef="Sequence_64">
         <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke MountFileServer workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_4" UnSafe="False" WorkflowFileName="Utilities\MountFileServer.xaml">
@@ -1270,14 +1420,40 @@
             <OutArgument x:TypeArguments="x:String">[UQ_SMTP_PORT]</OutArgument>
           </ui:GetRobotAsset.Value>
         </ui:GetRobotAsset>
-        <ui:SendMail Bcc="{x:Null}" Cc="{x:Null}" Email="{x:Null}" MailMessage="{x:Null}" Name="{x:Null}" Password="{x:Null}" TimeoutMS="{x:Null}" Body="[DTasHTML]" DisplayName="Send SMTP Mail Message" EnableSSL="True" From="noreply@uq.edu.au" sap2010:WorkflowViewState.IdRef="SendMail_1" IsBodyHtml="True" Port="[CInt(UQ_SMTP_PORT)]" SecureConnection="Auto" Server="[UQ_SMTP_SERVER]" Subject="Report Test" To="s.debbe@uq.edu.au">
+        <ui:ReadTextFile Content="[ReportEmailTemplate]" DisplayName="Read Text File" FileName="Data\Report Email Template.html" sap2010:WorkflowViewState.IdRef="ReadTextFile_6" />
+        <ui:ReadTextFile Content="[DTasHTML]" DisplayName="Read Text File" FileName="Data\Report.html" sap2010:WorkflowViewState.IdRef="ReadTextFile_7" />
+        <Assign sap2010:WorkflowViewState.IdRef="Assign_81">
+          <Assign.To>
+            <OutArgument x:TypeArguments="x:String">[ReportEmailTemplate]</OutArgument>
+          </Assign.To>
+          <Assign.Value>
+            <InArgument x:TypeArguments="x:String">[ReportEmailTemplate.Replace("{Message}","Test Message")]</InArgument>
+          </Assign.Value>
+        </Assign>
+        <Assign sap2010:WorkflowViewState.IdRef="Assign_82">
+          <Assign.To>
+            <OutArgument x:TypeArguments="x:String">[ReportEmailTemplate]</OutArgument>
+          </Assign.To>
+          <Assign.Value>
+            <InArgument x:TypeArguments="x:String">[ReportEmailTemplate.Replace("{ProcessName}","FTAE")]</InArgument>
+          </Assign.Value>
+        </Assign>
+        <Assign sap2010:WorkflowViewState.IdRef="Assign_83">
+          <Assign.To>
+            <OutArgument x:TypeArguments="x:String">[ReportEmailTemplate]</OutArgument>
+          </Assign.To>
+          <Assign.Value>
+            <InArgument x:TypeArguments="x:String">[ReportEmailTemplate.Replace("{Table}",DTasHTML)]</InArgument>
+          </Assign.Value>
+        </Assign>
+        <ui:SendMail Bcc="{x:Null}" Cc="{x:Null}" Email="{x:Null}" MailMessage="{x:Null}" Name="{x:Null}" Password="{x:Null}" TimeoutMS="{x:Null}" Body="[ReportEmailTemplate]" DisplayName="Send SMTP Mail Message" EnableSSL="True" From="noreply@uq.edu.au" sap2010:WorkflowViewState.IdRef="SendMail_1" IsBodyHtml="True" Port="[CInt(UQ_SMTP_PORT)]" SecureConnection="Auto" Server="[UQ_SMTP_SERVER]" Subject="Report Table Test" To="s.debbe@uq.edu.au">
           <ui:SendMail.Files>
             <scg:List x:TypeArguments="InArgument(x:String)" Capacity="0" />
           </ui:SendMail.Files>
         </ui:SendMail>
       </Sequence>
     </FlowStep>
-    <FlowStep x:Name="__ReferenceID8" sap2010:WorkflowViewState.IdRef="FlowStep_74">
+    <FlowStep x:Name="__ReferenceID7" sap2010:WorkflowViewState.IdRef="FlowStep_74">
       <ui:ForEachRow CurrentIndex="{x:Null}" DataTable="[employeeNumberDT]" DisplayName="For Each Row" sap2010:WorkflowViewState.IdRef="ForEachRow_4">
         <ui:ForEachRow.Body>
           <ActivityAction x:TypeArguments="sd:DataRow">
@@ -1432,7 +1608,7 @@
     <FlowStep sap2010:WorkflowViewState.IdRef="FlowStep_75">
       <ui:ReadRange Range="{x:Null}" AddHeaders="True" DataTable="[employeeNumberDT]" DisplayName="Read Range" sap2010:WorkflowViewState.IdRef="ReadRange_2" SheetName="Sheet1" WorkbookPath="Data\Employee Number.xlsx" />
       <FlowStep.Next>
-        <x:Reference>__ReferenceID8</x:Reference>
+        <x:Reference>__ReferenceID7</x:Reference>
       </FlowStep.Next>
     </FlowStep>
     <FlowStep sap2010:WorkflowViewState.IdRef="FlowStep_77">
@@ -1654,62 +1830,83 @@
     <FlowStep sap2010:WorkflowViewState.IdRef="FlowStep_81">
       <WriteLine DisplayName="Write Line" sap2010:WorkflowViewState.IdRef="WriteLine_25" Text="[DateTime.ParseExact(&quot;26-02-2020&quot;, &quot;dd-MM-yyyy&quot;, System.Globalization.CultureInfo.InvariantCulture).ToString(&quot;dd-MMM-yyyy&quot;)]" />
     </FlowStep>
-    <FlowStep sap2010:WorkflowViewState.IdRef="FlowStep_82">
-      <Sequence DisplayName="Populate queue" sap2010:WorkflowViewState.IdRef="Sequence_85">
-        <ui:ReadRange Range="{x:Null}" AddHeaders="True" DataTable="[CaseIDsDT]" DisplayName="Read Range" sap2010:WorkflowViewState.IdRef="ReadRange_4" SheetName="Sheet1" WorkbookPath="Data\Case IDs.xlsx" />
-        <ui:ForEachRow CurrentIndex="{x:Null}" DataTable="[CaseIDsDT]" DisplayName="For Each Row" sap2010:WorkflowViewState.IdRef="ForEachRow_6">
-          <ui:ForEachRow.Body>
-            <ActivityAction x:TypeArguments="sd:DataRow">
-              <ActivityAction.Argument>
-                <DelegateInArgument x:TypeArguments="sd:DataRow" Name="row" />
-              </ActivityAction.Argument>
-              <Sequence DisplayName="Body" sap2010:WorkflowViewState.IdRef="Sequence_84">
-                <ui:AddQueueItem ServiceBaseAddress="{x:Null}" TimeoutMS="{x:Null}" DisplayName="Add Queue Item" sap2010:WorkflowViewState.IdRef="AddQueueItem_3" Priority="Normal" QueueType="HR_FixedTermAppointmentExpiry" Reference="[row.Item(&quot;Case ID&quot;).ToString]">
-                  <ui:AddQueueItem.ItemInformation>
-                    <scg:Dictionary x:TypeArguments="x:String, InArgument" />
-                  </ui:AddQueueItem.ItemInformation>
-                </ui:AddQueueItem>
-                <Assign sap2010:WorkflowViewState.IdRef="Assign_80">
-                  <Assign.To>
-                    <OutArgument x:TypeArguments="x:Int32">[count]</OutArgument>
-                  </Assign.To>
-                  <Assign.Value>
-                    <InArgument x:TypeArguments="x:Int32">[count + 1]</InArgument>
-                  </Assign.Value>
-                </Assign>
-              </Sequence>
-            </ActivityAction>
-          </ui:ForEachRow.Body>
-        </ui:ForEachRow>
-        <WriteLine DisplayName="Write Line" sap2010:WorkflowViewState.IdRef="WriteLine_26" Text="[count.ToString]" />
-      </Sequence>
-    </FlowStep>
-    <sads:DebugSymbol.Symbol>d2FDOlxVc2Vyc1x1cXNkZWJiZVxEb2N1bWVudHNcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcSFJfRml4ZWRUZXJtQXBwb2ludG1lbnRFeHBpcnlcU2FuZGJveC54YW1sDU8DmA0PAgEBZDhkVQIBA2g4aFUCAQJzCYgBFAIBBHcLd/cCAgEMeAuHARgCAQV3vwJ33gICAQ535gJ39AICAQ14mgF4qAECAQt+EYQBHAIBBn8TgwEtAgEHf/QBf4ACAgEKf6ECf6kCAgEI</sads:DebugSymbol.Symbol>
+    <x:Reference>__ReferenceID8</x:Reference>
+    <x:Reference>__ReferenceID9</x:Reference>
+    <sads:DebugSymbol.Symbol>d2FDOlxVc2Vyc1x1cXNkZWJiZVxEb2N1bWVudHNcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcSFJfRml4ZWRUZXJtQXBwb2ludG1lbnRFeHBpcnlcU2FuZGJveC54YW1sLlADrA4PAgEBZThlVQIBA2k4aVUCAQJ2CZEBFAIBI5QBDekBGAIBBHcLd9IBAgEzeAuPARsCASeQAQuQAXgCASSVAQ+VAdYBAgEelgEPoAEfAgEboQEPrwEaAgEZsAEP6AEfAgEFd0Z3UwIBNnelAXetAQIBNXe7AXfPAQIBNHg8eEkCATF+EYwBHAIBKJABY5ABdQIBJZUBSpUBVwIBIZUBqQGVAbEBAgEglQG/AZUB0wECAR+WAccBlgHYAQIBHJ4BogGeAagCAgEdrQGiAa0BuwICARqwASuwAToCARewAUWwAVICARW2ARXlASACAQZ/E4MBJQIBLoQBE4sBHAIBKbcBF7sBJQIBErwBF8oBIgIBEMsBF88BLAIBDtABF9QBIgIBDNUBF+MBIgIBCuQBF+QBjgECAQd/6wF/lQICATB/wQF/4AECAS+JAT2JAUgCASyGAT6GAUUCASq5AaoBuQHrAgIBFLcBsAK3AdoCAgETyAGqAcgB0gICARHNAaoBzQG+AgIBD9IBqgHSAb4CAgEN4QGqAeEBxQICAQvkAW/kAYsBAgEI</sads:DebugSymbol.Symbol>
   </Flowchart>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
-      <sap2010:ViewStateData Id="GetQueueItems_1" sap:VirtualizedContainerService.HintSize="287,22" />
-      <sap2010:ViewStateData Id="SetTransactionStatus_1" sap:VirtualizedContainerService.HintSize="200,22" />
-      <sap2010:ViewStateData Id="Sequence_19" sap:VirtualizedContainerService.HintSize="222,146">
+      <sap2010:ViewStateData Id="ReadRange_4" sap:VirtualizedContainerService.HintSize="314,87">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="ForEach`1_1" sap:VirtualizedContainerService.HintSize="287,280" />
-      <sap2010:ViewStateData Id="Sequence_20" sap:VirtualizedContainerService.HintSize="200,51">
+      <sap2010:ViewStateData Id="AddQueueItem_3" sap:VirtualizedContainerService.HintSize="242,22" />
+      <sap2010:ViewStateData Id="Assign_80" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="Sequence_84" sap:VirtualizedContainerService.HintSize="264,246">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="FlowStep_15">
+      <sap2010:ViewStateData Id="ForEachRow_6" sap:VirtualizedContainerService.HintSize="314,394" />
+      <sap2010:ViewStateData Id="WriteLine_26" sap:VirtualizedContainerService.HintSize="314,61" />
+      <sap2010:ViewStateData Id="Sequence_85" sap:VirtualizedContainerService.HintSize="200,51">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <av:Point x:Key="ShapeLocation">1000,244.5</av:Point>
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="ReadRange_5" sap:VirtualizedContainerService.HintSize="366,87">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="SelectItem_1" sap:VirtualizedContainerService.HintSize="366,134" />
+      <sap2010:ViewStateData Id="Click_22" sap:VirtualizedContainerService.HintSize="366,106" />
+      <sap2010:ViewStateData Id="TypeInto_14" sap:VirtualizedContainerService.HintSize="314,134" />
+      <sap2010:ViewStateData Id="Click_17" sap:VirtualizedContainerService.HintSize="314,106" />
+      <sap2010:ViewStateData Id="UiElementExists_1" sap:VirtualizedContainerService.HintSize="314,106" />
+      <sap2010:ViewStateData Id="Check_7" sap:VirtualizedContainerService.HintSize="314,106" />
+      <sap2010:ViewStateData Id="Click_21" sap:VirtualizedContainerService.HintSize="314,106" />
+      <sap2010:ViewStateData Id="WriteLine_27" sap:VirtualizedContainerService.HintSize="314,61" />
+      <sap2010:ViewStateData Id="Sequence_93" sap:VirtualizedContainerService.HintSize="336,943">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="ForEachRow_7" sap:VirtualizedContainerService.HintSize="366,1091" />
+      <sap2010:ViewStateData Id="Sequence_94" sap:VirtualizedContainerService.HintSize="200,51">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="FlowStep_83">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <av:Point x:Key="ShapeLocation">0,655.02</av:Point>
             <av:Size x:Key="ShapeSize">200,51</av:Size>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="FlowStep_82">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <av:Point x:Key="ShapeLocation">0,554.02</av:Point>
+            <av:Size x:Key="ShapeSize">200,51</av:Size>
+            <av:PointCollection x:Key="ConnectorLocation">100,605.02 100,655.02</av:PointCollection>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
@@ -1770,6 +1967,31 @@
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <av:Point x:Key="ShapeLocation">1000,199</av:Point>
             <av:Size x:Key="ShapeSize">200,22</av:Size>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="GetQueueItems_1" sap:VirtualizedContainerService.HintSize="287,22" />
+      <sap2010:ViewStateData Id="SetTransactionStatus_1" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="Sequence_19" sap:VirtualizedContainerService.HintSize="222,146">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="ForEach`1_1" sap:VirtualizedContainerService.HintSize="287,280" />
+      <sap2010:ViewStateData Id="Sequence_20" sap:VirtualizedContainerService.HintSize="200,51">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="FlowStep_15">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <av:Point x:Key="ShapeLocation">1000,244.5</av:Point>
+            <av:Size x:Key="ShapeSize">200,51</av:Size>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
@@ -2119,7 +2341,7 @@
       <sap2010:ViewStateData Id="Assign_74" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="Assign_75" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="Assign_76" sap:VirtualizedContainerService.HintSize="242,60" />
-      <sap2010:ViewStateData Id="Sequence_60" sap:VirtualizedContainerService.HintSize="730,51">
+      <sap2010:ViewStateData Id="Sequence_60" sap:VirtualizedContainerService.HintSize="264,584">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">False</x:Boolean>
@@ -2934,7 +3156,7 @@
       <sap2010:ViewStateData Id="Catch`1_3" sap:VirtualizedContainerService.HintSize="723,647">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
             <x:Boolean x:Key="IsPinned">False</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
@@ -3018,7 +3240,22 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_90" sap:VirtualizedContainerService.HintSize="336,376">
+      <sap2010:ViewStateData Id="Sequence_90" sap:VirtualizedContainerService.HintSize="773,376">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Highlight_2" sap:VirtualizedContainerService.HintSize="314,106" />
+      <sap2010:ViewStateData Id="Click_16" sap:VirtualizedContainerService.HintSize="314,106">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Sequence_91" sap:VirtualizedContainerService.HintSize="336,376">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -3026,7 +3263,7 @@
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="Click_15" sap:VirtualizedContainerService.HintSize="314,106" />
-      <sap2010:ViewStateData Id="If_15" sap:VirtualizedContainerService.HintSize="773,524">
+      <sap2010:ViewStateData Id="If_15" sap:VirtualizedContainerService.HintSize="675,523">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -3034,6 +3271,14 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Sequence_92" sap:VirtualizedContainerService.HintSize="697,647">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="CommentOut_12" sap:VirtualizedContainerService.HintSize="773,725" />
       <sap2010:ViewStateData Id="LogMessage_1" sap:VirtualizedContainerService.HintSize="773,91">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
@@ -3096,10 +3341,15 @@
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="GetRobotAsset_1" sap:VirtualizedContainerService.HintSize="314,22" />
       <sap2010:ViewStateData Id="GetRobotAsset_2" sap:VirtualizedContainerService.HintSize="314,22" />
+      <sap2010:ViewStateData Id="ReadTextFile_6" sap:VirtualizedContainerService.HintSize="314,59" />
+      <sap2010:ViewStateData Id="ReadTextFile_7" sap:VirtualizedContainerService.HintSize="314,59" />
+      <sap2010:ViewStateData Id="Assign_81" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="Assign_82" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="Assign_83" sap:VirtualizedContainerService.HintSize="314,60" />
       <sap2010:ViewStateData Id="SendMail_1" sap:VirtualizedContainerService.HintSize="314,145">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsPinned">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
@@ -3386,47 +3636,13 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="ReadRange_4" sap:VirtualizedContainerService.HintSize="314,87">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="AddQueueItem_3" sap:VirtualizedContainerService.HintSize="242,22" />
-      <sap2010:ViewStateData Id="Assign_80" sap:VirtualizedContainerService.HintSize="242,60" />
-      <sap2010:ViewStateData Id="Sequence_84" sap:VirtualizedContainerService.HintSize="264,246">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="ForEachRow_6" sap:VirtualizedContainerService.HintSize="314,394" />
-      <sap2010:ViewStateData Id="WriteLine_26" sap:VirtualizedContainerService.HintSize="314,61" />
-      <sap2010:ViewStateData Id="Sequence_85" sap:VirtualizedContainerService.HintSize="200,51">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-            <x:Boolean x:Key="IsPinned">False</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="FlowStep_82">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <av:Point x:Key="ShapeLocation">0,554.02</av:Point>
-            <av:Size x:Key="ShapeSize">200,51</av:Size>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="Flowchart_1" sap:VirtualizedContainerService.HintSize="1284,1712">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">False</x:Boolean>
             <av:Point x:Key="ShapeLocation">370,2.5</av:Point>
             <av:Size x:Key="ShapeSize">60,75</av:Size>
-            <av:PointCollection x:Key="ConnectorLocation">430,40 460,40 460,0 970,0 970,270 1000,270</av:PointCollection>
+            <av:PointCollection x:Key="ConnectorLocation">400,77.5 400,107.5 270,107.5 270,579.52 200,579.52</av:PointCollection>
             <x:Double x:Key="Width">1270</x:Double>
             <x:Double x:Key="Height">1676</x:Double>
           </scg:Dictionary>
