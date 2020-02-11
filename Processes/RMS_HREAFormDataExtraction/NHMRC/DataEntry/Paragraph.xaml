@@ -12,9 +12,9 @@
  xmlns:ui="http://schemas.uipath.com/workflow/activities"
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <x:Members>
+    <x:Property Name="in_Entries" Type="InArgument(s:String[])" />
     <x:Property Name="in_Selector" Type="InArgument(x:String)" />
     <x:Property Name="in_Scope" Type="InArgument(ui:UiElement)" />
-    <x:Property Name="in_Entries" Type="InArgument(s:String[])" />
   </x:Members>
   <mva:VisualBasic.Settings>
     <x:Null />
@@ -134,7 +134,14 @@
                 </ui:ElementScope>
               </If.Else>
             </If>
-            <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_10" Level="Trace" Message="[&quot;Setting paragraph &quot; + in_Selector + &quot; to &quot; + If(in_Entries.First.Length &lt; 20, in_Entries.First, in_Entries.First.Substring(0, 20) + &quot;...&quot;)]" />
+            <If Condition="[in_Entries.Length &gt; 0]" sap2010:WorkflowViewState.IdRef="If_2">
+              <If.Then>
+                <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_10" Level="Trace" Message="[&quot;Setting paragraph &quot; + in_Selector + &quot; to &quot; + If(in_Entries.First.Length &lt; 20, in_Entries.First, in_Entries.First.Substring(0, 20) + &quot;...&quot;)]" />
+              </If.Then>
+              <If.Else>
+                <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_12" Level="Trace" Message="[&quot;Setting paragraph &quot; + in_Selector + &quot; to ''&quot;]" />
+              </If.Else>
+            </If>
             <ui:SendHotkey DelayBefore="{x:Null}" DelayBetweenKeys="{x:Null}" DelayMS="{x:Null}" Activate="True" ClickBeforeTyping="True" DisplayName="Send Select All Hotkey" EmptyField="False" sap2010:WorkflowViewState.IdRef="SendHotkey_2" Key="a" KeyModifiers="Ctrl" SendWindowMessages="False" SpecialKey="False">
               <ui:SendHotkey.Target>
                 <ui:Target ClippingRegion="{x:Null}" Selector="{x:Null}" TimeoutMS="{x:Null}" Element="[inputElement]" WaitForReady="INTERACTIVE" />
@@ -151,11 +158,15 @@
                   <ActivityAction.Argument>
                     <DelegateInArgument x:TypeArguments="x:String" Name="entry" />
                   </ActivityAction.Argument>
-                  <ui:TypeInto DelayBefore="{x:Null}" DelayMS="{x:Null}" Activate="True" ClickBeforeTyping="False" DelayBetweenKeys="1" DisplayName="Type Into Paragraph" EmptyField="False" sap2010:WorkflowViewState.IdRef="TypeInto_1" SendWindowMessages="False" SimulateType="False" Text="[entry + &quot;[k(enter)]&quot;]">
-                    <ui:TypeInto.Target>
-                      <ui:Target ClippingRegion="{x:Null}" Selector="{x:Null}" TimeoutMS="{x:Null}" Element="[inputElement]" WaitForReady="INTERACTIVE" />
-                    </ui:TypeInto.Target>
-                  </ui:TypeInto>
+                  <If Condition="[Not String.IsNullOrWhiteSpace(entry.Trim)]" sap2010:WorkflowViewState.IdRef="If_3">
+                    <If.Then>
+                      <ui:TypeInto DelayBefore="{x:Null}" DelayMS="{x:Null}" Activate="True" ClickBeforeTyping="False" DelayBetweenKeys="1" DisplayName="Type Into Paragraph" EmptyField="False" sap2010:WorkflowViewState.IdRef="TypeInto_1" SendWindowMessages="False" SimulateType="False" Text="[entry + &quot;[k(enter)]&quot;]">
+                        <ui:TypeInto.Target>
+                          <ui:Target ClippingRegion="{x:Null}" Selector="{x:Null}" TimeoutMS="{x:Null}" Element="[inputElement]" WaitForReady="INTERACTIVE" />
+                        </ui:TypeInto.Target>
+                      </ui:TypeInto>
+                    </If.Then>
+                  </If>
                 </ActivityAction>
               </ui:ForEach.Body>
             </ui:ForEach>
@@ -185,9 +196,7 @@
                 <InOutArgument x:TypeArguments="s:String[]" x:Key="io_Text">[lines]</InOutArgument>
               </ui:InvokeWorkflowFile.Arguments>
             </ui:InvokeWorkflowFile>
-            <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_12" Level="Warn" Message="[String.Join(&quot;|&quot;, in_Entries)]" />
-            <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_13" Level="Error" Message="[String.Join(&quot;|&quot;, lines)]" />
-            <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_11" Level="Trace" Message="[&quot;Verifying entry into &quot; + in_Selector + &quot;&lt;nav up='4' /&gt;&lt;webctrl tag='TEXTAREA' /&gt;  for lines &quot; + String.Join(&quot;, &quot;, lines.Select(function(line) in_Entries.Contains(line)))]" />
+            <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_11" Level="Trace" Message="[&quot;Verifying entry into &quot; + in_Selector + &quot;&lt;nav up='4' /&gt;&lt;webctrl tag='TEXTAREA' /&gt;  matching lines are: &quot; + String.Join(&quot;, &quot;, lines.Select(function(line) in_Entries.Contains(line)))]" />
           </Sequence>
         </ActivityAction>
       </ui:RetryScope.ActivityBody>
@@ -197,7 +206,7 @@
         </ActivityFunc>
       </ui:RetryScope.Condition>
     </ui:RetryScope>
-    <sads:DebugSymbol.Symbol>d15DOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUk1TX0hSRUFGb3JtRGF0YUV4dHJhY3Rpb25cTkhNUkNcRGF0YUVudHJ5XFBhcmFncmFwaC54YW1sQU0DyQEOAgEBUgVWHQIBVVcFxwEVAgECVEVUUQIBV1K9AVLUAQIBVleJAVeTAQIBVFd3V3oCAVNaC78BFgIBBcQBC8QBrwECAQNfDYgBEgIBM4kBDYkBrwICATGKAQ2OAR0CAS2PAQ2TAR0CASmUAQ2hARoCASCiAQ2mAR0CARynAQ2uARsCARavAQ22ARYCARK3AQ27ASUCAQ68AQ28AagBAgELvQENvQGkAQIBCL4BDb4B1wICAQbEAXXEAawBAgEEXxtfMgIBNGERbBwCAUZvEYYBIwIBNYkBfIkBrAICATKMAWeMAXcCAS+KAfYBigH5AQIBLpEBZ5EBdwIBK48B9gGPAfwBAgEqlAGYAZQBpgECASeaAROeASECASGkAWekAXcCAR6iAfYBogH8AQIBHawBOawBQgIBGKkBZ6kBdwIBGrQBOrQBYAIBFbEBO7EBQgIBE7kBTbkBVAIBELcBxQG3AdwBAgEPvAF7vAGlAQIBDL0BfL0BoQECAQm+AXy+AdQCAgEHYhNmLAIBTWcTaywCAUeEAW2EAXMCAUWEAVaEAWICAUN1F4ABIgIBNpoBoAKaAcICAgElmgGFAZoBiAECASScAW2cAX0CASJiXmJuAgFRZFhkZwIBT2RyZHgCAU5nXmduAgFLaVhpqgECAUlptQFpuwECAUh2GXoyAgE9exl/MgIBN3ZjdnMCAUF4XnhtAgE/eHh4fgIBPntje3MCATt9Xn2wAQIBOX27AX3BAQIBOA==</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d15DOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUk1TX0hSRUFGb3JtRGF0YUV4dHJhY3Rpb25cTkhNUkNcRGF0YUVudHJ5XFBhcmFncmFwaC54YW1sQ00D0gEOAgEBUgVWHQIBWFcF0AEVAgECVEVUUQIBWlK9AVLUAQIBWVeJAVeTAQIBV1d3V3oCAVZaC8gBFgIBBc0BC80BrwECAQNfDYgBEgIBNokBDZABEgIBLpEBDZUBHQIBKpYBDZoBHQIBJpsBDawBGgIBGq0BDbEBHQIBFrIBDbkBGwIBELoBDcEBFgIBDMIBDcYBJQIBCMcBDccB4QICAQbNAXXNAawBAgEEXxtfMgIBN2ERbBwCAUlvEYYBIwIBOIkBG4kBNwIBL4sBEYsBswICATSOARGOAcgBAgExkwFnkwF3AgEskQH2AZEB+QECASuYAWeYAXcCASiWAfYBlgH8AQIBJ5sBmAGbAaYBAgEkoQETqQEYAgEbrwFnrwF3AgEYrQH2Aa0B/AECARe3ATm3AUICARK0AWe0AXcCARS/ATq/AWACAQ+8ATu8AUICAQ3EAU3EAVQCAQrCAcUBwgHcAQIBCccBfMcB3gICAQdiE2YsAgFQZxNrLAIBSoQBbYQBcwIBSIQBVoQBYgIBRnUXgAEiAgE5iwGAAYsBsAICATWOAYABjgHFAQIBMqEBIaEBTgIBHKMBF6cBJQIBHmJeYm4CAVRkWGRnAgFSZHJkeAIBUWdeZ24CAU5pWGmqAQIBTGm1AWm7AQIBS3YZejICAUB7GX8yAgE6owGkAqMBxgICASKjAYkBowGMAQIBIaUBcaUBgQECAR92Y3ZzAgFEeF54bQIBQnh4eH4CAUF7Y3tzAgE+fV59sAECATx9uwF9wQECATs=</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -222,19 +231,20 @@
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="ElementScope_1" sap:VirtualizedContainerService.HintSize="414,408" />
       <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="775,555" />
-      <sap2010:ViewStateData Id="LogMessage_10" sap:VirtualizedContainerService.HintSize="775,91" />
+      <sap2010:ViewStateData Id="LogMessage_10" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="LogMessage_12" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="If_2" sap:VirtualizedContainerService.HintSize="775,238" />
       <sap2010:ViewStateData Id="SendHotkey_2" sap:VirtualizedContainerService.HintSize="775,116" />
       <sap2010:ViewStateData Id="SendHotkey_3" sap:VirtualizedContainerService.HintSize="775,116" />
       <sap2010:ViewStateData Id="TypeInto_1" sap:VirtualizedContainerService.HintSize="314,96" />
-      <sap2010:ViewStateData Id="ForEach`1_1" sap:VirtualizedContainerService.HintSize="775,229" />
+      <sap2010:ViewStateData Id="If_3" sap:VirtualizedContainerService.HintSize="464,243" />
+      <sap2010:ViewStateData Id="ForEach`1_1" sap:VirtualizedContainerService.HintSize="775,376" />
       <sap2010:ViewStateData Id="SendHotkey_1" sap:VirtualizedContainerService.HintSize="775,116" />
       <sap2010:ViewStateData Id="GetValue_1" sap:VirtualizedContainerService.HintSize="775,68" />
       <sap2010:ViewStateData Id="Assign_1" sap:VirtualizedContainerService.HintSize="775,60" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_2" sap:VirtualizedContainerService.HintSize="775,87" />
-      <sap2010:ViewStateData Id="LogMessage_12" sap:VirtualizedContainerService.HintSize="775,91" />
-      <sap2010:ViewStateData Id="LogMessage_13" sap:VirtualizedContainerService.HintSize="775,91" />
       <sap2010:ViewStateData Id="LogMessage_11" sap:VirtualizedContainerService.HintSize="775,91" />
-      <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="797,2275">
+      <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="797,2307">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -242,15 +252,15 @@
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="IsTrue_1" sap:VirtualizedContainerService.HintSize="200,22" />
-      <sap2010:ViewStateData Id="RetryScope_1" sap:VirtualizedContainerService.HintSize="819,2456" />
-      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="841,2707">
+      <sap2010:ViewStateData Id="RetryScope_1" sap:VirtualizedContainerService.HintSize="819,2488" />
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="841,2739">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Checkbox_1" sap:VirtualizedContainerService.HintSize="881,2987" />
+      <sap2010:ViewStateData Id="Checkbox_1" sap:VirtualizedContainerService.HintSize="881,2819" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
