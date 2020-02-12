@@ -2,15 +2,15 @@
  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
  xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities"
- xmlns:s="clr-namespace:System;assembly=mscorlib"
  xmlns:sads="http://schemas.microsoft.com/netfx/2010/xaml/activities/debugger"
  xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
  xmlns:scg="clr-namespace:System.Collections.Generic;assembly=mscorlib"
  xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=mscorlib"
+ xmlns:ui="http://schemas.uipath.com/workflow/activities"
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <x:Members>
-    <x:Property Name="io_Text" Type="InOutArgument(s:String[])" />
+    <x:Property Name="io_Text" Type="InOutArgument(x:String)" />
   </x:Members>
   <mva:VisualBasic.Settings>
     <x:Null />
@@ -41,6 +41,7 @@
       <x:String>UiPath.Core.Activities</x:String>
       <x:String>System.Text.RegularExpressions</x:String>
       <x:String>System.Net</x:String>
+      <x:String>System.Text</x:String>
     </sco:Collection>
   </TextExpression.NamespacesForImplementation>
   <TextExpression.ReferencesForImplementation>
@@ -71,54 +72,46 @@
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence DisplayName="SanitiseHtmlText" sap2010:WorkflowViewState.IdRef="Sequence_2">
-    <While DisplayName="While more lines" sap2010:WorkflowViewState.IdRef="While_5">
-      <While.Variables>
-        <Variable x:TypeArguments="x:Int32" Default="0" Name="i" />
-      </While.Variables>
-      <While.Condition>[i &lt; io_Text.Length]</While.Condition>
-      <Sequence sap2010:WorkflowViewState.IdRef="Sequence_5">
-        <While DisplayName="While line contains escaped content or tags" sap2010:WorkflowViewState.IdRef="While_1" Condition="[Regex.IsMatch(io_Text(i), &quot;&amp;[a-z0-9#]+;&quot;) Or Regex.IsMatch(io_Text(i), &quot;&lt;\/?\w+( [^&gt;]+)?&gt;&quot;)]">
-          <Sequence sap2010:WorkflowViewState.IdRef="Sequence_1">
-            <Assign DisplayName="Assign unescape html tags, replace nbsp with space" sap2010:WorkflowViewState.IdRef="Assign_1">
-              <Assign.To>
-                <OutArgument x:TypeArguments="x:String">[io_Text(i)]</OutArgument>
-              </Assign.To>
-              <Assign.Value>
-                <InArgument x:TypeArguments="x:String">[WebUtility.HtmlDecode(io_Text(i)).Replace(" ", " ")]</InArgument>
-              </Assign.Value>
-            </Assign>
-            <Assign DisplayName="Assign replaced line breaks" sap2010:WorkflowViewState.IdRef="Assign_2">
-              <Assign.To>
-                <OutArgument x:TypeArguments="x:String">[io_Text(i)]</OutArgument>
-              </Assign.To>
-              <Assign.Value>
-                <InArgument x:TypeArguments="x:String">[Regex.Replace(io_Text(i), "&lt;br\s*\/&gt;", vbNewLine)]</InArgument>
-              </Assign.Value>
-            </Assign>
-            <Assign DisplayName="Assign replaced url links" sap2010:WorkflowViewState.IdRef="Assign_11">
-              <Assign.To>
-                <OutArgument x:TypeArguments="x:String">[io_Text(i)]</OutArgument>
-              </Assign.To>
-              <Assign.Value>
-                <InArgument x:TypeArguments="x:String">[Regex.Replace(io_Text(i), " ?&lt;a href=""([^""]+)""[^&gt;]+&gt; ?", " $1 ")]</InArgument>
-              </Assign.Value>
-            </Assign>
-            <Assign DisplayName="Assign tagless text" sap2010:WorkflowViewState.IdRef="Assign_3">
-              <Assign.To>
-                <OutArgument x:TypeArguments="x:String">[io_Text(i)]</OutArgument>
-              </Assign.To>
-              <Assign.Value>
-                <InArgument x:TypeArguments="x:String">[Regex.Replace(io_Text(i), "&lt;\/?\w+( [^&gt;]+)?&gt;", "")]</InArgument>
-              </Assign.Value>
-            </Assign>
-          </Sequence>
-        </While>
-        <Assign DisplayName="Increment i" sap2010:WorkflowViewState.IdRef="Assign_8">
+    <While DisplayName="While line contains escaped content or tags" sap2010:WorkflowViewState.IdRef="While_1" Condition="[Regex.IsMatch(io_Text, &quot;&amp;[a-z0-9#]+;&quot;) Or Regex.IsMatch(io_Text, &quot;&lt;\/?\w+( [^&gt;]+)?&gt;&quot;)]">
+      <Sequence sap2010:WorkflowViewState.IdRef="Sequence_1">
+        <Assign DisplayName="Assign unescape html tags, replace nbsp with space" sap2010:WorkflowViewState.IdRef="Assign_1">
           <Assign.To>
-            <OutArgument x:TypeArguments="x:Int32">[i]</OutArgument>
+            <OutArgument x:TypeArguments="x:String">[io_Text]</OutArgument>
           </Assign.To>
           <Assign.Value>
-            <InArgument x:TypeArguments="x:Int32">[i + 1]</InArgument>
+            <InArgument x:TypeArguments="x:String">[WebUtility.HtmlDecode(io_Text).Replace(" ", " ")]</InArgument>
+          </Assign.Value>
+        </Assign>
+        <Assign DisplayName="Assign replaced line breaks" sap2010:WorkflowViewState.IdRef="Assign_2">
+          <Assign.To>
+            <OutArgument x:TypeArguments="x:String">[io_Text]</OutArgument>
+          </Assign.To>
+          <Assign.Value>
+            <InArgument x:TypeArguments="x:String">[Regex.Replace(io_Text, "&lt;br\s*\/&gt;", vbNewLine)]</InArgument>
+          </Assign.Value>
+        </Assign>
+        <Assign DisplayName="Assign replaced compound spaces" sap2010:WorkflowViewState.IdRef="Assign_14">
+          <Assign.To>
+            <OutArgument x:TypeArguments="x:String">[io_Text]</OutArgument>
+          </Assign.To>
+          <Assign.Value>
+            <InArgument x:TypeArguments="x:String" xml:space="preserve">[Regex.Replace(io_Text, "  +", " ")]</InArgument>
+          </Assign.Value>
+        </Assign>
+        <Assign DisplayName="Assign replaced url links" sap2010:WorkflowViewState.IdRef="Assign_11">
+          <Assign.To>
+            <OutArgument x:TypeArguments="x:String">[io_Text]</OutArgument>
+          </Assign.To>
+          <Assign.Value>
+            <InArgument x:TypeArguments="x:String">[Regex.Replace(io_Text, " ?&lt;a href=""([^""]+)""[^&gt;]+&gt; ?", " $1 ")]</InArgument>
+          </Assign.Value>
+        </Assign>
+        <Assign DisplayName="Assign tagless text" sap2010:WorkflowViewState.IdRef="Assign_3">
+          <Assign.To>
+            <OutArgument x:TypeArguments="x:String">[io_Text]</OutArgument>
+          </Assign.To>
+          <Assign.Value>
+            <InArgument x:TypeArguments="x:String">[Regex.Replace(io_Text, "&lt;\/?\w+( [^&gt;]+)?&gt;", "")]</InArgument>
           </Assign.Value>
         </Assign>
       </Sequence>
@@ -126,47 +119,62 @@
     <While DisplayName="While trimming leading whitespace" sap2010:WorkflowViewState.IdRef="While_3" Condition="[io_Text.Length &gt; 0 AndAlso String.IsNullOrWhiteSpace(io_Text.First)]">
       <Assign DisplayName="Assign text minus first" sap2010:WorkflowViewState.IdRef="Assign_5">
         <Assign.To>
-          <OutArgument x:TypeArguments="s:String[]">[io_Text]</OutArgument>
+          <OutArgument x:TypeArguments="x:String">[io_Text]</OutArgument>
         </Assign.To>
         <Assign.Value>
-          <InArgument x:TypeArguments="s:String[]">[io_Text.Skip(1).ToArray]</InArgument>
+          <InArgument x:TypeArguments="x:String">[io_Text.Skip(1).ToArray]</InArgument>
         </Assign.Value>
       </Assign>
     </While>
     <While DisplayName="While trimming tailing whitespace" sap2010:WorkflowViewState.IdRef="While_4" Condition="[io_Text.Length &gt; 0 AndAlso String.IsNullOrWhiteSpace(io_Text.Last)]">
       <Assign DisplayName="Assign text minus last" sap2010:WorkflowViewState.IdRef="Assign_6">
         <Assign.To>
-          <OutArgument x:TypeArguments="s:String[]">[io_Text]</OutArgument>
+          <OutArgument x:TypeArguments="x:String">[io_Text]</OutArgument>
         </Assign.To>
         <Assign.Value>
-          <InArgument x:TypeArguments="s:String[]">[io_Text.Take(io_Text.Length - 1).ToArray]</InArgument>
+          <InArgument x:TypeArguments="x:String">[io_Text.Take(io_Text.Length - 1).ToArray]</InArgument>
         </Assign.Value>
       </Assign>
     </While>
-    <Assign DisplayName="Assign resplit lines" sap2010:WorkflowViewState.IdRef="Assign_10">
+    <Assign DisplayName="Assign realigned text" sap2010:WorkflowViewState.IdRef="Assign_13">
       <Assign.To>
-        <OutArgument x:TypeArguments="s:String[]">[io_Text]</OutArgument>
+        <OutArgument x:TypeArguments="x:String">[io_Text]</OutArgument>
       </Assign.To>
       <Assign.Value>
-        <InArgument x:TypeArguments="s:String[]">[String.Join(vbNewLine, io_Text).Split(vbNewLine.ToCharArray, StringSplitOptions.RemoveEmptyEntries)]</InArgument>
+        <InArgument x:TypeArguments="x:String">[String.Join(vbNewLine, io_Text.Split(vbNewLine.ToCharArray, StringSplitOptions.RemoveEmptyEntries)).Trim]</InArgument>
       </Assign.Value>
     </Assign>
-    <sads:DebugSymbol.Symbol>d1VDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUk1TX0hSRUFGb3JtRGF0YUV4dHJhY3Rpb25cU2FuaXRpc2VIdG1sVGV4dC54YW1sJEkDmwEOAgEBSgV9DQIBEn4FhwENAgEMiAEFkQENAgEGkgEFmQEOAgECTDVMOAIBE08HfBICARdOGE4vAgEUfweGARACAQ5+cH66AQIBDYkBB5ABEAIBCIgBcIgBuQECAQeXATKXAZcBAgEFlAEzlAE8AgEDUAlzEQIBHXQJexICARiEATSEAU0CARGBATWBAT4CAQ+OATSOAV4CAQuLATWLAT4CAQlRC3IWAgEfUH5Q/gECAR55M3k6AgEbdjR2NwIBGVINWRYCAS9aDWEWAgEqYg1pFgIBJWoNcRYCASBXOFdtAgEzVDlURQIBMF84X3ECAS5cOVxFAgErZzhnhgECASlkOWRFAgEmbzhvdQIBJGw5bEUCASE=</sads:DebugSymbol.Symbol>
+    <ui:CommentOut DisplayName="Comment Out" sap2010:WorkflowViewState.IdRef="CommentOut_1">
+      <ui:CommentOut.Body>
+        <Sequence DisplayName="Ignored Activities" sap2010:WorkflowViewState.IdRef="Sequence_3">
+          <Assign sap2010:WorkflowViewState.IdRef="Assign_12">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:String">[io_Text]</OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:String">[System.Text.Encoding.ASCII.GetString(System.Text.Encoding.UTF8.GetBytes(io_Text)).Trim]</InArgument>
+            </Assign.Value>
+          </Assign>
+        </Sequence>
+      </ui:CommentOut.Body>
+    </ui:CommentOut>
+    <sads:DebugSymbol.Symbol>d1VDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUk1TX0hSRUFGb3JtRGF0YUV4dHJhY3Rpb25cU2FuaXRpc2VIdG1sVGV4dC54YW1sIEoDogEOAgEBSwV2DQIBE3cFgAENAgENgQEFigENAgEHiwEFkgEOAgEDkwEFoAEVAgECTAd1EgIBFUt6S/QBAgEUeAd/EAIBD3dwd7oBAgEOggEHiQEQAgEJgQFwgQG5AQIBCJABMJABmgECAQaNATGNAToCAQRNCVQSAgEmVQlcEgIBIl0JZBICAR5lCWwSAgEabQl0EgIBFn0yfUsCARJ6M3o8AgEQhwEyhwFcAgEMhAEzhAE8AgEKUjRSZgIBKU81Tz4CASdaNFpqAgElVzVXPgIBI181Xz4CAR9qNGp/AgEdZzVnPgIBG3I0cm4CARlvNW8+AgEX</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
       <sap2010:ViewStateData Id="Assign_1" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="Assign_2" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="Assign_14" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="Assign_11" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="Assign_3" sap:VirtualizedContainerService.HintSize="242,60" />
-      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="264,484">
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="264,584">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="While_1" sap:VirtualizedContainerService.HintSize="464,642">
+      <sap2010:ViewStateData Id="While_1" sap:VirtualizedContainerService.HintSize="464,742">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -174,28 +182,28 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Assign_8" sap:VirtualizedContainerService.HintSize="464,60" />
-      <sap2010:ViewStateData Id="Sequence_5" sap:VirtualizedContainerService.HintSize="486,866">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="While_5" sap:VirtualizedContainerService.HintSize="512,1024" />
       <sap2010:ViewStateData Id="Assign_5" sap:VirtualizedContainerService.HintSize="242,60" />
-      <sap2010:ViewStateData Id="While_3" sap:VirtualizedContainerService.HintSize="512,218" />
+      <sap2010:ViewStateData Id="While_3" sap:VirtualizedContainerService.HintSize="464,218" />
       <sap2010:ViewStateData Id="Assign_6" sap:VirtualizedContainerService.HintSize="242,60" />
-      <sap2010:ViewStateData Id="While_4" sap:VirtualizedContainerService.HintSize="512,218" />
-      <sap2010:ViewStateData Id="Assign_10" sap:VirtualizedContainerService.HintSize="512,60" />
-      <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="534,1664">
+      <sap2010:ViewStateData Id="While_4" sap:VirtualizedContainerService.HintSize="464,218" />
+      <sap2010:ViewStateData Id="Assign_13" sap:VirtualizedContainerService.HintSize="464,60" />
+      <sap2010:ViewStateData Id="Assign_12" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="Sequence_3" sap:VirtualizedContainerService.HintSize="264,184">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="SanitiseHtmlText_1" sap:VirtualizedContainerService.HintSize="574,1744" />
+      <sap2010:ViewStateData Id="CommentOut_1" sap:VirtualizedContainerService.HintSize="464,262" />
+      <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="486,1784">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="SanitiseHtmlText_1" sap:VirtualizedContainerService.HintSize="526,1864" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
