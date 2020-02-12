@@ -17,8 +17,8 @@
     <x:Property Name="in_TransactionItem" Type="InArgument(ui:QueueItem)" />
     <x:Property Name="out_employeeName" Type="OutArgument(x:String)" />
     <x:Property Name="out_employeeNumber" Type="OutArgument(x:String)" />
-    <x:Property Name="out_proposedContractStartDate" Type="OutArgument(x:String)" />
-    <x:Property Name="out_proposedContractEndDate" Type="OutArgument(x:String)" />
+    <x:Property Name="out_proposedContractStartDate" Type="OutArgument(s:DateTime)" />
+    <x:Property Name="out_proposedContractEndDate" Type="OutArgument(s:DateTime)" />
     <x:Property Name="out_systemErrorNotes" Type="OutArgument(x:String)" />
     <x:Property Name="in_Config" Type="InArgument(scg:Dictionary(x:String, x:Object))" />
   </x:Members>
@@ -80,6 +80,7 @@
       <AssemblyReference>UiPath.Studio.Plugin.Workflow</AssemblyReference>
       <AssemblyReference>Newtonsoft.Json</AssemblyReference>
       <AssemblyReference>Microsoft.VisualStudio.Services.Common</AssemblyReference>
+      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence DisplayName="Aurion_ExtractEmployeeNameAndProposedContractDates" sap2010:WorkflowViewState.IdRef="Sequence_1">
@@ -94,6 +95,7 @@
       <Variable x:TypeArguments="x:String" Name="employeeFirstName" />
       <Variable x:TypeArguments="x:String" Name="employeeLastName" />
       <Variable x:TypeArguments="x:String" Name="currentContractEndDate" />
+      <Variable x:TypeArguments="x:String" Name="proposedContractEndDate" />
     </Sequence.Variables>
     <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;Begin Aurion_ExtractEmployeeNameAndProposedContractDates&quot;]" />
     <ui:CommentOut DisplayName="Comment Out" sap2010:WorkflowViewState.IdRef="CommentOut_5">
@@ -345,31 +347,40 @@
             <InArgument x:TypeArguments="x:String">[DateTimeOffset.FromUnixTimeMilliseconds(CLng(currentContractEndDate)).AddHours(10).ToString]</InArgument>
           </Assign.Value>
         </Assign>
-        <Assign sap2010:Annotation.AnnotationText="currentContractEndDate + 1 day" DisplayName="Assign proposedContractStartDate" sap2010:WorkflowViewState.IdRef="Assign_20">
+        <Assign sap2010:Annotation.AnnotationText="currentContractEndDate + 1 day" DisplayName="Assign out_proposedContractStartDate" sap2010:WorkflowViewState.IdRef="Assign_20">
           <Assign.To>
-            <OutArgument x:TypeArguments="x:String">[out_proposedContractStartDate]</OutArgument>
+            <OutArgument x:TypeArguments="s:DateTime">[out_proposedContractStartDate]</OutArgument>
           </Assign.To>
           <Assign.Value>
-            <InArgument x:TypeArguments="x:String">[CDate(currentContractEndDate).AddDays(1).ToString("dd-MM-yyyy")]</InArgument>
+            <InArgument x:TypeArguments="s:DateTime">[CDate(currentContractEndDate).AddDays(1)]</InArgument>
           </Assign.Value>
         </Assign>
       </Sequence>
       <Sequence sap2010:Annotation.AnnotationText="The proposed end date is extracted from Employee Details Json.  The date is stored as a Unix timestamp and converted to dd-MM-yyyy." DisplayName="Get Proposed End Date" sap2010:WorkflowViewState.IdRef="Sequence_10">
         <Assign sap2010:Annotation.AnnotationText="From Employee Details Json (Unix timestamp)" DisplayName="Assign proposedContractEndDate" sap2010:WorkflowViewState.IdRef="Assign_21">
           <Assign.To>
-            <OutArgument x:TypeArguments="x:String">[out_proposedContractEndDate]</OutArgument>
+            <OutArgument x:TypeArguments="x:String">[proposedContractEndDate]</OutArgument>
           </Assign.To>
           <Assign.Value>
             <InArgument x:TypeArguments="x:String">[EmployeeDetailsJson("proposedPositionPlacementDetails")("placementDetails")("contractExpiryDate").ToString]</InArgument>
           </Assign.Value>
         </Assign>
-        <Assign sap2010:Annotation.AnnotationText="Converted to dd-MM-yyyy" DisplayName="Assign proposedContractEndDate" sap2010:WorkflowViewState.IdRef="Assign_22">
+        <Assign sap2010:Annotation.AnnotationText="Converted to standard date format" DisplayName="Assign proposedContractEndDate" sap2010:WorkflowViewState.IdRef="Assign_22">
           <Assign.To>
-            <OutArgument x:TypeArguments="x:String">[out_proposedContractEndDate]</OutArgument>
+            <OutArgument x:TypeArguments="x:String">[proposedContractEndDate]</OutArgument>
           </Assign.To>
           <Assign.Value>
-            <InArgument x:TypeArguments="x:String">[DateTimeOffset.FromUnixTimeMilliseconds(CLng(out_proposedContractEndDate)).AddHours(10).ToString("dd-MM-yyyy")]</InArgument>
+            <InArgument x:TypeArguments="x:String">[DateTimeOffset.FromUnixTimeMilliseconds(CLng(proposedContractEndDate)).AddHours(10).ToString]</InArgument>
           </Assign.Value>
+        </Assign>
+        <Assign DisplayName="Assign out_proposedContractEndDate">
+          <Assign.To>
+            <OutArgument x:TypeArguments="s:DateTime">[out_proposedContractEndDate]</OutArgument>
+          </Assign.To>
+          <Assign.Value>
+            <InArgument x:TypeArguments="s:DateTime">[CDate(currentContractEndDate)]</InArgument>
+          </Assign.Value>
+          <sap2010:WorkflowViewState.IdRef>Assign_31</sap2010:WorkflowViewState.IdRef>
         </Assign>
       </Sequence>
     </Sequence>
@@ -469,7 +480,7 @@
       </ui:CommentOut.Body>
     </ui:CommentOut>
     <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[&quot;End  Aurion_ExtractEmployeeNameAndProposedContractDates&quot;]" />
-    <sads:DebugSymbol.Symbol>d5UBQzpcVXNlcnNcdXFzZGViYmVcRG9jdW1lbnRzXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXEhSX0ZpeGVkVGVybUFwcG9pbnRtZW50RXhwaXJ5XFVuaXRhc2tcVW5pdGFza19FeHRyYWN0RW1wbG95ZWVOYW1lQW5kUHJvcG9zZWRDb250cmFjdERhdGVzLnhhbWxhVQPZAw4CAQFYOFhVAgECYgVivQECAX5jBYoBFQIBfYsBBZIBDgIBeZMBBZkBFQIBeJoBBdoBEAIBXNsBBaYCEAIBNqcCBfcCEAIBBvgCBdYDFQIBBdcDBdcDvAECAQNicmK6AQIBf5ABMJABTgIBfI0BMY0BOQIBepwBCcQBGQIBZMwBDdYBGAIBXdwBB9wByAECAVfdAQfkARACAVPlAQelAhICATeoAgeoAtgBAgExqQIHsAIQAgEtsQIHygISAgEeywIH5AISAgEQ5QIH9gISAgEH1wNy1wO5AQIBBJwBgwGcAY0BAgF3nAFxnAF0AgF2nwEPvAEgAgFowQEPwQHQAQIBZc0BD9QBGAIBYNUBD9UBrwECAV7cAbQB3AHFAQIBWtwBmQHcAagBAgFY4gEy4gF3AgFW3wEz3wE/AgFU5wELjwIbAgE/lwIPoQIaAgE4qAK8AagC1QECATSoApkBqAKwAQIBMq4CMq4CmQECATCrAjOrAkcCAS6yAgm5AhICASm6AgnBAhICASXCAgnJAhICAR/MAgnTAhICARrUAgnbAhICARbcAgnjAhICARHmAgntAhICAQzuAgn1AhICAQifAckBnwG7AgIBc6UBFbkBIAIBacEBpgHBAc0BAgFm0gE60gFPAgFjzwE7zwFRAgFh1QFG1QGCAQIBX+cBhQHnAY8BAgFS5wFz5wF2AgFR6gERhwIiAgFDjAIRjALiAQIBQJgCEZ8CGgIBO6ACEaACiwECATm3AjS3AnsCASy0AjW0AkgCASq/AjS/AnECASi8AjW8AkcCASbHAjTHAmACASLEAjXEAkcCASDRAjTRAp8BAgEdzgI1zgJNAgEb2QI02QKRAQIBGdYCNdYCTQIBF+ECNOECdQIBFN4CNd4CVAIBEusCNOsCoAECAQ/oAjXoAlICAQ3zAjTzAqQBAgEL8AI18AJSAgEJpgEXrwEgAgFvsAEXtwElAgFruAEXuAF+AgFq6gHLAeoB9wICAU7wAReEAiICAUSMArABjALfAQIBQZ0CPJ0CTQIBPpoCPZoCUwIBPKACIqACXgIBOqwBHawBTAIBcqgBQ6gBUgIBcLUBQ7UBUgIBbLIBqgGyAcgBAgFu8QEZ+gEiAgFK+wEZggInAgFGgwIZgwKAAQIBRfcBH/cBTgIBTfMBRfMBXAIBS4ACRYACXAIBR/0BrAH9AcoBAgFJ</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d5UBQzpcVXNlcnNcdXFzZGViYmVcRG9jdW1lbnRzXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXEhSX0ZpeGVkVGVybUFwcG9pbnRtZW50RXhwaXJ5XFVuaXRhc2tcVW5pdGFza19FeHRyYWN0RW1wbG95ZWVOYW1lQW5kUHJvcG9zZWRDb250cmFjdERhdGVzLnhhbWxkVgPkAw4CAQFZOFlVAgECZAVkvQEDAYMBZQWMARUDAYIBjQEFlAEOAgF+lQEFmwEVAgF9nAEF3AEQAgFh3QEFqAIQAgE7qQIFggMQAgEGgwMF4QMVAgEF4gMF4gO8AQIBA2RyZLoBAwGEAZIBMJIBTgMBgQGPATGPATkCAX+eAQnGARkCAWnOAQ3YARgCAWLeAQfeAcgBAgFc3wEH5gEQAgFY5wEHpwISAgE8qgIHqgLYAQIBNqsCB7ICEAIBMrMCB8wCEgIBI80CB+YCEgIBFecCB4EDEgIBB+IDcuIDuQECAQSeAYMBngGNAQIBfJ4BcZ4BdAIBe6EBD74BIAIBbcMBD8MB0AECAWrPAQ/WARgCAWXXAQ/XAa8BAgFj3gG0Ad4BxQECAV/eAZkB3gGoAQIBXeQBMuQBdwIBW+EBM+EBPwIBWekBC5ECGwIBRJkCD6MCGgIBPaoCvAGqAtUBAgE5qgKZAaoCsAECATewAjKwApkBAgE1rQIzrQJHAgEztAIJuwISAgEuvAIJwwISAgEqxAIJywISAgEkzgIJ1QISAgEf1gIJ3QISAgEb3gIJ5QISAgEW6AIJ7wISAgER8AIJ9wISAgEN+AIJgAMSAgEIoQHJAaEBuwICAXinARW7ASACAW7DAaYBwwHNAQIBa9QBOtQBTwIBaNEBO9EBUQIBZtcBRtcBggECAWTpAYUB6QGPAQIBV+kBc+kBdgIBVuwBEYkCIgIBSI4CEY4C4gECAUWaAhGhAhoCAUCiAhGiAosBAgE+uQI0uQJ7AgExtgI1tgJIAgEvwQI0wQJxAgEtvgI1vgJHAgEryQI0yQJgAgEnxgI1xgJHAgEl0wI00wKfAQIBItACNdACTQIBINsCNNsCkQECAR7YAjXYAk0CARzjAjbjAmACARngAjfgAlYCARftAjTtAqABAgEU6gI16gJOAgES9QI09QKSAQIBEPICNfICTgIBDv0CNv0CVQIBC/oCN/oCVAIBCagBF7EBIAIBdLIBF7kBJQIBcLoBF7oBfgIBb+wBywHsAfcCAgFT8gEXhgIiAgFJjgKwAY4C3wECAUafAjyfAk0CAUOcAj2cAlMCAUGiAiKiAl4CAT+uAR2uAUwCAXeqAUOqAVICAXW3AUO3AVICAXG0AaoBtAHIAQIBc/MBGfwBIgIBT/0BGYQCJwIBS4UCGYUCgAECAUr5AR/5AU4CAVL1AUX1AVwCAVCCAkWCAlwCAUz/AawB/wHKAQIBTg==</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -777,7 +788,8 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_10" sap:VirtualizedContainerService.HintSize="314,425">
+      <sap2010:ViewStateData Id="Assign_31" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="Sequence_10" sap:VirtualizedContainerService.HintSize="314,525">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -786,7 +798,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_12" sap:VirtualizedContainerService.HintSize="476,1945">
+      <sap2010:ViewStateData Id="Sequence_12" sap:VirtualizedContainerService.HintSize="476,2045">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">False</x:Boolean>
@@ -888,14 +900,14 @@
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="LogMessage_2" sap:VirtualizedContainerService.HintSize="476,91" />
-      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="498,5969">
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="498,6069">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Aurion_ExtractEmployeeName_ProposedContractDates_1" sap:VirtualizedContainerService.HintSize="538,6049">
+      <sap2010:ViewStateData Id="Aurion_ExtractEmployeeName_ProposedContractDates_1" sap:VirtualizedContainerService.HintSize="538,6149">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="ShouldExpandAll">True</x:Boolean>
