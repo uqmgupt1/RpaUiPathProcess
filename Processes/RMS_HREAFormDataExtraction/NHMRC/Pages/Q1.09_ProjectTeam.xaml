@@ -12,7 +12,7 @@
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <x:Members>
     <x:Property Name="in_Browser" Type="InArgument(ui:Browser)" />
-    <x:Property Name="in_TeamMembers" Type="InArgument(sxl:XElement)" />
+    <x:Property Name="in_TeamMembers" Type="InArgument(scg:List(sxl:XElement))" />
   </x:Members>
   <mva:VisualBasic.Settings>
     <x:Null />
@@ -70,13 +70,11 @@
       <AssemblyReference>UiPath.Studio.Plugin.Workflow</AssemblyReference>
       <AssemblyReference>System.Collections.Immutable</AssemblyReference>
       <AssemblyReference>Microsoft.VisualStudio.Services.Common</AssemblyReference>
+      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence DisplayName="Project Team Details " sap2010:WorkflowViewState.IdRef="Sequence_2">
-    <Sequence.Variables>
-      <Variable x:TypeArguments="scg:List(sxl:XElement)" Name="teamEntries" />
-    </Sequence.Variables>
-    <If Condition="[in_Application Is Nothing]" sap2010:WorkflowViewState.IdRef="If_1">
+    <If Condition="[in_TeamMembers Is Nothing]" sap2010:WorkflowViewState.IdRef="If_1">
       <If.Then>
         <ui:BrowserScope Browser="{x:Null}" SearchScope="{x:Null}" TimeoutMS="{x:Null}" BrowserType="Chrome" DisplayName="Attach Browser 'chrome.exe New'" sap2010:WorkflowViewState.IdRef="BrowserScope_4" Selector="&lt;html app='chrome.exe' title='New application - NHMRC Portal' /&gt;" UiBrowser="[in_Browser]">
           <ui:BrowserScope.Body>
@@ -86,10 +84,10 @@
               </ActivityAction.Argument>
               <Assign sap2010:WorkflowViewState.IdRef="Assign_7">
                 <Assign.To>
-                  <OutArgument x:TypeArguments="sxl:XElement">[in_Application]</OutArgument>
+                  <OutArgument x:TypeArguments="scg:List(sxl:XElement)">[in_TeamMembers]</OutArgument>
                 </Assign.To>
                 <Assign.Value>
-                  <InArgument x:TypeArguments="sxl:XElement">[XElement.Load("Data\dev.xml")]</InArgument>
+                  <InArgument x:TypeArguments="scg:List(sxl:XElement)">[XElement.Load("Data\dev.xml").Elements("TeamMembersRpt").Take(3).ToList]</InArgument>
                 </Assign.Value>
               </Assign>
             </ActivityAction>
@@ -112,7 +110,7 @@
                 <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="&lt;webctrl id='FormFrame' tag='IFRAME' /&gt;" WaitForReady="INTERACTIVE" />
               </ui:WaitUiElementAppear.Target>
             </ui:WaitUiElementAppear>
-            <ui:ForEach x:TypeArguments="sxl:XElement" CurrentIndex="{x:Null}" DisplayName="For Each team member" sap2010:WorkflowViewState.IdRef="ForEach`1_16" Values="[teamEntries]">
+            <ui:ForEach x:TypeArguments="sxl:XElement" CurrentIndex="{x:Null}" DisplayName="For Each team member" sap2010:WorkflowViewState.IdRef="ForEach`1_16" Values="[in_TeamMembers]">
               <ui:ForEach.Body>
                 <ActivityAction x:TypeArguments="sxl:XElement">
                   <ActivityAction.Argument>
@@ -362,7 +360,7 @@
                   <OutArgument x:TypeArguments="scg:List(x:Int32)">[indexesUsed]</OutArgument>
                 </Assign.To>
                 <Assign.Value>
-                  <InArgument x:TypeArguments="scg:List(x:Int32)">[teamEntries.Select(function(e) CInt(e.Value)).ToList]</InArgument>
+                  <InArgument x:TypeArguments="scg:List(x:Int32)">[in_TeamMembers.Select(function(e) CInt(e.Value)).ToList]</InArgument>
                 </Assign.Value>
               </Assign>
               <ui:ForEach x:TypeArguments="ui:UiElement" CurrentIndex="[index]" DisplayName="For Each item in list" sap2010:WorkflowViewState.IdRef="ForEach`1_18" Values="[checkboxItems]">
@@ -401,7 +399,7 @@
         </ActivityAction>
       </ui:BrowserScope.Body>
     </ui:BrowserScope>
-    <sads:DebugSymbol.Symbol>d2JDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUk1TX0hSRUFGb3JtRGF0YUV4dHJhY3Rpb25cTkhNUkNcUGFnZXNcUTEuMDlfUHJvamVjdFRlYW0ueGFtbIoBSwOVAw4CAQFPBWMKAwGyAWQFkwMXAgECTxNPMAMBswFRCWEbAwG0AWRzZIEBAwGwAWoLkAMWAgEDUdYBUZ4CAwG6AVGpAlG3AgMBuAFXD14YAwG1AW4NciYDAawBcw26AhoCASG7Ag2PAxgCAQRcPlxdAwG3AVk/WU8DAbYBblBuXQMBrgFwZ3CWAQMBrQFzqQFzuAEDAasBeRO3Ah4CASLBAg/nAhoCARXoAg/vAhgCARHwAg//AhwCAQeAAw+OAxoCAQV+Q35HAgEjgAEVhgEtAwGkAYcBFY0BLQMBnQGOARWUAS0DAZYBlQEVowEaAwGMAaQBFfIBGgIBUvMBFfcBGgIBTvgBFa0CJQIBKq4CFbUCHgIBJrYCFbYCsQECASTGAhPKAiUCARzeAhPlAhwCARnSAhfZAiACARbtAkPtAnkCARTqAkTqAlECARLwAqsB8AK8AQIBEPACR/ACUAIBDvYCFfwCLQIBCIwDaYwDyQECAQaEAV2EAW0DAakBggFUggGJAQMBqAGDAVWDAWADAaYBgAHMAYAB6wEDAaUBiwFdiwFxAwGiAYkBVIkBiQEDAaEBigFVigFgAwGfAYcB0AGHAe8BAwGeAZIBXZIBbwMBmwGQAVSQAYkBAwGaAZEBVZEBYAMBmAGOAc4BjgHtAQMBlwGVASOVAYMCAwGNAZcBGaEBJAMBjgGkASOkAYICAgFTpgEZ8AEkAgFU8wEj8wE2AgFP9QEZ9QFVAgFR+AGPAfgBmQECAU34AX34AYABAgFM+wEbpwImAgErswJAswJTAgEosAJBsAJPAgEntgKDAbYCrgECASXGAmTGApcBAgEgyAJtyAJ6AgEexgItxgI6AgEd4wJM4wJeAgEb4AJN4AJcAgEa1wJX1wJvAgEY1AJY1AJjAgEX+QJU+QJrAgEN+AJT+AJ0AgEK9gLTAfYC8gECAQmYARufASQDAZIBoAEboAG9AQMBjwGnARvuASMCAVjvARvvAbsBAgFV/AEdggI1AgFFgwIdiQI1AgE+igIdkAI1AgE3kQIdnwIoAgE0oAIdpgI1AgEsnQFFnQF/AwGVAZoBRpoBUAMBkwGgAYkBoAG6AQMBkAGpAUupAU4CAVmsAR3tASgCAV2rAS6rAU0CAVrvAYkB7wG4AQIBVv4BWf4BdwIBS/8BXP8BrAECAUmAAl2AAmgCAUf8AdYB/AHxAQIBRoUCWYUCdwIBRIYCXIYCrAECAUKHAl2HAmgCAUCDAtYBgwLxAQIBP4wCWYwCdwIBPY0CXI0CrAECATuOAl2OAmgCATmKAtYBigLxAQIBOJ0Cd50ClwICATaRAl+RAmUCATWkAlukAmkCATKjAl6jAmYCATCiAl2iAmkCAS6gAt4BoAKJAgIBLa0BH9YBJAIBcNcBH+wBJAIBXq0BLa0BTQIBca8BI9QBLgIBdNcBLdcBoQECAV/ZASPgASwCAWvjASPqASwCAWawASW+ATADAYoBvwElxQE9AwGDAcYBJcwBPQIBfM0BJdMBPQIBdd4BTd4BUAIBbtsBTtsBWAIBbOgBTegBVAIBaeUBTuUBUQIBZ7wBf7wB3AEDAYsBwwFtwwF9AwGIAcEBZMEBmQEDAYcBwgFlwgFwAwGFAb8B3AG/AfsBAwGEAcoBbcoBgQEDAYEByAFkyAGZAQMBgAHJAWXJAXACAX7GAeABxgH/AQIBfdEBbdEBfwIBes8BZM8BmQECAXnQAWXQAXACAXfNAd4BzQH9AQIBdg==</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d2JDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUk1TX0hSRUFGb3JtRGF0YUV4dHJhY3Rpb25cTkhNUkNcUGFnZXNcUTEuMDlfUHJvamVjdFRlYW0ueGFtbIoBTAOTAw4CAQFNBWEKAwGyAWIFkQMXAgECTRNNMAMBswFPCV8bAwG0AWJzYoEBAwGwAWgLjgMWAgEDT9YBT54CAwG6AU+pAk+3AgMBuAFVD1wYAwG1AWwNcCYDAawBcQ24AhoCASG5Ag2NAxgCAQRaSFqRAQMBtwFXSVdZAwG2AWxQbF0DAa4BbmdulgEDAa0BcakBcbsBAwGrAXcTtQIeAgEivwIP5QIaAgEV5gIP7QIYAgER7gIP/QIcAgEH/gIPjAMaAgEFfEN8RwIBI34VhAEtAwGkAYUBFYsBLQMBnQGMARWSAS0DAZYBkwEVoQEaAwGMAaIBFfABGgIBUvEBFfUBGgIBTvYBFasCJQIBKqwCFbMCHgIBJrQCFbQCsQECASTEAhPIAiUCARzcAhPjAhwCARnQAhfXAiACARbrAkPrAnwCARToAkToAlECARLuAqsB7gK8AQIBEO4CR+4CUAIBDvQCFfoCLQIBCIoDaYoDyQECAQaCAV2CAW0DAakBgAFUgAGJAQMBqAGBAVWBAWADAaYBfswBfusBAwGlAYkBXYkBcQMBogGHAVSHAYkBAwGhAYgBVYgBYAMBnwGFAdABhQHvAQMBngGQAV2QAW8DAZsBjgFUjgGJAQMBmgGPAVWPAWADAZgBjAHOAYwB7QEDAZcBkwEjkwGDAgMBjQGVARmfASQDAY4BogEjogGCAgIBU6QBGe4BJAIBVPEBI/EBNgIBT/MBGfMBVQIBUfYBjwH2AZkBAgFN9gF99gGAAQIBTPkBG6UCJgIBK7ECQLECUwIBKK4CQa4CTwIBJ7QCgwG0Aq4BAgElxAJkxAKXAQIBIMYCbcYCegIBHsQCLcQCOgIBHeECTOECXgIBG94CTd4CXAIBGtUCV9UCbwIBGNICWNICYwIBF/cCVPcCawIBDfYCU/YCdAIBCvQC0wH0AvIBAgEJlgEbnQEkAwGSAZ4BG54BvQEDAY8BpQEb7AEjAgFY7QEb7QG7AQIBVfoBHYACNQIBRYECHYcCNQIBPogCHY4CNQIBN48CHZ0CKAIBNJ4CHaQCNQIBLJsBRZsBfwMBlQGYAUaYAVADAZMBngGJAZ4BugEDAZABpwFLpwFOAgFZqgEd6wEoAgFdqQEuqQFNAgFa7QGJAe0BuAECAVb8AVn8AXcCAUv9AVz9AawBAgFJ/gFd/gFoAgFH+gHWAfoB8QECAUaDAlmDAncCAUSEAlyEAqwBAgFChQJdhQJoAgFAgQLWAYEC8QECAT+KAlmKAncCAT2LAlyLAqwBAgE7jAJdjAJoAgE5iALWAYgC8QECATibAnebApcCAgE2jwJfjwJlAgE1ogJbogJpAgEyoQJeoQJmAgEwoAJdoAJpAgEungLeAZ4CiQICAS2rAR/UASQCAXDVAR/qASQCAV6rAS2rAU0CAXGtASPSAS4CAXTVAS3VAaEBAgFf1wEj3gEsAgFr4QEj6AEsAgFmrgElvAEwAwGKAb0BJcMBPQMBgwHEASXKAT0CAXzLASXRAT0CAXXcAU3cAVACAW7ZAU7ZAVgCAWzmAU3mAVQCAWnjAU7jAVECAWe6AX+6AdwBAwGLAcEBbcEBfQMBiAG/AWS/AZkBAwGHAcABZcABcAMBhQG9AdwBvQH7AQMBhAHIAW3IAYEBAwGBAcYBZMYBmQEDAYABxwFlxwFwAgF+xAHgAcQB/wECAX3PAW3PAX8CAXrNAWTNAZkBAgF5zgFlzgFwAgF3ywHeAcsB/QECAXY=</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
