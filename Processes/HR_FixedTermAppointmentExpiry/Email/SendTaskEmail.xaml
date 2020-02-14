@@ -21,6 +21,7 @@
     <x:Property Name="in_Notes" Type="InArgument(x:String)" />
     <x:Property Name="in_EmployeeNumber" Type="InArgument(x:String)" />
     <x:Property Name="in_PayPointCode" Type="InArgument(x:String)" />
+    <x:Property Name="in_pstName" Type="InArgument(x:String)" />
   </x:Members>
   <mva:VisualBasic.Settings>
     <x:Null />
@@ -76,8 +77,8 @@
       <AssemblyReference>System.ValueTuple</AssemblyReference>
       <AssemblyReference>System.ComponentModel.Composition</AssemblyReference>
       <AssemblyReference>Microsoft.VisualStudio.Services.Common</AssemblyReference>
-      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
       <AssemblyReference>UiPath.Studio.Plugin.Workflow</AssemblyReference>
+      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence DisplayName="SendTaskEmail" sap2010:WorkflowViewState.IdRef="Sequence_1">
@@ -85,6 +86,7 @@
       <Variable x:TypeArguments="x:String" Name="ReportEmailTemplate" />
       <Variable x:TypeArguments="x:String" Name="messageText" />
       <Variable x:TypeArguments="x:Int32" Name="successCount" />
+      <Variable x:TypeArguments="x:String" Name="operatingEnvironment" />
     </Sequence.Variables>
     <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;Begin Send Task Email&quot;]" />
     <If Condition="[in_Notes = &quot;&quot;]" DisplayName="If in_Notes is blank, update to &quot;None&quot;" sap2010:WorkflowViewState.IdRef="If_2">
@@ -104,7 +106,7 @@
         <OutArgument x:TypeArguments="x:String">[messageText]</OutArgument>
       </Assign.To>
       <Assign.Value>
-        <InArgument x:TypeArguments="x:String" xml:space="preserve">["The following task was processed by FTAE bot.  The status is """ + in_Status.ToUpper + """.  The details are listed below." + "&lt;br&gt;" + "&lt;br&gt;" + "Case ID: " + in_TransactionItem.Reference + "&lt;br&gt;" + "Employee Name: " + in_EmployeeName + "&lt;br&gt;" + "Employee Number: " + in_EmployeeNumber + "&lt;br&gt;" + "Current End Date: " + in_CurrentEndDate.ToString("dd-MMM-yyyy") + "&lt;br&gt;" + "Proposed Start Date: " + in_ProposedStartDate.ToString("dd-MMM-yyyy") + "&lt;br&gt;" + "Proposed End Date: " + in_ProposedEndDate.ToString("dd-MMM-yyyy") + "&lt;br&gt;" + "Pay Point Code: " + in_PayPointCode + "&lt;br&gt;" + "Status: " + in_Status + "&lt;br&gt;" + "Notes: " + in_Notes]</InArgument>
+        <InArgument x:TypeArguments="x:String" xml:space="preserve">["The following task was processed by FTAE bot.  The status is """ + in_Status.ToUpper + """.  The details are listed below." + "&lt;br&gt;" + "&lt;br&gt;" + "Case ID: " + in_TransactionItem.Reference + "&lt;br&gt;" + "Employee Name: " + in_EmployeeName + "&lt;br&gt;" + "Employee Number: " + in_EmployeeNumber + "&lt;br&gt;" + "Current End Date: " + in_CurrentEndDate.ToString("dd-MMM-yyyy") + "&lt;br&gt;" + "Proposed Start Date: " + in_ProposedStartDate.ToString("dd-MMM-yyyy") + "&lt;br&gt;" + "Proposed End Date: " + in_ProposedEndDate.ToString("dd-MMM-yyyy") + "&lt;br&gt;" + "PST Name: " + in_pstName + "&lt;br&gt;" + "Status: " + in_Status + "&lt;br&gt;" + "Notes: " + in_Notes]</InArgument>
       </Assign.Value>
     </Assign>
     <ui:ReadTextFile Content="[ReportEmailTemplate]" DisplayName="Read Text File" FileName="Data\Report Email Template.html" sap2010:WorkflowViewState.IdRef="ReadTextFile_1" />
@@ -132,40 +134,67 @@
         <InArgument x:TypeArguments="x:String">[ReportEmailTemplate.Replace("{Table}","")]</InArgument>
       </Assign.Value>
     </Assign>
-    <ui:SendMail Bcc="{x:Null}" Cc="{x:Null}" Email="{x:Null}" MailMessage="{x:Null}" Name="{x:Null}" Password="{x:Null}" TimeoutMS="{x:Null}" Body="[ReportEmailTemplate]" DisplayName="Send SMTP Mail Message" EnableSSL="True" From="noreply@uq.edu.au" sap2010:WorkflowViewState.IdRef="SendMail_1" IsBodyHtml="True" Port="[CInt(in_Config(&quot;UQ_SMTP_PORT&quot;).ToString)]" SecureConnection="Auto" Server="[in_Config(&quot;UQ_SMTP_SERVER&quot;).ToString]" Subject="[in_Config(&quot;OperatingEnvironment&quot;).ToString + &quot; - &quot; + in_TransactionItem.Reference + &quot; Renewal Task - &quot; + in_Status]" To="s.debbe@uq.edu.au">
+    <If Condition="[in_Config(&quot;OperatingEnvironment&quot;).ToString.ToUpper.Trim = &quot;DEV&quot;]" sap2010:WorkflowViewState.IdRef="If_3">
+      <If.Then>
+        <Assign sap2010:WorkflowViewState.IdRef="Assign_8">
+          <Assign.To>
+            <OutArgument x:TypeArguments="x:String">[operatingEnvironment]</OutArgument>
+          </Assign.To>
+          <Assign.Value>
+            <InArgument x:TypeArguments="x:String">[in_Config("OperatingEnvironment").ToString + " - "]</InArgument>
+          </Assign.Value>
+        </Assign>
+      </If.Then>
+      <If.Else>
+        <Assign sap2010:WorkflowViewState.IdRef="Assign_9">
+          <Assign.To>
+            <OutArgument x:TypeArguments="x:String">[operatingEnvironment]</OutArgument>
+          </Assign.To>
+          <Assign.Value>
+            <InArgument x:TypeArguments="x:String">
+              <Literal x:TypeArguments="x:String" Value="" />
+            </InArgument>
+          </Assign.Value>
+        </Assign>
+      </If.Else>
+    </If>
+    <ui:SendMail Bcc="{x:Null}" Cc="{x:Null}" Email="{x:Null}" MailMessage="{x:Null}" Name="{x:Null}" Password="{x:Null}" TimeoutMS="{x:Null}" Body="[ReportEmailTemplate]" DisplayName="Send SMTP Mail Message" EnableSSL="True" From="noreply@uq.edu.au" sap2010:WorkflowViewState.IdRef="SendMail_1" IsBodyHtml="True" Port="[CInt(in_Config(&quot;UQ_SMTP_PORT&quot;).ToString)]" SecureConnection="Auto" Server="[in_Config(&quot;UQ_SMTP_SERVER&quot;).ToString]" Subject="[operatingEnvironment + in_TransactionItem.Reference + &quot; Renewal Task - &quot; + in_Status]" To="s.debbe@uq.edu.au">
       <ui:SendMail.Files>
         <scg:List x:TypeArguments="InArgument(x:String)" Capacity="0" />
       </ui:SendMail.Files>
     </ui:SendMail>
     <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[&quot;End Send Task Email&quot;]" />
-    <sads:DebugSymbol.Symbol>d21DOlxVc2Vyc1x1cXNkZWJiZVxEb2N1bWVudHNcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcSFJfRml4ZWRUZXJtQXBwb2ludG1lbnRFeHBpcnlcRW1haWxcU2VuZFRhc2tFbWFpbC54YW1sH1MDjgEOAgEBWQVZmgECAS1aBWUKAgEmZgVtDgIBIm4FbrEBAgEebwV2DgIBGHcFfg4CARN/BYYBDgIBDocBBYsBEwIBBIwBBYwBmAECAQJZclmXAQIBLloTWi4CASdcCWMSAgEpaDFoPgIBI25cbn0CASFuHm41AgEfdDB0ZgIBG3ExcUYCARl8MHxlAgEWeTF5RgIBFIQBMIQBWwIBEYEBMYEBRgIBD4cB6QSHAfwEAgENhwGVAYcBrAECAQuHAdEDhwHlBAIBCocB6AGHAfsBAgEJhwHAAocB9gICAQeHAZYDhwHIAwIBBYwBcowBlQECAQNhNGE4AgEsXjVePwIBKg==</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d21DOlxVc2Vyc1x1cXNkZWJiZVxEb2N1bWVudHNcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcSFJfRml4ZWRUZXJtQXBwb2ludG1lbnRFeHBpcnlcRW1haWxcU2VuZFRhc2tFbWFpbC54YW1sJ1QDqAEOAgEBWwVbmgECATlcBWcKAgEyaAVvDgIBLnAFcLEBAgEqcQV4DgIBJHkFgAEOAgEfgQEFiAEOAgEaiQEFoAEKAgEOoQEFpQETAgEEpgEFpgGYAQIBAltyW5cBAgE6XBNcLgIBM14JZRICATVqMWo+AgEvcFxwfQIBLXAecDUCASt2MHZmAgEnczFzRgIBJX4wfmUCASJ7MXtGAgEghgEwhgFbAgEdgwExgwFGAgEbiQETiQFqAgEPiwEJkgESAgEVlQEJngESAgERoQG3BKEBygQCAQ2hAZUBoQGsAQIBC6EB0QOhAbMEAgEKoQHoAaEB+wECAQmhAcACoQH2AgIBB6EBlgOhAcgDAgEFpgFypgGVAQIBA2M0YzgCAThgNWA/AgE2kAE0kAFoAgEYjQE1jQFLAgEWmwEPmwE+AgEUlwE1lwFLAgES</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
-      <sap2010:ViewStateData Id="LogMessage_1" sap:VirtualizedContainerService.HintSize="464,91" />
+      <sap2010:ViewStateData Id="LogMessage_1" sap:VirtualizedContainerService.HintSize="509,91" />
       <sap2010:ViewStateData Id="Assign_7" sap:VirtualizedContainerService.HintSize="242,60" />
-      <sap2010:ViewStateData Id="If_2" sap:VirtualizedContainerService.HintSize="464,208" />
-      <sap2010:ViewStateData Id="Assign_6" sap:VirtualizedContainerService.HintSize="464,60" />
-      <sap2010:ViewStateData Id="ReadTextFile_1" sap:VirtualizedContainerService.HintSize="464,59" />
-      <sap2010:ViewStateData Id="Assign_3" sap:VirtualizedContainerService.HintSize="464,60" />
-      <sap2010:ViewStateData Id="Assign_4" sap:VirtualizedContainerService.HintSize="464,60" />
-      <sap2010:ViewStateData Id="Assign_5" sap:VirtualizedContainerService.HintSize="464,60" />
-      <sap2010:ViewStateData Id="SendMail_1" sap:VirtualizedContainerService.HintSize="464,145">
+      <sap2010:ViewStateData Id="If_2" sap:VirtualizedContainerService.HintSize="509,208" />
+      <sap2010:ViewStateData Id="Assign_6" sap:VirtualizedContainerService.HintSize="509,60" />
+      <sap2010:ViewStateData Id="ReadTextFile_1" sap:VirtualizedContainerService.HintSize="509,59" />
+      <sap2010:ViewStateData Id="Assign_3" sap:VirtualizedContainerService.HintSize="509,60" />
+      <sap2010:ViewStateData Id="Assign_4" sap:VirtualizedContainerService.HintSize="509,60" />
+      <sap2010:ViewStateData Id="Assign_5" sap:VirtualizedContainerService.HintSize="509,60" />
+      <sap2010:ViewStateData Id="Assign_8" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="Assign_9" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="If_3" sap:VirtualizedContainerService.HintSize="509,208" />
+      <sap2010:ViewStateData Id="SendMail_1" sap:VirtualizedContainerService.HintSize="509,145">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsPinned">False</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="LogMessage_2" sap:VirtualizedContainerService.HintSize="464,91" />
-      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="486,1278">
+      <sap2010:ViewStateData Id="LogMessage_2" sap:VirtualizedContainerService.HintSize="509,91" />
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="531,1526">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="SendEmail_1" sap:VirtualizedContainerService.HintSize="526,1358" />
+      <sap2010:ViewStateData Id="SendEmail_1" sap:VirtualizedContainerService.HintSize="571,1646" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
