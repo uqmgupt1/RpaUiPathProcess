@@ -98,6 +98,9 @@
       <Variable x:TypeArguments="x:String" Name="employeeLastName" />
       <Variable x:TypeArguments="x:String" Name="currentContractEndDate" />
       <Variable x:TypeArguments="x:String" Name="proposedContractEndDate" />
+      <Variable x:TypeArguments="ui:GenericValue" Name="ChromeExeChrome" />
+      <Variable x:TypeArguments="x:String" Name="visibleText" />
+      <Variable x:TypeArguments="ui:Browser" Name="storageBrowser" />
     </Sequence.Variables>
     <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;Begin Unitask_ExtractContractDetails&quot;]" />
     <Assign sap2010:Annotation.AnnotationText="Case ID is assigned from queue item reference" DisplayName="Assign CaseID" sap2010:WorkflowViewState.IdRef="Assign_6">
@@ -113,7 +116,7 @@
         <ui:RetryScope DisplayName="Retry Scope" sap2010:WorkflowViewState.IdRef="RetryScope_1" NumberOfRetries="3" RetryInterval="00:00:05">
           <ui:RetryScope.ActivityBody>
             <ActivityAction>
-              <ui:OpenBrowser UiBrowser="{x:Null}" BrowserType="Chrome" DisplayName="Open Browser" Hidden="False" sap2010:WorkflowViewState.IdRef="OpenBrowser_1" NewSession="True" Private="False" Url="[in_Config(&quot;UnitaskURL&quot;).ToString + &quot;/bonita/API/bpm/case/&quot; + CaseID +&quot;/context&quot;]">
+              <ui:OpenBrowser BrowserType="Chrome" ContinueOnError="False" DisplayName="Open Browser" Hidden="False" sap2010:WorkflowViewState.IdRef="OpenBrowser_1" NewSession="True" Private="False" UiBrowser="[storageBrowser]" Url="[in_Config(&quot;UnitaskURL&quot;).ToString + &quot;/bonita/API/bpm/case/&quot; + CaseID +&quot;/context&quot;]">
                 <ui:OpenBrowser.Body>
                   <ActivityAction x:TypeArguments="x:Object">
                     <ActivityAction.Argument>
@@ -162,6 +165,12 @@
         </Catch>
       </TryCatch.Catches>
     </TryCatch>
+    <If Condition="[StorageString.Trim.Equals(&quot;&quot;)]" DisplayName="If StorageString.Trim.Equals(&quot;&quot;)">
+      <If.Then>
+        <Throw DisplayName="Throw Unitask data not found" Exception="[New SystemException(&quot;Unitask data not found.&quot;)]" sap2010:WorkflowViewState.IdRef="Throw_3" />
+      </If.Then>
+      <sap2010:WorkflowViewState.IdRef>If_2</sap2010:WorkflowViewState.IdRef>
+    </If>
     <ui:DeserializeJson x:TypeArguments="njl:JObject" sap2010:Annotation.AnnotationText="Storage Json contains storage location for Employee Detail URL" DisplayName="Deserialize JSON (StorageString)" sap2010:WorkflowViewState.IdRef="DeserializeJson`1_1" JsonObject="[StorageJson]" JsonString="[StorageString]" />
     <Assign sap2010:Annotation.AnnotationText="Storage location value from storage Json" DisplayName="Assign StorageURL" sap2010:WorkflowViewState.IdRef="Assign_10">
       <Assign.To>
@@ -176,7 +185,7 @@
         <ui:RetryScope DisplayName="Retry Scope" sap2010:WorkflowViewState.IdRef="RetryScope_2" NumberOfRetries="3" RetryInterval="00:00:05">
           <ui:RetryScope.ActivityBody>
             <ActivityAction>
-              <ui:OpenBrowser UiBrowser="{x:Null}" BrowserType="Chrome" DisplayName="Open Browser" Hidden="False" sap2010:WorkflowViewState.IdRef="OpenBrowser_2" NewSession="True" Private="False" Url="[in_Config(&quot;UnitaskURL&quot;).ToString + &quot;/bonita/API/extension/getBdmData?bdmClassName=au.edu.uq.HpFtaeFixTrmAppointmntExpV1&amp;storageId=&quot; + StorageURL]">
+              <ui:OpenBrowser UiBrowser="{x:Null}" BrowserType="Chrome" ContinueOnError="False" DisplayName="Open Browser" Hidden="False" sap2010:WorkflowViewState.IdRef="OpenBrowser_2" NewSession="True" Private="False" Url="[in_Config(&quot;UnitaskURL&quot;).ToString + &quot;/bonita/API/extension/getBdmData?bdmClassName=au.edu.uq.HpFtaeFixTrmAppointmntExpV1&amp;storageId=&quot; + StorageURL]">
                 <ui:OpenBrowser.Body>
                   <ActivityAction x:TypeArguments="x:Object">
                     <ActivityAction.Argument>
@@ -324,12 +333,12 @@
     </Sequence>
     <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[&quot;Contract details extracted&quot;]" />
     <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_3" Level="Info" Message="[&quot;End Unitask_ExtractContractDetails&quot;]" />
-    <sads:DebugSymbol.Symbol>d4ABQzpcVXNlcnNcdXFzZGViYmVcRG9jdW1lbnRzXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXEhSX0ZpeGVkVGVybUFwcG9pbnRtZW50RXhwaXJ5XFVuaXRhc2tcVW5pdGFza19FeHRyYWN0Q29udHJhY3REZXRhaWxzLnhhbWxZWAPIAg4CAQFbOFtVAgECZgVmqQECAXdnBW4OAgFzbwWkARACAV6lAQWlAbkCAgFZpgEFrQEOAgFVrgEF4wEQAgFA5AEFxAIQAgEHxQIFxQKfAQIBBcYCBcYCpwECAQNmcmamAQIBeGwwbE4CAXZpMWk5AgF0cQmZARkCAV+lAaUCpQG2AgIBXKUBigKlAZkCAgFaqwEwqwF1AgFYqAExqAE9AgFWsAEJ2AEZAgFB5QEH5QHwAQIBO+YBB+0BEAIBN+4BB/UBEAIBM/YBB48CEgIBJJACB6kCEgIBFqoCB8MCEgIBCMUCcsUCnAECAQbGAnLGAqQBAgEEcYMBcY0BAgFycXFxdAIBcXQPkQEgAgFjlgEPlgHNAQIBYLABgwGwAY0BAgFUsAFxsAF0AgFTswEP0AEgAgFF1QEP1QHdAQIBQuUB1AHlAe0BAgE+5QGxAeUByAECATzrATLrAZkBAgE66AEz6AFHAgE48wEy8wGSAQIBNvABM/ABQAIBNPcBCf4BEgIBL/8BCYYCEgIBK4cCCY4CEgIBJZECCZgCEgIBIJkCCaACEgIBHKECCagCEgIBF6sCCbICEgIBErMCCboCEgIBDrsCCcICEgIBCXTJAXS6AgIBbnoVjgEgAgFklgGjAZYBygECAWGzAckBswH1AgIBULkBFc0BIAIBRtUBqwHVAdoBAgFD/AE0/AF7AgEy+QE1+QFIAgEwhAI0hAJxAgEugQI1gQJHAgEsjAI0jAJgAgEoiQI1iQJHAgEmlgI0lgKfAQIBI5MCNZMCTQIBIZ4CNJ4CkQECAR+bAjWbAk0CAR2mAjamAmACARqjAjejAlYCARiwAjSwAqABAgEVrQI1rQJOAgETuAI0uAKSAQIBEbUCNbUCTgIBD8ACNsACVgIBDL0CN70CVAIBCnsXhAEgAgFqhQEXjAElAgFmjQEXjQF+AgFlugEXwwEgAgFMxAEXywElAgFIzAEXzAF+AgFHgQEdgQFMAgFtfUN9UgIBa4oBQ4oBUgIBZ4cBqgGHAcgBAgFpwAEdwAFMAgFPvAFDvAFaAgFNyQFDyQFaAgFJxgGqAcYByAECAUs=</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d4ABQzpcVXNlcnNcdXFzZGViYmVcRG9jdW1lbnRzXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXEhSX0ZpeGVkVGVybUFwcG9pbnRtZW50RXhwaXJ5XFVuaXRhc2tcVW5pdGFza19FeHRyYWN0Q29udHJhY3REZXRhaWxzLnhhbWxgWAPRAg4CAQFbOFtVAgECaQVpqQEDAYABagVxDgIBfHIFpwEQAgFkqAEFrQEKAgFfrgEFrgG5AgIBWq8BBbYBDgIBVrcBBewBEAIBQO0BBc0CEAIBB84CBc4CnwECAQXPAgXPAqcBAgEDaXJppgEDAYEBbzBvTgIBf2wxbDkCAX10CZwBGQIBZagBE6gBPgIBYKoBCaoBrgECAWKuAaUCrgG2AgIBXa4BigKuAZkCAgFbtAEwtAF1AgFZsQExsQE9AgFXuQEJ4QEZAgFB7gEH7gHwAQIBO+8BB/YBEAIBN/cBB/4BEAIBM/8BB5gCEgIBJJkCB7ICEgIBFrMCB8wCEgIBCM4Ccs4CnAECAQbPAnLPAqQBAgEEdIMBdI0BAgF7dHF0dAIBencPlAEgAgFpmQEPmQHNAQIBZqoBRaoBgQECAWO5AYMBuQGNAQIBVbkBcbkBdAIBVLwBD9kBIAIBRd4BD94B3QECAULuAdQB7gHtAQIBPu4BsQHuAcgBAgE89AEy9AGZAQIBOvEBM/EBRwIBOPwBMvwBkgECATb5ATP5AUACATSAAgmHAhICAS+IAgmPAhICASuQAgmXAhICASWaAgmhAhICASCiAgmpAhICARyqAgmxAhICARe0Agm7AhICARK8AgnDAhICAQ7EAgnLAhICAQl3RHdLAgF5d9IBd+QBAgF3d+kBd9oCAgF0fRWRASACAWqZAaMBmQHKAQIBZ7wBWbwBYAIBU7wB4QG8AY0DAgFQwgEV1gEgAgFG3gGrAd4B2gECAUOFAjSFAnsCATKCAjWCAkgCATCNAjSNAnECAS6KAjWKAkcCASyVAjSVAmACASiSAjWSAkcCASafAjSfAp8BAgEjnAI1nAJNAgEhpwI0pwKRAQIBH6QCNaQCTQIBHa8CNq8CYAIBGqwCN6wCVgIBGLkCNLkCoAECARW2AjW2Ak4CARPBAjTBApIBAgERvgI1vgJOAgEPyQI2yQJWAgEMxgI3xgJUAgEKfheHASACAXCIARePASUCAWyQAReQAX4CAWvDARfMASACAUzNARfUASUCAUjVARfVAX4CAUeEAR2EAUwCAXOAAUOAAVICAXGNAUONAVICAW2KAaoBigHIAQIBb8kBHckBTAIBT8UBQ8UBWgIBTdIBQ9IBWgIBSc8BqgHPAcgBAgFL</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
-      <sap2010:ViewStateData Id="LogMessage_1" sap:VirtualizedContainerService.HintSize="454,91" />
-      <sap2010:ViewStateData Id="Assign_6" sap:VirtualizedContainerService.HintSize="454,102">
+      <sap2010:ViewStateData Id="LogMessage_1" sap:VirtualizedContainerService.HintSize="464,91" />
+      <sap2010:ViewStateData Id="Assign_6" sap:VirtualizedContainerService.HintSize="464,102">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -378,7 +387,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="454,1170">
+      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="464,1170">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsPinned">False</x:Boolean>
@@ -387,7 +396,9 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="DeserializeJson`1_1" sap:VirtualizedContainerService.HintSize="454,102">
+      <sap2010:ViewStateData Id="Throw_3" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="If_2" sap:VirtualizedContainerService.HintSize="464,208" />
+      <sap2010:ViewStateData Id="DeserializeJson`1_1" sap:VirtualizedContainerService.HintSize="464,102">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">False</x:Boolean>
@@ -396,7 +407,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Assign_10" sap:VirtualizedContainerService.HintSize="454,102">
+      <sap2010:ViewStateData Id="Assign_10" sap:VirtualizedContainerService.HintSize="464,102">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -452,7 +463,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_2" sap:VirtualizedContainerService.HintSize="454,1170">
+      <sap2010:ViewStateData Id="TryCatch_2" sap:VirtualizedContainerService.HintSize="464,1170">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsPinned">False</x:Boolean>
@@ -575,7 +586,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_12" sap:VirtualizedContainerService.HintSize="454,2259">
+      <sap2010:ViewStateData Id="Sequence_12" sap:VirtualizedContainerService.HintSize="464,2259">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -584,9 +595,9 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="LogMessage_2" sap:VirtualizedContainerService.HintSize="454,91" />
-      <sap2010:ViewStateData Id="LogMessage_3" sap:VirtualizedContainerService.HintSize="454,91" />
-      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="476,5874">
+      <sap2010:ViewStateData Id="LogMessage_2" sap:VirtualizedContainerService.HintSize="464,91" />
+      <sap2010:ViewStateData Id="LogMessage_3" sap:VirtualizedContainerService.HintSize="464,91" />
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="486,6107">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -594,7 +605,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Aurion_ExtractEmployeeName_ProposedContractDates_1" sap:VirtualizedContainerService.HintSize="516,5994">
+      <sap2010:ViewStateData Id="Aurion_ExtractEmployeeName_ProposedContractDates_1" sap:VirtualizedContainerService.HintSize="526,6187">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="ShouldExpandAll">True</x:Boolean>
