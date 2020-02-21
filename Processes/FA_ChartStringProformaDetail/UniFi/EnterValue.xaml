@@ -2,7 +2,6 @@
  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
  xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities"
- xmlns:p="http://schemas.microsoft.com/workflow/2012/07/xaml/activities"
  xmlns:s="clr-namespace:System;assembly=mscorlib"
  xmlns:sads="http://schemas.microsoft.com/netfx/2010/xaml/activities/debugger"
  xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
@@ -59,6 +58,7 @@
       <x:String>UiPath.Mail.SMTP.Activities</x:String>
       <x:String>UiPath.Credentials.Activities</x:String>
       <x:String>System.Windows.Markup</x:String>
+      <x:String>Microsoft.VisualBasic.CompilerServices</x:String>
     </sco:Collection>
   </TextExpression.NamespacesForImplementation>
   <TextExpression.ReferencesForImplementation>
@@ -95,6 +95,7 @@
   <Sequence sap2010:Annotation.AnnotationText="Description: Finds a field, enters some text into the field and immediately gets the same text to verify correct entry&#xA;&#xA;Inputs:&#xA;in_FieldSelector (String): Selector of the target field to update.&#xA;in_EntryScope [opt] (UiElement): Optional parent element to limit the scope of searching.&#xA;in_NewValue (String): New value?&#xA;&#xA;Outputs: NA&#xA;&#xA;Pre Condition:&#xA;FieldSelector and EntryScope are valid UI elements.&#xA;NewValue is valid for entry into the field.&#xA;&#xA;Post Condition:&#xA;Value entered correctly." sap2010:WorkflowViewState.IdRef="Sequence_17">
     <Sequence.Variables>
       <Variable x:TypeArguments="x:String" Name="verifyEntry" />
+      <Variable x:TypeArguments="ui:UiElement" Name="element" />
     </Sequence.Variables>
     <TryCatch DisplayName="Try Catch" sap2010:WorkflowViewState.IdRef="TryCatch_1">
       <TryCatch.Try>
@@ -102,9 +103,6 @@
           <ui:RetryScope.ActivityBody>
             <ActivityAction>
               <Sequence sap2010:WorkflowViewState.IdRef="Sequence_16">
-                <Sequence.Variables>
-                  <Variable x:TypeArguments="ui:UiElement" Name="element" />
-                </Sequence.Variables>
                 <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_17" Level="Trace" Message="[&quot;Updating &quot; + in_FieldSelector + &quot; with &quot; + in_NewValue]" />
                 <If Condition="[opt_ParentScope Is Nothing]" DisplayName="If no parent defined" sap2010:WorkflowViewState.IdRef="If_1">
                   <If.Then>
@@ -153,13 +151,12 @@
                   </ui:GetValue.Value>
                 </ui:GetValue>
                 <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_16" Level="Trace" Message="[&quot;Entered &quot; + verifyEntry + &quot; vs &quot; + in_NewValue]" />
+                <ui:CheckTrue DisplayName="Check Entry Entered Correctly" ErrorMessage="[in_NewValue + &quot; was not entered correctly&quot;]" Expression="[in_NewValue = verifyEntry]" sap2010:WorkflowViewState.IdRef="CheckTrue_1" />
               </Sequence>
             </ActivityAction>
           </ui:RetryScope.ActivityBody>
           <ui:RetryScope.Condition>
-            <ActivityFunc x:TypeArguments="x:Boolean">
-              <p:IsEqual x:TypeArguments="x:String" DisplayName="Is Entry Entered Correctly" sap2010:WorkflowViewState.IdRef="IsEqual`1_3" Left="[verifyEntry]" Right="[in_NewValue]" />
-            </ActivityFunc>
+            <ActivityFunc x:TypeArguments="x:Boolean" />
           </ui:RetryScope.Condition>
         </ui:RetryScope>
       </TryCatch.Try>
@@ -171,17 +168,17 @@
             </ActivityAction.Argument>
             <If Condition="[exception.InnerException Is Nothing]" DisplayName="If inner exception" sap2010:WorkflowViewState.IdRef="If_2">
               <If.Then>
-                <Throw DisplayName="Throw inner exception" Exception="[New Exception(exception.Message + &quot; Inner exception: &quot; + exception.InnerException.Message, exception)]" sap2010:WorkflowViewState.IdRef="Throw_2" />
+                <Throw DisplayName="Throw exception" Exception="[exception]" sap2010:WorkflowViewState.IdRef="Throw_1" />
               </If.Then>
               <If.Else>
-                <Throw DisplayName="Throw exception" Exception="[exception]" sap2010:WorkflowViewState.IdRef="Throw_1" />
+                <Throw DisplayName="Throw inner exception" Exception="[New Exception(exception.Message + &quot; Inner exception: &quot; + exception.InnerException.Message, exception)]" sap2010:WorkflowViewState.IdRef="Throw_2" />
               </If.Else>
             </If>
           </ActivityAction>
         </Catch>
       </TryCatch.Catches>
     </TryCatch>
-    <sads:DebugSymbol.Symbol>d1dDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQ2hhcnRTdHJpbmdQcm9mb3JtYURldGFpbFxVbmlGaVxFbnRlclZhbHVlLnhhbWwmXwO5AQ4CAQFjBbcBEAIBAmUJpAEZAgELrAENswESAgEDZYMBZY0BAgE5ZXFldAIBOGgPnAEaAgERoQEPoQG5AQIBDKwBG6wBQgIBBK4BEa4B5gECAQmxARGxAXoCAQZsEWzSAQIBNG0RiAEWAgEliQERjQEhAgEhjgERkgEfAgEckwERmgEfAgEWmwERmwHKAQIBEqEBkQGhAaABAgEPoQGnAaEBtgECAQ2uAUauAbkBAgEKsQFAsQFNAgEHbIABbM8BAgE1bR9tPQIBJm8Vcy4CAS92FYYBJwIBJ4sBa4sBdgIBI4kBgwKJAYkCAgEijgGbAo4BqgICAR+QAWuQAXYCAR2YAT2YAUoCARiVAWuVAXYCARqbAYABmwHHAQIBE29db2gCATJxqAFxvAECATCEAW+EAYIBAgEtfBuAATQCASh8Y3xuAgErfq4BfsIBAgEp</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d1dDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQ2hhcnRTdHJpbmdQcm9mb3JtYURldGFpbFxVbmlGaVxFbnRlclZhbHVlLnhhbWwmXwO2AQ4CAQFkBbQBEAIBAmYJoQEZAgELqQENsAESAgEDZoMBZo0BAgE6ZnFmdAIBOWkPmwEaAgEMqQEbqQFCAgEEqwERqwF6AgEIrgERrgHmAQIBBmoRatIBAgE1axGGARYCASaHARGLASECASKMARGQAR8CAR2RARGYAR8CAReZARGZAcoBAgETmgERmgHqAQIBDasBQKsBTQIBCa4BRq4BuQECAQdqgAFqzwECATZrH2s9AgEnbRVxLgIBMHQVhAEnAgEoiQFriQF2AgEkhwGDAocBiQICASOMAZsCjAGqAgIBII4Ba44BdgIBHpYBPZYBSgIBGZMBa5MBdgIBG5kBgAGZAccBAgEUmgGcAZoBuQECARCaAViaAZABAgEObV1taAIBM2+oAW+8AQIBMYIBb4IBggECAS56G340AgEpemN6bgIBLHyuAXzCAQIBKg==</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -194,7 +191,8 @@
       <sap2010:ViewStateData Id="TypeInto_10" sap:VirtualizedContainerService.HintSize="753,134" />
       <sap2010:ViewStateData Id="GetValue_6" sap:VirtualizedContainerService.HintSize="753,68" />
       <sap2010:ViewStateData Id="LogMessage_16" sap:VirtualizedContainerService.HintSize="753,91" />
-      <sap2010:ViewStateData Id="Sequence_16" sap:VirtualizedContainerService.HintSize="775,1223">
+      <sap2010:ViewStateData Id="CheckTrue_1" sap:VirtualizedContainerService.HintSize="753,87" />
+      <sap2010:ViewStateData Id="Sequence_16" sap:VirtualizedContainerService.HintSize="775,1350">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -202,8 +200,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="IsEqual`1_3" sap:VirtualizedContainerService.HintSize="200,22" />
-      <sap2010:ViewStateData Id="RetryScope_3" sap:VirtualizedContainerService.HintSize="797,1404">
+      <sap2010:ViewStateData Id="RetryScope_3" sap:VirtualizedContainerService.HintSize="797,1524">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -211,19 +208,19 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Throw_2" sap:VirtualizedContainerService.HintSize="200,22" />
       <sap2010:ViewStateData Id="Throw_1" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="Throw_2" sap:VirtualizedContainerService.HintSize="200,22" />
       <sap2010:ViewStateData Id="If_2" sap:VirtualizedContainerService.HintSize="464,208" />
-      <sap2010:ViewStateData Id="Catch`1_1" sap:VirtualizedContainerService.HintSize="470,277">
+      <sap2010:ViewStateData Id="Catch`1_1" sap:VirtualizedContainerService.HintSize="801,21">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
             <x:Boolean x:Key="IsPinned">False</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="484,439" />
-      <sap2010:ViewStateData Id="Sequence_17" sap:VirtualizedContainerService.HintSize="506,830">
+      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="815,1751" />
+      <sap2010:ViewStateData Id="Sequence_17" sap:VirtualizedContainerService.HintSize="837,2112">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -231,7 +228,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="EnterValue_1" sap:VirtualizedContainerService.HintSize="546,910" />
+      <sap2010:ViewStateData Id="EnterValue_1" sap:VirtualizedContainerService.HintSize="877,2232" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>

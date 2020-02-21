@@ -76,10 +76,14 @@
       <AssemblyReference>Microsoft.VisualStudio.Services.Common</AssemblyReference>
       <AssemblyReference>UiPath.Studio.Plugin.Workflow</AssemblyReference>
       <AssemblyReference>System.Data.Entity</AssemblyReference>
+      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence sap2010:Annotation.AnnotationText="Description: Updates the proforma document.&#xA;&#xA;Inputs:&#xA;in_PostAdmin, in_Description, in_Integration, in_Department, in_Subdivision, in_Site and in_Justification (String): Details to update the proforma with.&#xA;io_UpdatingRow (DataRow): The proposal details from the search page.&#xA;&#xA;Outputs:&#xA;io_UpdatingRow (DataRow).&#xA;&#xA;Pre Condition:&#xA;Must be on the details page for a single proposal.&#xA;&#xA;Post Condition:&#xA;RM Stage Load ID or Sequence incorrect&#xA;Pre award spending checked&#xA;Invalid data couldn't be saved" DisplayName="UpdateRMProposal" sap2010:WorkflowViewState.IdRef="Sequence_7">
-    <ui:BrowserScope Browser="{x:Null}" SearchScope="{x:Null}" TimeoutMS="{x:Null}" UiBrowser="{x:Null}" BrowserType="Chrome" DisplayName="Attach Browser UniFi MSP" sap2010:WorkflowViewState.IdRef="BrowserScope_1" InformativeScreenshot="a857d010ca5cd785a1b89381c4170024" Selector="&lt;html app='chrome.exe' title='Maintain Staged Proposals' /&gt;">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="ui:Browser" Name="unifi" />
+    </Sequence.Variables>
+    <ui:BrowserScope Browser="{x:Null}" SearchScope="{x:Null}" TimeoutMS="{x:Null}" BrowserType="Chrome" DisplayName="Attach Browser UniFi MSP" sap2010:WorkflowViewState.IdRef="BrowserScope_1" InformativeScreenshot="a857d010ca5cd785a1b89381c4170024" Selector="&lt;html app='chrome.exe' title='Maintain Staged Proposals' /&gt;" UiBrowser="[unifi]">
       <ui:BrowserScope.Body>
         <ActivityAction x:TypeArguments="x:Object">
           <ActivityAction.Argument>
@@ -91,7 +95,6 @@
               <Variable x:TypeArguments="x:String" Name="sequenceNumber" />
               <Variable x:TypeArguments="x:Boolean" Name="preAwardSpending" />
               <Variable x:TypeArguments="x:String" Name="verifyEntry" />
-              <Variable x:TypeArguments="ui:UiElement" Name="unifi" />
               <Variable x:TypeArguments="x:String" Default="[Nothing]" Name="entryErrorMessage" />
             </Sequence.Variables>
             <ui:WaitUiElementAppear FoundElement="{x:Null}" DisplayName="Find RM Proposal Tab - Verify on correct page" sap2010:WorkflowViewState.IdRef="WaitUiElementAppear_1" WaitActive="False" WaitVisible="False">
@@ -168,11 +171,6 @@
               </If.Then>
             </If>
             <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_10" Level="Info" Message="[String.Format(&quot;Start UpdateRMProposal.xaml, got load ID {0}, sequence {1} and pre-award {2}.&quot;,&#xA;stageLoadID, sequenceNumber, preAwardSpending)]" />
-            <ui:WaitUiElementAppear DisplayName="Find Me Element" FoundElement="[unifi]" sap2010:WorkflowViewState.IdRef="WaitUiElementAppear_24" WaitActive="False" WaitVisible="False">
-              <ui:WaitUiElementAppear.Target>
-                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Selector="{x:Null}" TimeoutMS="{x:Null}" WaitForReady="INTERACTIVE" />
-              </ui:WaitUiElementAppear.Target>
-            </ui:WaitUiElementAppear>
             <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke EnterValue Post Admin" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_1" UnSafe="False" WorkflowFileName="UniFi/EnterValue.xaml">
               <ui:InvokeWorkflowFile.Arguments>
                 <InArgument x:TypeArguments="x:String" x:Key="in_FieldSelector">&lt;webctrl tag='IFRAME' parentclass='PSPAGE' /&gt;&lt;webctrl id='UQ_RM_PROJECT_POST_ADMIN' tag='INPUT' /&gt;</InArgument>
@@ -180,13 +178,17 @@
                 <InArgument x:TypeArguments="ui:UiElement" x:Key="opt_ParentScope">[unifi]</InArgument>
               </ui:InvokeWorkflowFile.Arguments>
             </ui:InvokeWorkflowFile>
-            <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke EnterValue Description" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_2" UnSafe="False" WorkflowFileName="UniFi/EnterValue.xaml">
-              <ui:InvokeWorkflowFile.Arguments>
-                <InArgument x:TypeArguments="x:String" x:Key="in_FieldSelector">&lt;webctrl tag='IFRAME' parentclass='PSPAGE' /&gt;&lt;webctrl id='UQ_RM_PROJECT_DESCR' tag='INPUT' /&gt;</InArgument>
-                <InArgument x:TypeArguments="x:String" x:Key="in_NewValue">[in_Description]</InArgument>
-                <InArgument x:TypeArguments="ui:UiElement" x:Key="opt_ParentScope">[unifi]</InArgument>
-              </ui:InvokeWorkflowFile.Arguments>
-            </ui:InvokeWorkflowFile>
+            <If Condition="[Not String.IsNullOrWhiteSpace(in_Description.Trim)]" DisplayName="If description has any content" sap2010:WorkflowViewState.IdRef="If_6">
+              <If.Then>
+                <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke EnterValue Description" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_2" UnSafe="False" WorkflowFileName="UniFi/EnterValue.xaml">
+                  <ui:InvokeWorkflowFile.Arguments>
+                    <InArgument x:TypeArguments="x:String" x:Key="in_FieldSelector">&lt;webctrl tag='IFRAME' parentclass='PSPAGE' /&gt;&lt;webctrl id='UQ_RM_PROJECT_DESCR' tag='INPUT' /&gt;</InArgument>
+                    <InArgument x:TypeArguments="x:String" x:Key="in_NewValue">[in_Description]</InArgument>
+                    <InArgument x:TypeArguments="ui:UiElement" x:Key="opt_ParentScope">[unifi]</InArgument>
+                  </ui:InvokeWorkflowFile.Arguments>
+                </ui:InvokeWorkflowFile>
+              </If.Then>
+            </If>
             <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke EnterValue Integration" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_3" UnSafe="False" WorkflowFileName="UniFi/EnterValue.xaml">
               <ui:InvokeWorkflowFile.Arguments>
                 <InArgument x:TypeArguments="x:String" x:Key="in_FieldSelector">&lt;webctrl tag='IFRAME' parentclass='PSPAGE' /&gt;&lt;webctrl id='UQ_RM_PROJECT_INTEGRATION_TMPL' tag='INPUT' /&gt;</InArgument>
@@ -301,7 +303,7 @@
       </ui:BrowserScope.Body>
     </ui:BrowserScope>
     <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_11" Level="Info" Message="[&quot;End UpdateRMProposal.xaml, set &quot; + String.Join(&quot;, &quot;, {&#xA;&quot;Post Admin: &quot; + in_PostAdmin,&#xA;&quot;Int: &quot; + in_Integration,&#xA;&quot;Dep: &quot; + in_Department,&#xA;&quot;Sub: &quot; + in_Subdivision,&#xA;&quot;Site: &quot; + in_Site,&#xA;&quot;Just: &quot; + in_Justification,&#xA;&quot;Desc: &quot; + in_Description&#xA;})]" />
-    <sads:DebugSymbol.Symbol>d11DOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQ2hhcnRTdHJpbmdQcm9mb3JtYURldGFpbFxVbmlGaVxVcGRhdGVSTVByb3Bvc2FsLnhhbWxfUQOxAg4CAQFSBa4CFwIBC68CBa8C5QMCAQJSmQJS3AIDAYIBWAurAhYCAQyvAnOvAuIDAgEDXzxfRwIBDWENZSYDAYABZg1tGwIBe24NdRsCAXZ2DYsBEgIBb4wBDZMBHwIBaZQBDakBEgIBYaoBDaoBnQICAVyrAQ2vASYCAVmwAQ22ASUCAVK3AQ29ASUCAUu+AQ3EASUCAUTFAQ3LASUCAT3MAQ3SASUCATbTAQ3ZASUCAS/aAQ3gASUCASjhAQ3vARgCASbwAQ3wAWsCASTxAQ34ARsCAR35AQ2HAhgCARmIAg2WAhgCAReXAg2lAhgCAROmAg2qAhICAQ5joAFjhwIDAYEBazlrRgIBfWigAWiSAgIBf3M5c0kCAXhwoAFwlgICAXp2G3bEAQIBcHgRiQEcAgFxjAFDjAFMAgFtjgE6jgFMAgFrkQGgAZEBlgICAW6UARuUAS8CAWKWARGnARwCAWSqAXuqAZoCAgFdqwFQqwFZAgFatAFUtAFbAgFXswFMswFaAgFVsAHBAbAB2AECAVSyAVGyAb8BAgFTuwFUuwFbAgFQugFMugFcAgFOtwHCAbcB2QECAU25AVG5AboBAgFMwgFUwgFbAgFJwQFMwQFcAgFHvgHCAb4B2QECAUbAAVHAAcUBAgFFyQFUyQFbAgFCyAFMyAFbAgFAxQHBAcUB2AECAT/HAVHHAbsBAgE+0AFU0AFbAgE7zwFMzwFcAgE5zAHCAcwB2QECATjOAVHOAcYBAgE31wFU1wFbAgE01gFM1gFVAgEy0wG7AdMB0gECATHVAVHVAcIBAgEw3gFU3gFbAgEt3QFM3QFeAgEr2gHEAdoB2wECASrcAVHcAcUBAgEp7QGgAe0BjwICASfwATTwAT4CASX2ATn2AUwCASDxASrxATACAR/zAYsB8wHPAQIBI/MB2gHzAd8BAgEihQKLAYUCyQECARyFAtQBhQLZAQIBG/kBavkBcAIBGpQCoAGUApsCAgEYowKLAaMCzwECARajAtoBowLfAQIBFZcCapcCcAIBFKYCG6YCPgIBD6gCEagClAECARF5E4cBHgIBdIgBE4gBnAECAXKXAROlAR4CAWemAROmAa4BAgFlqAJDqAJnAgEShQGmAYUBoQICAXWIAY4BiAGZAQIBc6MBpgGjAaECAgFopgGXAaYBqwECAWY=</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d11DOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQ2hhcnRTdHJpbmdQcm9mb3JtYURldGFpbFxVbmlGaVxVcGRhdGVSTVByb3Bvc2FsLnhhbWxgUgOzAg4CAQFWBbACFwIBC7ECBbEC5QMCAQJWhAJWxwIDAYQBVtICVtsCAwGCAVwLrQIWAgEMsQJzsQLiAwIBA2I8YkcCAQ1kDWgmAwGAAWkNcBsCAXtxDXgbAgF2eQ2OARICAW+PAQ2WAR8CAWmXAQ2sARICAWGtAQ2tAZ0CAgFcrgENtAElAgFVtQENvwESAgFLwAENxgElAgFExwENzQElAgE9zgEN1AElAgE21QEN2wElAgEv3AEN4gElAgEo4wEN8QEYAgEm8gEN8gFrAgEk8wEN+gEbAgEd+wENiQIYAgEZigINmAIYAgEXmQINpwIYAgETqAINrAISAgEOZqABZocCAwGBAW45bkYCAX1roAFrkgICAX92OXZJAgF4c6ABc5YCAgF6eRt5xAECAXB7EYwBHAIBcY8BQ48BTAIBbZEBOpEBTAIBa5QBoAGUAZYCAgFulwEblwEvAgFimQERqgEcAgFkrQF7rQGaAgIBXbIBVLIBWwIBWrEBTLEBWgIBWK4BwQGuAdgBAgFXsAFRsAG/AQIBVrUBG7UBUQIBTLcBEb0BKQIBTsQBVMQBWwIBScMBTMMBXAIBR8ABwgHAAdkBAgFGwgFRwgHFAQIBRcsBVMsBWwIBQsoBTMoBWwIBQMcBwQHHAdgBAgE/yQFRyQG7AQIBPtIBVNIBWwIBO9EBTNEBXAIBOc4BwgHOAdkBAgE40AFR0AHGAQIBN9kBVNkBWwIBNNgBTNgBVQIBMtUBuwHVAdIBAgEx1wFR1wHCAQIBMOABVOABWwIBLd8BTN8BXgIBK9wBxAHcAdsBAgEq3gFR3gHFAQIBKe8BoAHvAY8CAgEn8gE08gE+AgEl+AE5+AFMAgEg8wEq8wEwAgEf9QGLAfUBzwECASP1AdoB9QHfAQIBIocCiwGHAskBAgEchwLUAYcC2QECARv7AWr7AXACARqWAqABlgKbAgIBGKUCiwGlAs8BAgEWpQLaAaUC3wECARWZAmqZAnACARSoAhuoAj4CAQ+qAhGqApQBAgERfBOKAR4CAXSLAROLAZwBAgFymgETqAEeAgFnqQETqQGuAQIBZbsBWLsBXwIBU7oBULoBYAIBUbcBxgG3Ad0BAgFQuQFVuQG+AQIBT6oCQ6oCZwIBEogBpgGIAaECAgF1iwGOAYsBmQECAXOmAaYBpgGhAgIBaKkBlwGpAasBAgFm</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -330,9 +332,9 @@
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="464,439" />
       <sap2010:ViewStateData Id="LogMessage_10" sap:VirtualizedContainerService.HintSize="464,91" />
-      <sap2010:ViewStateData Id="WaitUiElementAppear_24" sap:VirtualizedContainerService.HintSize="464,68" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_1" sap:VirtualizedContainerService.HintSize="464,87" />
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_2" sap:VirtualizedContainerService.HintSize="464,87" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_2" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="If_6" sap:VirtualizedContainerService.HintSize="464,234" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_3" sap:VirtualizedContainerService.HintSize="464,87" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_4" sap:VirtualizedContainerService.HintSize="464,87" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_5" sap:VirtualizedContainerService.HintSize="464,87" />
@@ -346,7 +348,7 @@
       <sap2010:ViewStateData Id="Click_7" sap:VirtualizedContainerService.HintSize="464,106" />
       <sap2010:ViewStateData Id="Throw_3" sap:VirtualizedContainerService.HintSize="200,22" />
       <sap2010:ViewStateData Id="If_5" sap:VirtualizedContainerService.HintSize="464,207" />
-      <sap2010:ViewStateData Id="Sequence_8" sap:VirtualizedContainerService.HintSize="486,3821">
+      <sap2010:ViewStateData Id="Sequence_8" sap:VirtualizedContainerService.HintSize="486,3860">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -354,7 +356,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="BrowserScope_1" sap:VirtualizedContainerService.HintSize="500,3967">
+      <sap2010:ViewStateData Id="BrowserScope_1" sap:VirtualizedContainerService.HintSize="500,4006">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -363,7 +365,7 @@
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="LogMessage_11" sap:VirtualizedContainerService.HintSize="500,91" />
-      <sap2010:ViewStateData Id="Sequence_7" sap:VirtualizedContainerService.HintSize="522,4489">
+      <sap2010:ViewStateData Id="Sequence_7" sap:VirtualizedContainerService.HintSize="522,4528">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -371,7 +373,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="UpdateRMProposal_1" sap:VirtualizedContainerService.HintSize="562,4569" />
+      <sap2010:ViewStateData Id="UpdateRMProposal_1" sap:VirtualizedContainerService.HintSize="562,4608" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
