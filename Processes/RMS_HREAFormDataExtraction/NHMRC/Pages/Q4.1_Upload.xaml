@@ -70,6 +70,7 @@
       <AssemblyReference>UiPath.Studio.Plugin.Workflow</AssemblyReference>
       <AssemblyReference>System.Collections.Immutable</AssemblyReference>
       <AssemblyReference>Microsoft.VisualStudio.Services.Common</AssemblyReference>
+      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence DisplayName="Upload" sap2010:WorkflowViewState.IdRef="Sequence_2">
@@ -134,262 +135,72 @@
             </ui:InvokeWorkflowFile>
             <If Condition="[in_Application.Element(&quot;q1222&quot;).Value = &quot;Yes&quot;]" DisplayName="If Q4.2 is Yes" sap2010:WorkflowViewState.IdRef="If_7">
               <If.Then>
-                <Assign DisplayName="Assign list of files to upload" sap2010:WorkflowViewState.IdRef="Assign_3">
-                  <Assign.To>
-                    <OutArgument x:TypeArguments="scg:List(sxl:XElement)">[uploadFiles]</OutArgument>
-                  </Assign.To>
-                  <Assign.Value>
-                    <InArgument x:TypeArguments="scg:List(sxl:XElement)">[in_Application.Elements("OtherAttachmentsRpt").ToList]</InArgument>
-                  </Assign.Value>
-                </Assign>
+                <Sequence sap2010:WorkflowViewState.IdRef="Sequence_17">
+                  <Assign DisplayName="Assign " sap2010:WorkflowViewState.IdRef="Assign_4">
+                    <Assign.To>
+                      <OutArgument x:TypeArguments="scg:List(sxl:XElement)">[entries]</OutArgument>
+                    </Assign.To>
+                    <Assign.Value>
+                      <InArgument x:TypeArguments="scg:List(sxl:XElement)">[in_Application.Elements("OtherAttachmentsRpt").ToList]</InArgument>
+                    </Assign.Value>
+                  </Assign>
+                  <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke Q4.2.1 Q1082 SetupMulti workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_38" UnSafe="False" WorkflowFileName="NHMRC\DataEntry\SetupMulti.xaml">
+                    <ui:InvokeWorkflowFile.Arguments>
+                      <InArgument x:TypeArguments="x:String" x:Key="in_FirstItemSelector">&lt;webctrl id='FormFrame' tag='IFRAME' /&gt;&lt;webctrl id='Q1082_*' tag='INPUT' type='text' /&gt;</InArgument>
+                      <InArgument x:TypeArguments="ui:UiElement" x:Key="in_PageScope">[in_Browser]</InArgument>
+                      <OutArgument x:TypeArguments="x:String" x:Key="out_ParentSelector">[tableSelector]</OutArgument>
+                    </ui:InvokeWorkflowFile.Arguments>
+                  </ui:InvokeWorkflowFile>
+                </Sequence>
               </If.Then>
             </If>
-            <ui:ForEach x:TypeArguments="sxl:XElement" CurrentIndex="{x:Null}" DisplayName="For Each file to upload" sap2010:WorkflowViewState.IdRef="ForEach`1_1" Values="[uploadFiles]">
+            <ui:ForEach x:TypeArguments="sxl:XElement" CurrentIndex="{x:Null}" DisplayName="For Each" sap2010:WorkflowViewState.IdRef="ForEach`1_2" Values="[entries]">
               <ui:ForEach.Body>
                 <ActivityAction x:TypeArguments="sxl:XElement">
                   <ActivityAction.Argument>
-                    <DelegateInArgument x:TypeArguments="sxl:XElement" Name="upload" />
+                    <DelegateInArgument x:TypeArguments="sxl:XElement" Name="item" />
                   </ActivityAction.Argument>
-                  <Sequence DisplayName="Body" sap2010:WorkflowViewState.IdRef="Sequence_11">
+                  <Sequence DisplayName="Body" sap2010:WorkflowViewState.IdRef="Sequence_18">
                     <Sequence.Variables>
-                      <Variable x:TypeArguments="x:Int32" Default="-1" Name="position" />
-                      <Variable x:TypeArguments="scg:List(x:String)" Name="attachedFiles" />
+                      <Variable x:TypeArguments="ui:UiElement" Name="parent" />
                     </Sequence.Variables>
-                    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;Uploading attachment: &quot; + upload.Element(&quot;q&quot;).Value]" />
-                    <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke Attachments GetItems workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_27" UnSafe="False" WorkflowFileName="NHMRC\DataEntry\GetItems.xaml">
-                      <ui:InvokeWorkflowFile.Arguments>
-                        <InArgument x:TypeArguments="x:String" x:Key="in_Selector">&lt;webctrl id='Q621_*' tag='TEXTAREA' /&gt;</InArgument>
-                        <InArgument x:TypeArguments="ui:UiElement" x:Key="in_Scope">[formFrame]</InArgument>
-                        <OutArgument x:TypeArguments="scg:List(x:String)" x:Key="out_Items">[attachedFiles]</OutArgument>
-                      </ui:InvokeWorkflowFile.Arguments>
-                    </ui:InvokeWorkflowFile>
-                    <If Condition="[attachedFiles.IndexOf(upload.Element(&quot;q&quot;).Value) &gt;= 0]" DisplayName="If new entry" sap2010:WorkflowViewState.IdRef="If_2">
-                      <If.Then>
-                        <Sequence sap2010:WorkflowViewState.IdRef="Sequence_6">
-                          <Assign DisplayName="Assign position" sap2010:WorkflowViewState.IdRef="Assign_4">
-                            <Assign.To>
-                              <OutArgument x:TypeArguments="x:Int32">[position]</OutArgument>
-                            </Assign.To>
-                            <Assign.Value>
-                              <InArgument x:TypeArguments="x:Int32">[attachedFiles.IndexOf(upload.Element("q").Value)]</InArgument>
-                            </Assign.Value>
-                          </Assign>
-                          <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[&quot;Updating entry at &quot; &amp; position]" />
-                        </Sequence>
-                      </If.Then>
-                    </If>
-                    <If Condition="[attachedFiles.IndexOf(upload.Element(&quot;q&quot;).Value) &lt; 0]" DisplayName="If new entry" sap2010:WorkflowViewState.IdRef="If_5">
-                      <If.Then>
-                        <Sequence sap2010:WorkflowViewState.IdRef="Sequence_9">
-                          <While DisplayName="While looking for position" sap2010:WorkflowViewState.IdRef="While_1">
-                            <While.Variables>
-                              <Variable x:TypeArguments="x:Int32" Default="0" Name="i" />
-                            </While.Variables>
-                            <While.Condition>[position &lt; 0]</While.Condition>
-                            <Sequence sap2010:WorkflowViewState.IdRef="Sequence_8">
-                              <If Condition="[i &gt;= attachedFiles.Count]" sap2010:WorkflowViewState.IdRef="If_3">
-                                <If.Then>
-                                  <Sequence sap2010:WorkflowViewState.IdRef="Sequence_7">
-                                    <ui:Click DelayBefore="{x:Null}" DelayMS="{x:Null}" ClickType="CLICK_SINGLE" DisplayName="Click add new row" sap2010:WorkflowViewState.IdRef="Click_1" KeyModifiers="None" MouseButton="BTN_LEFT" SendWindowMessages="False" SimulateClick="True">
-                                      <ui:Click.CursorPosition>
-                                        <ui:CursorPosition Position="Center">
-                                          <ui:CursorPosition.OffsetX>
-                                            <InArgument x:TypeArguments="x:Int32" />
-                                          </ui:CursorPosition.OffsetX>
-                                          <ui:CursorPosition.OffsetY>
-                                            <InArgument x:TypeArguments="x:Int32" />
-                                          </ui:CursorPosition.OffsetY>
-                                        </ui:CursorPosition>
-                                      </ui:Click.CursorPosition>
-                                      <ui:Click.Target>
-                                        <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="&lt;webctrl id='FormFrame' tag='IFRAME' /&gt;&lt;webctrl id='Q618' tag='DIV' /&gt;&lt;nav up='8' /&gt;&lt;webctrl aaname='Add Row' tag='INPUT' /&gt;" WaitForReady="INTERACTIVE" />
-                                      </ui:Click.Target>
-                                    </ui:Click>
-                                    <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke Update GetItems workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_35" UnSafe="False" WorkflowFileName="NHMRC\DataEntry\GetItems.xaml">
-                                      <ui:InvokeWorkflowFile.Arguments>
-                                        <InArgument x:TypeArguments="x:String" x:Key="in_Selector">&lt;webctrl id='Q621_*' tag='TEXTAREA' /&gt;</InArgument>
-                                        <InArgument x:TypeArguments="ui:UiElement" x:Key="in_Scope">[formFrame]</InArgument>
-                                        <OutArgument x:TypeArguments="scg:List(x:String)" x:Key="out_Items">[attachedFiles]</OutArgument>
-                                      </ui:InvokeWorkflowFile.Arguments>
-                                    </ui:InvokeWorkflowFile>
-                                  </Sequence>
-                                </If.Then>
-                              </If>
-                              <If Condition="[attachedFiles(i) = &quot;&quot;]" DisplayName="If blank line found" sap2010:WorkflowViewState.IdRef="If_4">
-                                <If.Then>
-                                  <Assign DisplayName="Assign position" sap2010:WorkflowViewState.IdRef="Assign_5">
-                                    <Assign.To>
-                                      <OutArgument x:TypeArguments="x:Int32">[position]</OutArgument>
-                                    </Assign.To>
-                                    <Assign.Value>
-                                      <InArgument x:TypeArguments="x:Int32">[i]</InArgument>
-                                    </Assign.Value>
-                                  </Assign>
-                                </If.Then>
-                                <If.Else>
-                                  <Assign DisplayName="Increment i" sap2010:WorkflowViewState.IdRef="Assign_6">
-                                    <Assign.To>
-                                      <OutArgument x:TypeArguments="x:Int32">[i]</OutArgument>
-                                    </Assign.To>
-                                    <Assign.Value>
-                                      <InArgument x:TypeArguments="x:Int32">[i + 1]</InArgument>
-                                    </Assign.Value>
-                                  </Assign>
-                                </If.Else>
-                              </If>
-                            </Sequence>
-                          </While>
-                          <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_3" Level="Info" Message="[&quot;Adding entry at &quot; &amp; position]" />
-                        </Sequence>
-                      </If.Then>
-                    </If>
-                    <If Condition="[position &lt; 0]" sap2010:WorkflowViewState.IdRef="If_6">
-                      <If.Then>
-                        <ui:Continue sap2010:WorkflowViewState.IdRef="Continue_1" />
-                      </If.Then>
-                    </If>
-                    <ui:RetryScope DisplayName="Retry Scope" sap2010:WorkflowViewState.IdRef="RetryScope_1" NumberOfRetries="3" RetryInterval="00:00:05">
-                      <ui:RetryScope.ActivityBody>
-                        <ActivityAction>
-                          <Sequence DisplayName="Action" sap2010:WorkflowViewState.IdRef="Sequence_10">
-                            <ui:CommentOut DisplayName="Comment Out" sap2010:WorkflowViewState.IdRef="CommentOut_2">
-                              <ui:CommentOut.Body>
-                                <Sequence DisplayName="Ignored Activities" sap2010:WorkflowViewState.IdRef="Sequence_14">
-                                  <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke Q4.2.1 Q619 FileUpload workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_33" UnSafe="False" WorkflowFileName="NHMRC\DataEntry\FileUpload.xaml">
-                                    <ui:InvokeWorkflowFile.Arguments>
-                                      <InArgument x:TypeArguments="x:String" x:Key="in_FilePath">[in_Application.Element("q1082").Value]</InArgument>
-                                      <InArgument x:TypeArguments="x:String" x:Key="in_Selector">["&lt;webctrl id='Q619_" &amp; position &amp; "_btnUpload' tag='INPUT' /&gt;"]</InArgument>
-                                      <InArgument x:TypeArguments="ui:UiElement" x:Key="in_Scope">[formFrame]</InArgument>
-                                      <InArgument x:TypeArguments="x:String" x:Key="in_Verification">&lt;webctrl tag='SPAN' aaname='*({{filename}})' colName='Q4.2.1 Upload attachment*' /&gt;</InArgument>
-                                    </ui:InvokeWorkflowFile.Arguments>
-                                  </ui:InvokeWorkflowFile>
-                                </Sequence>
-                              </ui:CommentOut.Body>
-                            </ui:CommentOut>
-                            <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke Q4.2.2 Q621 Text workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_34" UnSafe="False" WorkflowFileName="NHMRC\DataEntry\Text.xaml">
-                              <ui:InvokeWorkflowFile.Arguments>
-                                <InArgument x:TypeArguments="x:String" x:Key="in_Entry">[upload.Element("q621").Value]</InArgument>
-                                <InArgument x:TypeArguments="x:String" x:Key="in_Selector">["&lt;webctrl id='Q621_" &amp; position &amp; "' tag='TEXTAREA' /&gt;"]</InArgument>
-                                <InArgument x:TypeArguments="ui:UiElement" x:Key="in_Scope">[formFrame]</InArgument>
-                              </ui:InvokeWorkflowFile.Arguments>
-                            </ui:InvokeWorkflowFile>
-                          </Sequence>
-                        </ActivityAction>
-                      </ui:RetryScope.ActivityBody>
-                      <ui:RetryScope.Condition>
-                        <ActivityFunc x:TypeArguments="x:Boolean" />
-                      </ui:RetryScope.Condition>
-                    </ui:RetryScope>
-                    <Assign DisplayName="Assign position of attached item" sap2010:WorkflowViewState.IdRef="Assign_7">
-                      <Assign.To>
-                        <OutArgument x:TypeArguments="x:String">[upload.Value]</OutArgument>
-                      </Assign.To>
-                      <Assign.Value>
-                        <InArgument x:TypeArguments="x:String">[position.ToString]</InArgument>
-                      </Assign.Value>
-                    </Assign>
-                    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_5" Level="Info" Message="[&quot;Updated row &quot; + upload.Value]" />
+                    <ui:Click DelayBefore="{x:Null}" DelayMS="{x:Null}" ClickType="CLICK_SINGLE" DisplayName="Click add new row" sap2010:WorkflowViewState.IdRef="Click_1" KeyModifiers="None" MouseButton="BTN_LEFT" SendWindowMessages="False" SimulateClick="True">
+                      <ui:Click.CursorPosition>
+                        <ui:CursorPosition Position="Center">
+                          <ui:CursorPosition.OffsetX>
+                            <InArgument x:TypeArguments="x:Int32" />
+                          </ui:CursorPosition.OffsetX>
+                          <ui:CursorPosition.OffsetY>
+                            <InArgument x:TypeArguments="x:Int32" />
+                          </ui:CursorPosition.OffsetY>
+                        </ui:CursorPosition>
+                      </ui:Click.CursorPosition>
+                      <ui:Click.Target>
+                        <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="[tableSelector + &quot;&lt;webctrl aaname='Add Row' tag='INPUT' /&gt;&quot;]" WaitForReady="INTERACTIVE" />
+                      </ui:Click.Target>
+                    </ui:Click>
+                    <ui:WaitUiElementAppear DisplayName="Find Table Element" FoundElement="[parent]" sap2010:WorkflowViewState.IdRef="WaitUiElementAppear_3" WaitActive="False" WaitVisible="False">
+                      <ui:WaitUiElementAppear.Target>
+                        <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="[tableSelector]" WaitForReady="COMPLETE" />
+                      </ui:WaitUiElementAppear.Target>
+                    </ui:WaitUiElementAppear>
+                    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Warn" Message="[&quot;Q4.2.1 &amp; Q4.2.2&quot;]" />
                   </Sequence>
                 </ActivityAction>
               </ui:ForEach.Body>
             </ui:ForEach>
-            <Sequence DisplayName="Cleanup" sap2010:WorkflowViewState.IdRef="Sequence_12">
-              <Sequence.Variables>
-                <Variable x:TypeArguments="scg:List(ui:UiElement)" Name="checkboxItems" />
-                <Variable x:TypeArguments="scg:List(x:Int32)" Name="indexesUsed" />
-                <Variable x:TypeArguments="x:Int32" Name="index" />
-              </Sequence.Variables>
-              <TryCatch DisplayName="Try Catch" sap2010:WorkflowViewState.IdRef="TryCatch_1">
-                <TryCatch.Variables>
-                  <Variable x:TypeArguments="scg:IEnumerable(ui:UiElement)" Name="tempItems" />
-                </TryCatch.Variables>
-                <TryCatch.Try>
-                  <ui:FindChildren Children="[tempItems]" DisplayName="Find Checkbox items" Filter="&lt;webctrl tag='INPUT' aaname='Select Row' /&gt;" sap2010:WorkflowViewState.IdRef="FindChildren_1" Scope="FIND_DESCENDANTS">
-                    <ui:FindChildren.Target>
-                      <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="&lt;webctrl id='FormFrame' tag='IFRAME' /&gt;&lt;webctrl id='Q618' tag='DIV' /&gt;&lt;nav up='8' /&gt;&lt;webctrl tag='TABLE' /&gt;" WaitForReady="INTERACTIVE" />
-                    </ui:FindChildren.Target>
-                  </ui:FindChildren>
-                </TryCatch.Try>
-                <TryCatch.Catches>
-                  <Catch x:TypeArguments="ui:SelectorNotFoundException" sap2010:WorkflowViewState.IdRef="Catch`1_1">
-                    <ActivityAction x:TypeArguments="ui:SelectorNotFoundException">
-                      <ActivityAction.Argument>
-                        <DelegateInArgument x:TypeArguments="ui:SelectorNotFoundException" Name="exception" />
-                      </ActivityAction.Argument>
-                      <Assign DisplayName="Default element list" sap2010:WorkflowViewState.IdRef="Assign_8">
-                        <Assign.To>
-                          <OutArgument x:TypeArguments="scg:IEnumerable(ui:UiElement)">[tempItems]</OutArgument>
-                        </Assign.To>
-                        <Assign.Value>
-                          <InArgument x:TypeArguments="scg:IEnumerable(ui:UiElement)">[New List(Of UiElement)]</InArgument>
-                        </Assign.Value>
-                      </Assign>
-                    </ActivityAction>
-                  </Catch>
-                </TryCatch.Catches>
-                <TryCatch.Finally>
-                  <Assign DisplayName="Assign element list" sap2010:WorkflowViewState.IdRef="Assign_9">
-                    <Assign.To>
-                      <OutArgument x:TypeArguments="scg:List(ui:UiElement)">[checkboxItems]</OutArgument>
-                    </Assign.To>
-                    <Assign.Value>
-                      <InArgument x:TypeArguments="scg:List(ui:UiElement)">[tempItems.ToList]</InArgument>
-                    </Assign.Value>
-                  </Assign>
-                </TryCatch.Finally>
-              </TryCatch>
-              <Assign DisplayName="Assign list of indexes" sap2010:WorkflowViewState.IdRef="Assign_10">
-                <Assign.To>
-                  <OutArgument x:TypeArguments="scg:List(x:Int32)">[indexesUsed]</OutArgument>
-                </Assign.To>
-                <Assign.Value>
-                  <InArgument x:TypeArguments="scg:List(x:Int32)">[uploadFiles.Select(function(e) CInt(e.Value)).ToList]</InArgument>
-                </Assign.Value>
-              </Assign>
-              <ui:ForEach x:TypeArguments="ui:UiElement" CurrentIndex="[index]" DisplayName="For Each item in list" sap2010:WorkflowViewState.IdRef="ForEach`1_2" Values="[checkboxItems]">
-                <ui:ForEach.Body>
-                  <ActivityAction x:TypeArguments="ui:UiElement">
-                    <ActivityAction.Argument>
-                      <DelegateInArgument x:TypeArguments="ui:UiElement" Name="removal" />
-                    </ActivityAction.Argument>
-                    <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke Not Contains Checkbox workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_36" UnSafe="False" WorkflowFileName="NHMRC\DataEntry\Checkbox.xaml">
-                      <ui:InvokeWorkflowFile.Arguments>
-                        <InArgument x:TypeArguments="x:Boolean" x:Key="in_Choice">[Not indexesUsed.Contains(index)]</InArgument>
-                        <InArgument x:TypeArguments="x:String" x:Key="in_Selector">[removal.Selector.Text]</InArgument>
-                        <InArgument x:TypeArguments="ui:UiElement" x:Key="in_Scope" />
-                      </ui:InvokeWorkflowFile.Arguments>
-                    </ui:InvokeWorkflowFile>
-                  </ActivityAction>
-                </ui:ForEach.Body>
-              </ui:ForEach>
-              <ui:Click DelayBefore="{x:Null}" DelayMS="{x:Null}" ClickType="CLICK_SINGLE" DisplayName="Click to remove list" sap2010:WorkflowViewState.IdRef="Click_2" KeyModifiers="None" MouseButton="BTN_LEFT" SendWindowMessages="False" SimulateClick="True">
-                <ui:Click.CursorPosition>
-                  <ui:CursorPosition Position="Center">
-                    <ui:CursorPosition.OffsetX>
-                      <InArgument x:TypeArguments="x:Int32" />
-                    </ui:CursorPosition.OffsetX>
-                    <ui:CursorPosition.OffsetY>
-                      <InArgument x:TypeArguments="x:Int32" />
-                    </ui:CursorPosition.OffsetY>
-                  </ui:CursorPosition>
-                </ui:Click.CursorPosition>
-                <ui:Click.Target>
-                  <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="&lt;webctrl id='FormFrame' tag='IFRAME' /&gt;&lt;webctrl id='Q618' tag='DIV' /&gt;&lt;nav up='8' /&gt;&lt;webctrl aaname='Delete Row' tag='INPUT' /&gt;" WaitForReady="INTERACTIVE" />
-                </ui:Click.Target>
-              </ui:Click>
-            </Sequence>
           </Sequence>
         </ActivityAction>
       </ui:BrowserScope.Body>
     </ui:BrowserScope>
-    <sads:DebugSymbol.Symbol>d1xDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUk1TX0hSRUFGb3JtRGF0YUV4dHJhY3Rpb25cTkhNUkNcUGFnZXNcUTQuMV9VcGxvYWQueGFtbHNLA4IDDgIBAUwFYAoDAYcBYQWAAxcCAQJME0wwAwGIAU4JXhsDAYkBYXNhgQEDAYUBZwv9AhYCAQNO1gFOngIDAZABTqkCTrcCAwGOAVQPWxgDAYoBbA1wJgMBgQFxDX4dAwGAAX8NhgElAgF5hwENkgESAgF0kwENpwIaAgEgqAIN/AIYAgEEWT5ZXQMBjQFWP1ZPAwGLAWxQbF0DAYMBbmdulgEDAYIBggFPggF9AgF/gwFOgwF8AgF+gQFKgQFxAgF9hAFNhAFYAgF7f8YBf+IBAgF6hwEbhwFgAgF1iQERkAEaAgF2kwGrAZMBugECAXOZAROkAh4CASGuAg/UAhoCARXVAg/cAhgCARHdAg/sAhwCAQftAg/7AhoCAQWOAUqOAYEBAgF4iwFLiwFYAgF3mwFDmwFHAgEingEVngHRAQIBcZ8BFaUBLQIBaqYBFbQBGgIBYLUBFfUBGgIBOfYBFfoBGgIBNfsBFZoCJQIBKZsCFaICHgIBJaMCFaMCsAECASOzAhO3AiUCARzLAhPSAhwCARm/AhfGAiACARbaAkPaAnkCARTXAkTXAlECARLdAqoB3QK7AQIBEN0CR90CUAIBDuMCFekCLQIBCPkCafkCggICAQaeAYIBngHOAQIBcqMBXaMBbAIBb6EBVKEBgAECAW6iAVWiAWACAWyfAdIBnwHxAQIBa6YBI6YBaQIBYagBGbIBJAIBYrUBI7UBaAIBOrcBGfMBJAIBO/YBI/YBNgIBNvgBGfgBVQIBOPsBjwH7AZkBAgE0+wF9+wGAAQIBM/4BG5QCJgIBKqACQKACUwIBJ50CQZ0CTwIBJqMCggGjAq0BAgEktQJttQLyAQIBH7MCZLMClwECAR6zAi2zAjoCAR3QAkzQAl4CARvNAk3NAlwCARrEAlfEAm8CARjBAljBAmMCARfmAlTmAmsCAQ3lAlPlAnQCAQrjAtMB4wLyAQIBCakBG7ABJAIBZrEBG7EBvAECAWO4ARvxASMCAT/yARvyAboBAgE8/wEdjAItAgEyjQIdkwI1AgErrgFFrgF3AgFpqwFGqwFQAgFnsQGIAbEBuQECAWS6AUu6AU4CAUC9AR3wASgCAUO8AS68AT8CAUHyAYgB8gG3AQIBPY8CWY8CdwIBMZACXJACowECAS+RAl2RAmgCAS2NAtYBjQLxAQIBLL4BH9kBJAIBUtoBH+8BJAIBRL4BLb4BTAIBU8ABI9cBLgIBVtoBLdoBUAIBRdwBI+MBLAIBTeYBI+0BLAIBSMEBJc8BMAIBXtABJdYBPQIBV+EBTeEBUAIBUN4BTt4BWAIBTusBTesBVAIBS+gBTugBUQIBSc0Bf80BlQICAV/UAW3UAXwCAVzSAWTSAZABAgFb0wFl0wFwAgFZ0AHdAdAB/AECAVg=</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d1xDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUk1TX0hSRUFGb3JtRGF0YUV4dHJhY3Rpb25cTkhNUkNcUGFnZXNcUTQuMV9VcGxvYWQueGFtbCtMA8UBDgIBAU0FYQoCASliBcMBFwIBAk0TTTACASpPCV8bAgErYnNigQECASdoC8ABFgIBA0/WAU+eAgIBMk+pAk+3AgIBMFUPXBgCASxtDXEmAgEjcg1/HQIBIoABDYcBJQIBG4gBDZwBEgIBD50BDb8BGgIBBFo+Wl0CAS9XP1dPAgEtbVBtXQIBJW9nb5YBAgEkgwFPgwF9AgEhhAFOhAF8AgEgggFKggFxAgEfhQFNhQFYAgEdgAHGAYAB4gECARyIARuIAWACARCKARGaARwCARGdAZwBnQGnAQIBDqMBE7wBHgIBBYsBE5IBHAIBGJMBE5kBKwIBEqcBFbUBIAIBDLYBFboBLgIBCLsBFbsBqAECAQaQAUyQAYMBAgEajQFNjQFWAgEZlwFalwFpAgEXlQFblQG+AQIBFpYBV5YBYwIBFJMB0wGTAfQBAgETswFvswG9AQIBDbYBW7YBZQIBCrgBb7gBgAECAQm7AYIBuwGlAQIBBw==</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
       <sap2010:ViewStateData Id="Assign_2" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="BrowserScope_3" sap:VirtualizedContainerService.HintSize="414,168" />
-      <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="778,316" />
-      <sap2010:ViewStateData Id="WaitUiElementAppear_2" sap:VirtualizedContainerService.HintSize="742,68" />
+      <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="539,316" />
+      <sap2010:ViewStateData Id="WaitUiElementAppear_2" sap:VirtualizedContainerService.HintSize="464,68" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_25" sap:VirtualizedContainerService.HintSize="314,87" />
       <sap2010:ViewStateData Id="Sequence_13" sap:VirtualizedContainerService.HintSize="336,211">
         <sap:WorkflowViewStateService.ViewState>
@@ -398,52 +209,29 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="CommentOut_1" sap:VirtualizedContainerService.HintSize="742,289" />
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_26" sap:VirtualizedContainerService.HintSize="742,87" />
-      <sap2010:ViewStateData Id="Assign_3" sap:VirtualizedContainerService.HintSize="242,60" />
-      <sap2010:ViewStateData Id="If_7" sap:VirtualizedContainerService.HintSize="742,207" />
-      <sap2010:ViewStateData Id="LogMessage_1" sap:VirtualizedContainerService.HintSize="704,91" />
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_27" sap:VirtualizedContainerService.HintSize="704,87" />
+      <sap2010:ViewStateData Id="CommentOut_1" sap:VirtualizedContainerService.HintSize="464,289" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_26" sap:VirtualizedContainerService.HintSize="464,87" />
       <sap2010:ViewStateData Id="Assign_4" sap:VirtualizedContainerService.HintSize="314,60" />
-      <sap2010:ViewStateData Id="LogMessage_2" sap:VirtualizedContainerService.HintSize="314,91" />
-      <sap2010:ViewStateData Id="Sequence_6" sap:VirtualizedContainerService.HintSize="336,315">
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_38" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="Sequence_17" sap:VirtualizedContainerService.HintSize="336,311">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_2" sap:VirtualizedContainerService.HintSize="704,462" />
+      <sap2010:ViewStateData Id="If_7" sap:VirtualizedContainerService.HintSize="464,458" />
       <sap2010:ViewStateData Id="Click_1" sap:VirtualizedContainerService.HintSize="314,68" />
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_35" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="Sequence_7" sap:VirtualizedContainerService.HintSize="336,319">
+      <sap2010:ViewStateData Id="WaitUiElementAppear_3" sap:VirtualizedContainerService.HintSize="314,68" />
+      <sap2010:ViewStateData Id="LogMessage_1" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="Sequence_18" sap:VirtualizedContainerService.HintSize="336,431">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_3" sap:VirtualizedContainerService.HintSize="509,466" />
-      <sap2010:ViewStateData Id="Assign_5" sap:VirtualizedContainerService.HintSize="242,60" />
-      <sap2010:ViewStateData Id="Assign_6" sap:VirtualizedContainerService.HintSize="242,60" />
-      <sap2010:ViewStateData Id="If_4" sap:VirtualizedContainerService.HintSize="509,207" />
-      <sap2010:ViewStateData Id="Sequence_8" sap:VirtualizedContainerService.HintSize="531,837">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="While_1" sap:VirtualizedContainerService.HintSize="557,994" />
-      <sap2010:ViewStateData Id="LogMessage_3" sap:VirtualizedContainerService.HintSize="557,91" />
-      <sap2010:ViewStateData Id="Sequence_9" sap:VirtualizedContainerService.HintSize="579,1249">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_5" sap:VirtualizedContainerService.HintSize="704,1396">
+      <sap2010:ViewStateData Id="ForEach`1_2" sap:VirtualizedContainerService.HintSize="464,564">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -451,29 +239,14 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Continue_1" sap:VirtualizedContainerService.HintSize="200,22" />
-      <sap2010:ViewStateData Id="If_6" sap:VirtualizedContainerService.HintSize="704,207" />
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_33" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="Sequence_14" sap:VirtualizedContainerService.HintSize="336,211">
+      <sap2010:ViewStateData Id="Sequence_5" sap:VirtualizedContainerService.HintSize="486,1750">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="CommentOut_2" sap:VirtualizedContainerService.HintSize="416,289" />
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_34" sap:VirtualizedContainerService.HintSize="416,87" />
-      <sap2010:ViewStateData Id="Sequence_10" sap:VirtualizedContainerService.HintSize="438,540">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="RetryScope_1" sap:VirtualizedContainerService.HintSize="704,714" />
-      <sap2010:ViewStateData Id="Assign_7" sap:VirtualizedContainerService.HintSize="704,60" />
-      <sap2010:ViewStateData Id="LogMessage_5" sap:VirtualizedContainerService.HintSize="704,91" />
-      <sap2010:ViewStateData Id="Sequence_11" sap:VirtualizedContainerService.HintSize="726,3512">
+      <sap2010:ViewStateData Id="BrowserScope_1" sap:VirtualizedContainerService.HintSize="539,1858">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -481,61 +254,14 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="ForEach`1_1" sap:VirtualizedContainerService.HintSize="742,3645">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-            <x:Boolean x:Key="IsPinned">False</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="FindChildren_1" sap:VirtualizedContainerService.HintSize="314,68" />
-      <sap2010:ViewStateData Id="Assign_8" sap:VirtualizedContainerService.HintSize="242,60" />
-      <sap2010:ViewStateData Id="Catch`1_1" sap:VirtualizedContainerService.HintSize="404,21">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
-            <x:Boolean x:Key="IsPinned">False</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Assign_9" sap:VirtualizedContainerService.HintSize="242,60" />
-      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="418,295" />
-      <sap2010:ViewStateData Id="Assign_10" sap:VirtualizedContainerService.HintSize="418,60" />
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_36" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="ForEach`1_2" sap:VirtualizedContainerService.HintSize="418,220" />
-      <sap2010:ViewStateData Id="Click_2" sap:VirtualizedContainerService.HintSize="418,68" />
-      <sap2010:ViewStateData Id="Sequence_12" sap:VirtualizedContainerService.HintSize="742,887">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-            <x:Boolean x:Key="IsPinned">False</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_5" sap:VirtualizedContainerService.HintSize="764,5507">
+      <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="561,2338">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="BrowserScope_1" sap:VirtualizedContainerService.HintSize="778,5615">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-            <x:Boolean x:Key="IsPinned">False</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="800,6095">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_3" sap:VirtualizedContainerService.HintSize="840,6175" />
+      <sap2010:ViewStateData Id="Sequence_3" sap:VirtualizedContainerService.HintSize="601,2418" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
