@@ -13,6 +13,7 @@
   <x:Members>
     <x:Property Name="in_TransactionItem" Type="InArgument(ui:QueueItem)" />
     <x:Property Name="in_Config" Type="InArgument(scg:Dictionary(x:String, x:String))" />
+    <x:Property Name="out_TransactionOutput" Type="OutArgument(x:String)" />
   </x:Members>
   <mva:VisualBasic.Settings>
     <x:Null />
@@ -73,14 +74,6 @@
       <Variable x:TypeArguments="x:String" Name="familyName" />
       <Variable x:TypeArguments="x:String" Name="dateofBirth" />
       <Variable x:TypeArguments="x:String" Name="passportNumber" />
-      <Variable x:TypeArguments="x:String" Name="reference" />
-      <Variable x:TypeArguments="x:String" Name="testCaseRef" />
-      <Variable x:TypeArguments="x:String" Name="failure_reason">
-        <Variable.Default>
-          <Literal x:TypeArguments="x:String" Value="" />
-        </Variable.Default>
-      </Variable>
-      <Variable x:TypeArguments="ui:BusinessRuleException" Name="exception" />
       <Variable x:TypeArguments="x:String" Name="countryOfDocument" />
       <Variable x:TypeArguments="x:Boolean" Name="isVevoSearchSuccessful" />
     </Sequence.Variables>
@@ -107,10 +100,10 @@
             <Sequence DisplayName="Write validation failure messsage and assign to Vevo Check out" sap2010:WorkflowViewState.IdRef="Sequence_19">
               <Assign DisplayName="Assign failure reason " sap2010:WorkflowViewState.IdRef="Assign_4">
                 <Assign.To>
-                  <OutArgument x:TypeArguments="x:String">[failure_reason]</OutArgument>
+                  <OutArgument x:TypeArguments="x:String">[out_TransactionOutput]</OutArgument>
                 </Assign.To>
                 <Assign.Value>
-                  <InArgument x:TypeArguments="x:String">[exception.Message]</InArgument>
+                  <InArgument x:TypeArguments="x:String">[exception.Message.ToString]</InArgument>
                 </Assign.Value>
               </Assign>
               <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke WriteValidationFailureMsg workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_16" UnSafe="False" WorkflowFileName="CRM\WriteNoteToCaseReference.xaml">
@@ -130,7 +123,7 @@
                   <InArgument x:TypeArguments="x:String" x:Key="in_CaseReference">[in_TransactionItem.Reference]</InArgument>
                 </ui:InvokeWorkflowFile.Arguments>
               </ui:InvokeWorkflowFile>
-              <Throw DisplayName="Throw BusinessRuleException" Exception="[new BusinessRuleException(failure_reason+&quot; : &quot;+ in_Config(failure_reason) +&quot; for CaseReference : &quot; + in_TransactionItem.Reference)]" sap2010:WorkflowViewState.IdRef="Throw_6" />
+              <Throw DisplayName="Throw BusinessRuleException" Exception="[new BusinessRuleException(out_TransactionOutput+&quot; : &quot;+ in_Config(out_TransactionOutput) +&quot; for CaseReference : &quot; + in_TransactionItem.Reference, exception)]" sap2010:WorkflowViewState.IdRef="Throw_6" />
             </Sequence>
           </ActivityAction>
         </Catch>
@@ -148,10 +141,10 @@
           <ui:CommentOut.Body>
             <Sequence DisplayName="Ignored Activities" sap2010:WorkflowViewState.IdRef="Sequence_21">
               <Sequence sap2010:WorkflowViewState.IdRef="Sequence_11">
-                <If Condition="[failure_reason &lt;&gt;&quot;&quot;]" DisplayName="If Exception isNot nothing " sap2010:WorkflowViewState.IdRef="If_4">
+                <If Condition="[transactionOutput &lt;&gt;&quot;&quot;]" DisplayName="If Exception isNot nothing " sap2010:WorkflowViewState.IdRef="If_4">
                   <If.Then>
                     <Sequence sap2010:WorkflowViewState.IdRef="Sequence_12">
-                      <Throw Exception="[new BusinessRuleException(failure_reason+&quot;:&quot;+ in_Config(failure_reason))]" sap2010:WorkflowViewState.IdRef="Throw_4" />
+                      <Throw Exception="[new BusinessRuleException(transactionOutput+&quot;:&quot;+ in_Config(transactionOutput))]" sap2010:WorkflowViewState.IdRef="Throw_4" />
                     </Sequence>
                   </If.Then>
                 </If>
@@ -188,6 +181,41 @@
             <Throw DisplayName="Throw ImmiSearchException" Exception="[New ApplicationException( in_Config(&quot;ImmiSearchException&quot;) +vbNewLine +exception.Message + vbNewLine+ &quot; at source : &quot; +  vbNewLine + exception.Source +  vbNewLine + &quot; for Case Reference : &quot; +in_TransactionItem.Reference)]" sap2010:WorkflowViewState.IdRef="Throw_10" />
           </ActivityAction>
         </Catch>
+        <Catch x:TypeArguments="ui:BusinessRuleException" sap2010:WorkflowViewState.IdRef="Catch`1_16">
+          <ActivityAction x:TypeArguments="ui:BusinessRuleException">
+            <ActivityAction.Argument>
+              <DelegateInArgument x:TypeArguments="ui:BusinessRuleException" Name="exception" />
+            </ActivityAction.Argument>
+            <Sequence DisplayName="Write validation failure messsage and assign to Vevo Check out" sap2010:WorkflowViewState.IdRef="Sequence_24">
+              <Assign DisplayName="Assign failure reason " sap2010:WorkflowViewState.IdRef="Assign_7">
+                <Assign.To>
+                  <OutArgument x:TypeArguments="x:String">[out_TransactionOutput]</OutArgument>
+                </Assign.To>
+                <Assign.Value>
+                  <InArgument x:TypeArguments="x:String">[exception.Message.ToString]</InArgument>
+                </Assign.Value>
+              </Assign>
+              <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke WriteValidationFailureMsg workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_24" UnSafe="False" WorkflowFileName="CRM\WriteNoteToCaseReference.xaml">
+                <ui:InvokeWorkflowFile.Arguments>
+                  <InArgument x:TypeArguments="x:String" x:Key="in_ErrorMsg">[in_Config(exception.Message)]</InArgument>
+                  <InArgument x:TypeArguments="x:String" x:Key="in_CaseReference">[in_TransactionItem.Reference]</InArgument>
+                </ui:InvokeWorkflowFile.Arguments>
+              </ui:InvokeWorkflowFile>
+              <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke AssignToVevoCheckOutCategory workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_25" UnSafe="False" WorkflowFileName="CRM\AssignToVevoCheckOutCategory.xaml">
+                <ui:InvokeWorkflowFile.Arguments>
+                  <InArgument x:TypeArguments="x:String" x:Key="in_VevoOutCategory">[in_Config("VevoCheckOutCategory")]</InArgument>
+                  <InArgument x:TypeArguments="x:String" x:Key="in_CaseReference">[in_TransactionItem.Reference]</InArgument>
+                </ui:InvokeWorkflowFile.Arguments>
+              </ui:InvokeWorkflowFile>
+              <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke SaveAndCloseCRMTicket workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_26" UnSafe="False" WorkflowFileName="CRM\SaveAndCloseCRMTicket.xaml">
+                <ui:InvokeWorkflowFile.Arguments>
+                  <InArgument x:TypeArguments="x:String" x:Key="in_CaseReference">[in_TransactionItem.Reference]</InArgument>
+                </ui:InvokeWorkflowFile.Arguments>
+              </ui:InvokeWorkflowFile>
+              <Throw DisplayName="Throw BusinessRuleException" Exception="[new BusinessRuleException(out_TransactionOutput+&quot; : &quot;+ in_Config(out_TransactionOutput) +&quot; for CaseReference : &quot; + in_TransactionItem.Reference, exception)]" sap2010:WorkflowViewState.IdRef="Throw_15" />
+            </Sequence>
+          </ActivityAction>
+        </Catch>
       </TryCatch.Catches>
     </TryCatch>
     <TryCatch DisplayName="Try Catch - Upload Immi Search Result" sap2010:WorkflowViewState.IdRef="TryCatch_5">
@@ -218,20 +246,40 @@
       <TryCatch.Try>
         <If Condition="[isVevoSearchSuccessful]" DisplayName="Check Vevo search result and write message accordingly " sap2010:WorkflowViewState.IdRef="If_5">
           <If.Then>
-            <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke WriteNoteToCaseReference workflow with success message" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_22" UnSafe="False" WorkflowFileName="CRM\WriteNoteToCaseReference.xaml">
-              <ui:InvokeWorkflowFile.Arguments>
-                <InArgument x:TypeArguments="x:String" x:Key="in_ErrorMsg">[in_Config("VevoSearch_Success_CRM_Note")]</InArgument>
-                <InArgument x:TypeArguments="x:String" x:Key="in_CaseReference">[in_TransactionItem.Reference]</InArgument>
-              </ui:InvokeWorkflowFile.Arguments>
-            </ui:InvokeWorkflowFile>
+            <Sequence DisplayName="Vevo serach - Successful" sap2010:WorkflowViewState.IdRef="Sequence_22">
+              <Assign DisplayName="Output - VevoSearch_Success" sap2010:WorkflowViewState.IdRef="Assign_5">
+                <Assign.To>
+                  <OutArgument x:TypeArguments="x:String">[out_TransactionOutput]</OutArgument>
+                </Assign.To>
+                <Assign.Value>
+                  <InArgument x:TypeArguments="x:String">[in_Config("VevoSearch_Success")]</InArgument>
+                </Assign.Value>
+              </Assign>
+              <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke WriteNoteToCaseReference workflow with success message" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_22" UnSafe="False" WorkflowFileName="CRM\WriteNoteToCaseReference.xaml">
+                <ui:InvokeWorkflowFile.Arguments>
+                  <InArgument x:TypeArguments="x:String" x:Key="in_ErrorMsg">[in_Config("VevoSearch_Success_CRM_Note")]</InArgument>
+                  <InArgument x:TypeArguments="x:String" x:Key="in_CaseReference">[in_TransactionItem.Reference]</InArgument>
+                </ui:InvokeWorkflowFile.Arguments>
+              </ui:InvokeWorkflowFile>
+            </Sequence>
           </If.Then>
           <If.Else>
-            <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke WriteNoteToCaseReference workflow with no result message" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_23" UnSafe="False" WorkflowFileName="CRM\WriteNoteToCaseReference.xaml">
-              <ui:InvokeWorkflowFile.Arguments>
-                <InArgument x:TypeArguments="x:String" x:Key="in_ErrorMsg">[in_Config("VevoSearch_NoResult_CRM_Note")]</InArgument>
-                <InArgument x:TypeArguments="x:String" x:Key="in_CaseReference">[in_TransactionItem.Reference]</InArgument>
-              </ui:InvokeWorkflowFile.Arguments>
-            </ui:InvokeWorkflowFile>
+            <Sequence DisplayName="Vevo serach - No result" sap2010:WorkflowViewState.IdRef="Sequence_23">
+              <Assign DisplayName="Output - VevoSearch_NoResult" sap2010:WorkflowViewState.IdRef="Assign_6">
+                <Assign.To>
+                  <OutArgument x:TypeArguments="x:String">[out_TransactionOutput]</OutArgument>
+                </Assign.To>
+                <Assign.Value>
+                  <InArgument x:TypeArguments="x:String">[in_Config("VevoSearch_NoResult")]</InArgument>
+                </Assign.Value>
+              </Assign>
+              <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke WriteNoteToCaseReference workflow with no result message" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_23" UnSafe="False" WorkflowFileName="CRM\WriteNoteToCaseReference.xaml">
+                <ui:InvokeWorkflowFile.Arguments>
+                  <InArgument x:TypeArguments="x:String" x:Key="in_ErrorMsg">[in_Config("VevoSearch_NoResult_CRM_Note")]</InArgument>
+                  <InArgument x:TypeArguments="x:String" x:Key="in_CaseReference">[in_TransactionItem.Reference]</InArgument>
+                </ui:InvokeWorkflowFile.Arguments>
+              </ui:InvokeWorkflowFile>
+            </Sequence>
           </If.Else>
         </If>
       </TryCatch.Try>
@@ -293,7 +341,7 @@
         <InArgument x:TypeArguments="x:String" x:Key="in_CaseReference" />
       </ui:InvokeWorkflowFile.Arguments>
     </ui:InvokeWorkflowFile>
-    <sads:DebugSymbol.Symbol>d1hDOlxVc2Vyc1x1cW1ndXB0MVxEb2N1bWVudHNcVWlQYXRoXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXElBQV9WZXZvQ2hlY2tcUHJvY2Vzcy54YW1sV0cDqQIOAgEBUAtQOgIBAlcFowEQAgFPpAEFwAEQAgE1wQEF2AEQAgEp2QEF+AEQAgEZ+QEFjAIQAgERjQIFnwIQAgELoAIFpwIdAgEDWQljFAIBZpMBCaEBGQIBZWsNhgEYAgFSjgENjgH3AgIBUKYBCbQBIQIBOLwBDbwB8gICATbDAQnMASECASzUAQ3UAf4CAgEq2wEJ7AEOAgEc9AEN9AH8AgIBGvsBCYACIQIBFIgCDYgClgMCARKPAgmTAiECAQ6bAg2bAvYCAgEMogJKogJpAgEJowJHowJpAgEHpAJEpAJgAgEFoALEAaAC5QECAQRaC2IjAgFnbA9zGAIBYXQPeScCAV16D38nAgFYgAEPhAEnAgFVhQEPhQGRAgIBU44BSo4BygICAVGsAVGsAWQCAU2rAU6rAV4CAUupAUqpAVYCAUmuAU6uAW0CAUeoAVOoAWsCAUWwAVKwAXMCAUOqAUuqAVgCAUGtAU2tAWsCAUCxAVmxAYEBAgE+rwFIrwFkAgE8pgHCAaYB5QECATuyAVqyAYMBAgE5vAFGvAHEAgIBN8UBTsUBbQIBM8gBTcgBawIBMsYBS8YBbQIBMMcBSMcBZAIBLsMBxwHDAegBAgEt1AFM1AHQAgIBK9sBF9sBMQIBHd0BDeIBJQIBJOUBDeoBJQIBH/QBS/QBzgICARv+AU3+AWsCARj9AU/9AXICARb7Ac4B+wH1AQIBFYgCWIgC6AICARORAk2RAmsCARCPAscBjwLnAQIBD5sCSJsCyAICAQ1cT1xtAgFxXlJeYgIBb11OXVoCAW1gVWBoAgFrWsgBWugBAgFqX09fXAIBaHE6cU0CAWRuO25LAgFidk52bAIBYHdTd3ECAV900QF09AECAV59U31xAgFcfFV8eAIBWnrUAXr7AQIBWYIBU4IBcQIBV4ABzQGAAe0BAgFWhQFKhQHkAQIBVN8BTN8BdgIBJ+ABUeABbwIBJt0B4wHdAYYCAgEl5wFM5wF3AgEi6AFR6AFvAgEh5QHlAeUBiAICASA=</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d1hDOlxVc2Vyc1x1cW1ndXB0MVxEb2N1bWVudHNcVWlQYXRoXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXElBQV9WZXZvQ2hlY2tcUHJvY2Vzcy54YW1sb0gD2QIOAgEBUAWcARACAW2dAQXcARACAUDdAQX0ARACATT1AQWoAhACARipAgW8AhACARC9AgXPAhACAQrQAgXXAh0CAQJSCVwUAwGEAYwBCZoBGQMBgwFkDX8YAgFwhwENhwH3AgIBbp8BCa0BIQIBVrUBDbUB8gICAVS9AQ3YARgCAUHfAQnoASECATfwAQ3wAf4CAgE19wEJnAIOAgEbpAINpAL8AgIBGasCCbACIQIBE7gCDbgClgMCARG/AgnDAiECAQ3LAg3LAvYCAgEL0gJK0gJpAgEI0wJH0wJpAgEG1AJE1AJgAgEE0ALEAdAC5QECAQNTC1sjAwGFAWUPbBgCAX9tD3InAgF7cw94JwIBdnkPfScCAXN+D36qAgIBcYcBSocBygICAW+lAVGlAWQCAWukAU6kAV4CAWmiAUqiAVYCAWenAU6nAW0CAWWhAVOhAWsCAWOpAVKpAXMCAWGjAUujAVgCAV+mAU2mAWsCAV6qAVmqAYEBAgFcqAFIqAFkAgFanwHCAZ8B5QECAVmrAVqrAYMBAgFXtQFGtQHEAgIBVb4BD8UBGAIBUMYBD8sBJwIBTMwBD9EBJwIBR9IBD9YBJwIBRNcBD9cBqwICAULhAU7hAW0CAT7kAU3kAWsCAT3iAUviAW0CATvjAUjjAWQCATnfAccB3wHoAQIBOPABTPAB0AICATb3ARf3ATECARz5AQ2IAhgCASmLAg2aAhgCAR6kAkukAs4CAgEargJNrgJrAgEXrQJPrQJyAgEVqwLOAasC9QECARS4Ali4AugCAgESwQJNwQJrAgEPvwLHAb8C5wECAQ7LAkjLAsgCAgEMVU9VbQMBjwFXUldiAwGNAVZOVloDAYsBWVVZaAMBiQFTyAFT6AEDAYgBWE9YXAMBhgFqOmpWAwGCAWc7Z1IDAYABb05vbAIBfnBTcHECAX1t0QFt9AECAXx2U3ZxAgF6dVV1eAIBeHPUAXP7AQIBd3tTe3ECAXV5zQF57QECAXR+Sn79AQIBcsMBOsMBVgIBU8ABO8ABUgIBUcgBTsgBbAIBT8kBU8kBcQIBTsYB0QHGAfQBAgFNzwFTzwFxAgFLzgFVzgF4AgFJzAHUAcwB+wECAUjUAVPUAXECAUbSAc0B0gHtAQIBRdcBStcB/QECAUP6AQ+BAhgCAS+CAg+HAicCASqMAg+TAhgCASSUAg+ZAicCAR//ATr/AVsCATL8ATv8AVICATCEAk6EAngCAS2FAlOFAnECASyCAuUBggKIAgIBK5ECOpECXAIBJ44CO44CUgIBJZYCTpYCeQIBIpcCU5cCcQIBIZQC5wGUAooCAgEg</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -311,10 +359,11 @@
       <sap2010:ViewStateData Id="InvokeWorkflowFile_19" sap:VirtualizedContainerService.HintSize="314,87" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_20" sap:VirtualizedContainerService.HintSize="314,87" />
       <sap2010:ViewStateData Id="Throw_6" sap:VirtualizedContainerService.HintSize="314,22" />
-      <sap2010:ViewStateData Id="Sequence_19" sap:VirtualizedContainerService.HintSize="336,624">
+      <sap2010:ViewStateData Id="Sequence_19" sap:VirtualizedContainerService.HintSize="336,51">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
@@ -367,17 +416,7 @@
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="CommentOut_2" sap:VirtualizedContainerService.HintSize="524,619" />
-      <sap2010:ViewStateData Id="TryCatch_2" sap:VirtualizedContainerService.HintSize="671,460">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-            <x:Boolean x:Key="IsPinned">False</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_4" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="Throw_10" sap:VirtualizedContainerService.HintSize="200,22" />
-      <sap2010:ViewStateData Id="Catch`1_11" sap:VirtualizedContainerService.HintSize="404,21">
+      <sap2010:ViewStateData Id="TryCatch_2" sap:VirtualizedContainerService.HintSize="414,51">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">False</x:Boolean>
@@ -385,10 +424,41 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_4" sap:VirtualizedContainerService.HintSize="671,314">
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_4" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="Throw_10" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="Catch`1_11" sap:VirtualizedContainerService.HintSize="400,21">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Assign_7" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_24" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_25" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_26" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="Throw_15" sap:VirtualizedContainerService.HintSize="314,22" />
+      <sap2010:ViewStateData Id="Sequence_24" sap:VirtualizedContainerService.HintSize="336,627">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Catch`1_16" sap:VirtualizedContainerService.HintSize="400,696">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="TryCatch_4" sap:VirtualizedContainerService.HintSize="414,51">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
             <x:Boolean x:Key="IsPinned">False</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
@@ -410,17 +480,33 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_5" sap:VirtualizedContainerService.HintSize="418,314">
+      <sap2010:ViewStateData Id="TryCatch_5" sap:VirtualizedContainerService.HintSize="414,51">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
             <x:Boolean x:Key="IsPinned">False</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Assign_5" sap:VirtualizedContainerService.HintSize="314,60" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_22" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="Sequence_22" sap:VirtualizedContainerService.HintSize="336,311">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Assign_6" sap:VirtualizedContainerService.HintSize="314,60" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_23" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="If_5" sap:VirtualizedContainerService.HintSize="653,235">
+      <sap2010:ViewStateData Id="Sequence_23" sap:VirtualizedContainerService.HintSize="336,311">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="If_5" sap:VirtualizedContainerService.HintSize="697,459">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -429,7 +515,7 @@
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="Throw_14" sap:VirtualizedContainerService.HintSize="200,22" />
-      <sap2010:ViewStateData Id="Catch`1_15" sap:VirtualizedContainerService.HintSize="657,21">
+      <sap2010:ViewStateData Id="Catch`1_15" sap:VirtualizedContainerService.HintSize="701,21">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">False</x:Boolean>
@@ -437,7 +523,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_8" sap:VirtualizedContainerService.HintSize="671,462">
+      <sap2010:ViewStateData Id="TryCatch_8" sap:VirtualizedContainerService.HintSize="414,51">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">False</x:Boolean>
@@ -455,10 +541,10 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_6" sap:VirtualizedContainerService.HintSize="418,51">
+      <sap2010:ViewStateData Id="TryCatch_6" sap:VirtualizedContainerService.HintSize="414,266">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
             <x:Boolean x:Key="IsPinned">False</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
@@ -473,15 +559,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_7" sap:VirtualizedContainerService.HintSize="418,51">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
-            <x:Boolean x:Key="IsPinned">False</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_21" sap:VirtualizedContainerService.HintSize="418,87">
+      <sap2010:ViewStateData Id="TryCatch_7" sap:VirtualizedContainerService.HintSize="414,266">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -489,7 +567,15 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="693,2145">
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_21" sap:VirtualizedContainerService.HintSize="414,87">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="436,1259">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -497,7 +583,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="ProcessTransaction_1" sap:VirtualizedContainerService.HintSize="733,2225" />
+      <sap2010:ViewStateData Id="ProcessTransaction_1" sap:VirtualizedContainerService.HintSize="480,1303" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>

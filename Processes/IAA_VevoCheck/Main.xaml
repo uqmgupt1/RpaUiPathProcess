@@ -178,6 +178,14 @@
                   </Assign>
                 </ActivityAction>
               </Catch>
+              <Catch x:TypeArguments="ui:BusinessRuleException" sap2010:WorkflowViewState.IdRef="Catch`1_11">
+                <ActivityAction x:TypeArguments="ui:BusinessRuleException">
+                  <ActivityAction.Argument>
+                    <DelegateInArgument x:TypeArguments="ui:BusinessRuleException" Name="exception" />
+                  </ActivityAction.Argument>
+                  <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_29" Level="Warn" Message="[&quot;Business Rule Exception in Initialisation State. No pending cases in CRM to to check. &quot;]" />
+                </ActivityAction>
+              </Catch>
             </TryCatch.Catches>
           </TryCatch>
         </State.Entry>
@@ -196,7 +204,7 @@
                     </Sequence.Variables>
                     <If Condition="[SystemError.Message.Contains(Config(&quot;SignInError&quot;)) AND OperatingEnvironment = &quot;PROD&quot;]" DisplayName="Check if System Error is a SignInError" sap2010:WorkflowViewState.IdRef="If_15">
                       <If.Then>
-                        <Assign DisplayName="Email distribution list with business user" sap2010:WorkflowViewState.IdRef="Assign_21">
+                        <Assign DisplayName="Email to RPA ADS &amp; Business user" sap2010:WorkflowViewState.IdRef="Assign_21">
                           <Assign.To>
                             <OutArgument x:TypeArguments="x:String">[distributionList]</OutArgument>
                           </Assign.To>
@@ -216,7 +224,7 @@
                         </Assign>
                       </If.Else>
                     </If>
-                    <ui:LogMessage DisplayName="Log Message" Level="Trace" Message="[&quot;Distribution list is &quot; +distributionList]" sap2010:WorkflowViewState.IdRef="LogMessage_28" />
+                    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_28" Level="Trace" Message="[&quot;Distribution list is &quot; +distributionList]" />
                     <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke TakeScreenshot workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_20" UnSafe="False" WorkflowFileName="Framework\TakeScreenshot.xaml">
                       <ui:InvokeWorkflowFile.Arguments>
                         <InArgument x:TypeArguments="x:String" x:Key="in_Folder">Exceptions_Screenshots</InArgument>
@@ -231,8 +239,8 @@
                           <ui:InvokeWorkflowFile.Arguments>
                             <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)" x:Key="in_Config">[Config]</InArgument>
                             <InArgument x:TypeArguments="x:String" x:Key="receiverAddress">[distributionList]</InArgument>
-                            <InArgument x:TypeArguments="x:String" x:Key="body">You are receiving this email from UiPath RPA Robot due to a error encountred in Vevo Check process. Please see subject line and attached screen shot for additional information.</InArgument>
-                            <InArgument x:TypeArguments="x:String" x:Key="subject">["Environment : " + OperatingEnvironment +" Process Name : " + Config("logF_BusinessProcessName")]</InArgument>
+                            <InArgument x:TypeArguments="x:String" x:Key="body">[Config("VevoInitErrorEmailMsg") +vbNewLine +SystemError.Message.ToString]</InArgument>
+                            <InArgument x:TypeArguments="x:String" x:Key="subject">["Environment : " + OperatingEnvironment +" ProcessName : " + Config("logF_BusinessProcessName")]</InArgument>
                             <InArgument x:TypeArguments="x:String" x:Key="attachmentPath">[FilePath]</InArgument>
                           </ui:InvokeWorkflowFile.Arguments>
                         </ui:InvokeWorkflowFile>
@@ -242,8 +250,8 @@
                           <ui:InvokeWorkflowFile.Arguments>
                             <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)" x:Key="in_Config">[Config]</InArgument>
                             <InArgument x:TypeArguments="x:String" x:Key="receiverAddress">[distributionList]</InArgument>
-                            <InArgument x:TypeArguments="x:String" x:Key="body">You are receiving this email from UiPath RPA Robot due to a error encountred in Vevo Check process. Please see subject line and attached screen shot for additional information.</InArgument>
-                            <InArgument x:TypeArguments="x:String" x:Key="subject">[OperatingEnvironment +" : " + Config("logF_BusinessProcessName")]</InArgument>
+                            <InArgument x:TypeArguments="x:String" x:Key="body">[Config("VevoInitErrorEmailMsg") +vbNewLine +SystemError.Message.ToString]</InArgument>
+                            <InArgument x:TypeArguments="x:String" x:Key="subject">["Environment : " + OperatingEnvironment +" ProcessName : " + Config("logF_BusinessProcessName")]</InArgument>
                             <InArgument x:TypeArguments="x:String" x:Key="attachmentPath" />
                           </ui:InvokeWorkflowFile.Arguments>
                         </ui:InvokeWorkflowFile>
@@ -297,8 +305,6 @@
                                 <InArgument x:TypeArguments="x:Int32" x:Key="in_TransactionNumber">[TransactionNumber]</InArgument>
                                 <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)" x:Key="in_Config">[Config]</InArgument>
                                 <OutArgument x:TypeArguments="ui:QueueItem" x:Key="out_TransactionItem">[TransactionItem]</OutArgument>
-                                <OutArgument x:TypeArguments="x:String" x:Key="out_TransactionField1">[TransactionField1]</OutArgument>
-                                <OutArgument x:TypeArguments="x:String" x:Key="out_TransactionField2">[TransactionField2]</OutArgument>
                                 <OutArgument x:TypeArguments="x:String" x:Key="out_TransactionID">[TransactionID]</OutArgument>
                               </ui:InvokeWorkflowFile.Arguments>
                             </ui:InvokeWorkflowFile>
@@ -348,6 +354,7 @@
                                   <ui:InvokeWorkflowFile.Arguments>
                                     <InArgument x:TypeArguments="ui:QueueItem" x:Key="in_TransactionItem">[TransactionItem]</InArgument>
                                     <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)" x:Key="in_Config">[Config]</InArgument>
+                                    <OutArgument x:TypeArguments="x:String" x:Key="out_TransactionOutput">[TransactionResult]</OutArgument>
                                   </ui:InvokeWorkflowFile.Arguments>
                                 </ui:InvokeWorkflowFile>
                               </Sequence>
@@ -358,14 +365,24 @@
                                   <ActivityAction.Argument>
                                     <DelegateInArgument x:TypeArguments="ui:BusinessRuleException" Name="exception" />
                                   </ActivityAction.Argument>
-                                  <Assign DisplayName="Set transaction status to Rule Exception" sap2010:WorkflowViewState.IdRef="Assign_3">
-                                    <Assign.To>
-                                      <OutArgument x:TypeArguments="ui:BusinessRuleException">[BusinessRuleException]</OutArgument>
-                                    </Assign.To>
-                                    <Assign.Value>
-                                      <InArgument x:TypeArguments="ui:BusinessRuleException">[exception]</InArgument>
-                                    </Assign.Value>
-                                  </Assign>
+                                  <Sequence sap2010:WorkflowViewState.IdRef="Sequence_30">
+                                    <Assign DisplayName="Set transaction status to Rule Exception" sap2010:WorkflowViewState.IdRef="Assign_3">
+                                      <Assign.To>
+                                        <OutArgument x:TypeArguments="ui:BusinessRuleException">[BusinessRuleException]</OutArgument>
+                                      </Assign.To>
+                                      <Assign.Value>
+                                        <InArgument x:TypeArguments="ui:BusinessRuleException">[exception]</InArgument>
+                                      </Assign.Value>
+                                    </Assign>
+                                    <Assign sap2010:WorkflowViewState.IdRef="Assign_23">
+                                      <Assign.To>
+                                        <OutArgument x:TypeArguments="x:String">[TransactionResult]</OutArgument>
+                                      </Assign.To>
+                                      <Assign.Value>
+                                        <InArgument x:TypeArguments="x:String">[exception.InnerException.Message]</InArgument>
+                                      </Assign.Value>
+                                    </Assign>
+                                  </Sequence>
                                 </ActivityAction>
                               </Catch>
                               <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch`1_2">
@@ -395,7 +412,7 @@
                                       <InArgument x:TypeArguments="ui:QueueItem" x:Key="in_TransactionItem">[TransactionItem]</InArgument>
                                       <InOutArgument x:TypeArguments="x:Int32" x:Key="io_RetryNumber">[RetryNumber]</InOutArgument>
                                       <InOutArgument x:TypeArguments="x:Int32" x:Key="io_TransactionNumber">[TransactionNumber]</InOutArgument>
-                                      <InArgument x:TypeArguments="x:String" x:Key="in_TransactionField1">[TransactionField1]</InArgument>
+                                      <InArgument x:TypeArguments="x:String" x:Key="in_TransactionField1">[TransactionResult]</InArgument>
                                       <InArgument x:TypeArguments="x:String" x:Key="in_TransactionField2">[TransactionField2]</InArgument>
                                       <InArgument x:TypeArguments="x:String" x:Key="in_TransactionID">[TransactionID]</InArgument>
                                     </ui:InvokeWorkflowFile.Arguments>
@@ -523,13 +540,13 @@
       <Variable x:TypeArguments="scg:Dictionary(x:String, x:String)" Name="Config" />
       <Variable x:TypeArguments="x:Int32" Default="0" Name="RetryNumber" />
       <Variable x:TypeArguments="x:String" Name="TransactionField2" />
-      <Variable x:TypeArguments="x:String" Name="TransactionField1" />
       <Variable x:TypeArguments="x:String" Name="TransactionID" />
       <Variable x:TypeArguments="scg:List(ui:QueueItem)" Name="TransactionData" />
       <Variable x:TypeArguments="x:String" Name="OperatingEnvironment" />
       <Variable x:TypeArguments="s:DateTime" Default="[Now]" Name="StartTime" />
+      <Variable x:TypeArguments="x:String" Name="TransactionResult" />
     </StateMachine.Variables>
-    <sads:DebugSymbol.Symbol>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</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>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</sads:DebugSymbol.Symbol>
   </StateMachine>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -620,7 +637,16 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_2" sap:VirtualizedContainerService.HintSize="605,1729">
+      <sap2010:ViewStateData Id="LogMessage_29" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="Catch`1_11" sap:VirtualizedContainerService.HintSize="591,21">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="TryCatch_2" sap:VirtualizedContainerService.HintSize="605,1751">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -696,7 +722,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="ShouldStop_1" sap:VirtualizedContainerService.HintSize="775,22" />
+      <sap2010:ViewStateData Id="ShouldStop_1" sap:VirtualizedContainerService.HintSize="779,22" />
       <sap2010:ViewStateData Id="LogMessage_25" sap:VirtualizedContainerService.HintSize="314,91" />
       <sap2010:ViewStateData Id="Assign_15" sap:VirtualizedContainerService.HintSize="314,60" />
       <sap2010:ViewStateData Id="Sequence_21" sap:VirtualizedContainerService.HintSize="336,315">
@@ -725,7 +751,15 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Catch`1_6" sap:VirtualizedContainerService.HintSize="400,384">
+      <sap2010:ViewStateData Id="Catch`1_6" sap:VirtualizedContainerService.HintSize="404,21">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="TryCatch_5" sap:VirtualizedContainerService.HintSize="418,314">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -733,16 +767,8 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_5" sap:VirtualizedContainerService.HintSize="414,546">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-            <x:Boolean x:Key="IsPinned">False</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_8" sap:VirtualizedContainerService.HintSize="775,694" />
-      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="797,937">
+      <sap2010:ViewStateData Id="If_8" sap:VirtualizedContainerService.HintSize="779,463" />
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="801,706">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -760,7 +786,15 @@
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="Assign_3" sap:VirtualizedContainerService.HintSize="242,60" />
-      <sap2010:ViewStateData Id="Catch`1_1" sap:VirtualizedContainerService.HintSize="404,21">
+      <sap2010:ViewStateData Id="Assign_23" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="Sequence_30" sap:VirtualizedContainerService.HintSize="264,284">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Catch`1_1" sap:VirtualizedContainerService.HintSize="422,21">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">False</x:Boolean>
@@ -769,7 +803,7 @@
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="Assign_4" sap:VirtualizedContainerService.HintSize="242,60" />
-      <sap2010:ViewStateData Id="Catch`1_2" sap:VirtualizedContainerService.HintSize="404,21">
+      <sap2010:ViewStateData Id="Catch`1_2" sap:VirtualizedContainerService.HintSize="422,21">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">False</x:Boolean>
@@ -788,7 +822,7 @@
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="TryCatch_6" sap:VirtualizedContainerService.HintSize="418,314" />
-      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="418,560">
+      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="436,563">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -945,7 +979,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="State_2" sap:VirtualizedContainerService.HintSize="844,3275">
+      <sap2010:ViewStateData Id="State_2" sap:VirtualizedContainerService.HintSize="844,3297">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <av:Point x:Key="ShapeLocation">274.5,8.5</av:Point>
