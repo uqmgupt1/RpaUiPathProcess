@@ -85,6 +85,7 @@
       <AssemblyReference>System.ComponentModel.Composition</AssemblyReference>
       <AssemblyReference>Microsoft.VisualStudio.Services.Common</AssemblyReference>
       <AssemblyReference>System.Data.Entity</AssemblyReference>
+      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence sap2010:Annotation.AnnotationText="This XAML will locate the current employee and create a new contract.  BRE will be thrown if the employee is marked terminated, is a continuing employee, or if the proposed contract start date is before the current contract end date.  The reportDT is frequently updated.&#xA;&#xA;in_Arg&#xA;     in_AurionWindow                         Window&#xA;     in_Config                                        Dictionary(String, Object)&#xA;     in_employeeName                        String&#xA;     in_employeeNumber                    String&#xA;     in_proposedContractEndDate      DateTime&#xA;     in_proposedContractStartDate     DateTime&#xA;     in_pstName                                     String&#xA;     in_systemErrorNotes                      String&#xA;     in_TransactionItem                         QueueItem&#xA;&#xA;io_Arg&#xA;     io_reportDT                                      DataTable&#xA;&#xA;out_Arg&#xA;     out_currentContractEndDate        DateTime&#xA;     out_systemErrorStatus                   String&#xA;&#xA;" DisplayName="Aurion_CreateNewContract" sap2010:WorkflowViewState.IdRef="Sequence_5">
@@ -98,6 +99,8 @@
       <Variable x:TypeArguments="x:String" Name="currentContractEndDate" />
       <Variable x:TypeArguments="x:Boolean" Name="textEntered" />
       <Variable x:TypeArguments="x:Boolean" Name="searchClicked" />
+      <Variable x:TypeArguments="x:String" Name="payScaleHistory" />
+      <Variable x:TypeArguments="x:Boolean" Name="contractExpiryPopUpExists" />
     </Sequence.Variables>
     <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;Begin Aurion_CreateNewContract&quot;]" />
     <ui:WindowScope ApplicationWindow="{x:Null}" SearchScope="{x:Null}" Selector="{x:Null}" TimeoutMS="{x:Null}" DisplayName="Attach Window 'Aurion'" sap2010:WorkflowViewState.IdRef="WindowScope_1" InformativeScreenshot="86b90901e960af24b4c267407a920d68" Window="[in_AurionWindow]">
@@ -644,6 +647,107 @@
                 </Sequence>
               </If.Then>
             </If>
+            <ui:GetVisibleText WordsInfo="{x:Null}" DisplayName="Get Visible Text 'Pay Scale History'" FormattedText="False" sap2010:WorkflowViewState.IdRef="GetVisibleText_5">
+              <ui:GetVisibleText.Target>
+                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="8bba84daf234c5a1874752a8b2466458" Selector="&lt;wnd app='aurion.exe' cls='UniForm' title='Placement Processing' /&gt;&lt;wnd cls='UniLabel' idx='17' /&gt;&lt;nav up='1' /&gt;&lt;wnd cls='AfxWnd140u' idx='2' /&gt;" WaitForReady="COMPLETE" />
+              </ui:GetVisibleText.Target>
+              <ui:GetVisibleText.Text>
+                <OutArgument x:TypeArguments="x:String">[payScaleHistory]</OutArgument>
+              </ui:GetVisibleText.Text>
+            </ui:GetVisibleText>
+            <If Condition="[payScaleHistory.ToUpper.Contains(&quot;PENDING&quot;)]" DisplayName="If Pending pay increment" sap2010:WorkflowViewState.IdRef="If_6">
+              <If.Then>
+                <Sequence sap2010:WorkflowViewState.IdRef="Sequence_39">
+                  <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_6" Level="Warn" Message="[&quot;Employee has pending pay increment&quot;]" />
+                  <Assign DisplayName="Assign out_systemErrorStatus" sap2010:WorkflowViewState.IdRef="Assign_33">
+                    <Assign.To>
+                      <OutArgument x:TypeArguments="x:String">[out_systemErrorStatus]</OutArgument>
+                    </Assign.To>
+                    <Assign.Value>
+                      <InArgument x:TypeArguments="x:String">Error</InArgument>
+                    </Assign.Value>
+                  </Assign>
+                  <Assign DisplayName="Assign in_systemErrorNotes" sap2010:WorkflowViewState.IdRef="Assign_34">
+                    <Assign.To>
+                      <OutArgument x:TypeArguments="x:String">[in_systemErrorNotes]</OutArgument>
+                    </Assign.To>
+                    <Assign.Value>
+                      <InArgument x:TypeArguments="x:String" xml:space="preserve">["Employee has pending pay increment in Aurion.  Please investigate."]</InArgument>
+                    </Assign.Value>
+                  </Assign>
+                  <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke UpdateReport workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_4" UnSafe="False" WorkflowFileName="Report\UpdateReport.xaml">
+                    <ui:InvokeWorkflowFile.Arguments>
+                      <InArgument x:TypeArguments="scg:Dictionary(x:String, x:Object)" x:Key="in_Config">[in_Config]</InArgument>
+                      <InArgument x:TypeArguments="ui:QueueItem" x:Key="in_TransactionItem">[in_TransactionItem]</InArgument>
+                      <InOutArgument x:TypeArguments="sd:DataTable" x:Key="io_ReportDT">[io_reportDT]</InOutArgument>
+                      <InArgument x:TypeArguments="x:String" x:Key="in_employeeName">[in_employeeName]</InArgument>
+                      <InArgument x:TypeArguments="x:String" x:Key="in_employeeNumber">[in_EmployeeNumber]</InArgument>
+                      <InArgument x:TypeArguments="s:DateTime" x:Key="in_proposedContractStartDate">[in_proposedContractStartDate]</InArgument>
+                      <InArgument x:TypeArguments="s:DateTime" x:Key="in_proposedContractEndDate">[in_proposedContractEndDate]</InArgument>
+                      <InArgument x:TypeArguments="x:String" x:Key="in_systemErrorNotes">[in_systemErrorNotes]</InArgument>
+                      <InOutArgument x:TypeArguments="x:String" x:Key="io_DTasHTML" />
+                      <InArgument x:TypeArguments="x:String" x:Key="in_systemErrorStatus">[out_systemErrorStatus]</InArgument>
+                      <InArgument x:TypeArguments="s:DateTime" x:Key="in_currentContractEndDate">[out_currentContractEndDate]</InArgument>
+                      <InArgument x:TypeArguments="x:String" x:Key="in_pstName">[in_pstName]</InArgument>
+                    </ui:InvokeWorkflowFile.Arguments>
+                  </ui:InvokeWorkflowFile>
+                  <ui:UiElementExists Exists="{x:Null}" DisplayName="Element Exists 'Cancel&quot; button" sap2010:WorkflowViewState.IdRef="UiElementExists_9">
+                    <ui:UiElementExists.Target>
+                      <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" InformativeScreenshot="cf06fd38cce780407ad776b5afc3237c" Selector="&lt;wnd app='aurion.exe' cls='UniForm' title='Placement Processing' /&gt;&lt;wnd cls='Button' title='Cancel' /&gt;" TimeoutMS="3000" WaitForReady="COMPLETE" />
+                    </ui:UiElementExists.Target>
+                  </ui:UiElementExists>
+                  <ui:Click DelayBefore="{x:Null}" DelayMS="{x:Null}" ClickType="CLICK_SINGLE" DisplayName="Click 'Cancel'" sap2010:WorkflowViewState.IdRef="Click_18" KeyModifiers="None" MouseButton="BTN_LEFT" SendWindowMessages="False" SimulateClick="False">
+                    <ui:Click.CursorPosition>
+                      <ui:CursorPosition Position="Center">
+                        <ui:CursorPosition.OffsetX>
+                          <InArgument x:TypeArguments="x:Int32" />
+                        </ui:CursorPosition.OffsetX>
+                        <ui:CursorPosition.OffsetY>
+                          <InArgument x:TypeArguments="x:Int32" />
+                        </ui:CursorPosition.OffsetY>
+                      </ui:CursorPosition>
+                    </ui:Click.CursorPosition>
+                    <ui:Click.Target>
+                      <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="aea794c1f3848db9d844ea4d43ab1291" Selector="&lt;wnd app='aurion.exe' cls='UniForm' title='Placement Processing' /&gt;&lt;wnd cls='Button' title='Cancel' /&gt;" WaitForReady="COMPLETE" />
+                    </ui:Click.Target>
+                  </ui:Click>
+                  <ui:RetryScope sap2010:Annotation.AnnotationText="Magnifying glass located upper right" DisplayName="Retry Scope Click 'Search'" sap2010:WorkflowViewState.IdRef="RetryScope_10" NumberOfRetries="3" RetryInterval="00:00:05">
+                    <ui:RetryScope.ActivityBody>
+                      <ActivityAction>
+                        <Sequence DisplayName="Action" sap2010:WorkflowViewState.IdRef="Sequence_38">
+                          <ui:Click DelayBefore="{x:Null}" DelayMS="{x:Null}" sap2010:Annotation.AnnotationText="Magnifying glass located upper right" ClickType="CLICK_SINGLE" DisplayName="Click 'Search'" sap2010:WorkflowViewState.IdRef="Click_19" KeyModifiers="None" MouseButton="BTN_LEFT" SendWindowMessages="False" SimulateClick="False">
+                            <ui:Click.CursorPosition>
+                              <ui:CursorPosition Position="Center">
+                                <ui:CursorPosition.OffsetX>
+                                  <InArgument x:TypeArguments="x:Int32" />
+                                </ui:CursorPosition.OffsetX>
+                                <ui:CursorPosition.OffsetY>
+                                  <InArgument x:TypeArguments="x:Int32" />
+                                </ui:CursorPosition.OffsetY>
+                              </ui:CursorPosition>
+                            </ui:Click.CursorPosition>
+                            <ui:Click.Target>
+                              <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="2fd12da003f721e2f1331d0793794a89" Selector="&lt;wnd aaname='Placements' cls='Edit' /&gt;&lt;nav up='2' /&gt;&lt;wnd cls='OwiCmdButton' idx='2' /&gt;" WaitForReady="INTERACTIVE" />
+                            </ui:Click.Target>
+                          </ui:Click>
+                          <ui:UiElementExists DisplayName="Element Exists 'Quick Search'" Exists="[searchClicked]" sap2010:WorkflowViewState.IdRef="UiElementExists_10">
+                            <ui:UiElementExists.Target>
+                              <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" InformativeScreenshot="853dfee03e218ea5f7d4de91c6be8c90" Selector="&lt;wnd app='aurion.exe' cls='UniApplication' /&gt;&lt;wnd aaname='Select Employee' cls='Edit' /&gt;&lt;nav up='2' /&gt;&lt;wnd cls='Edit' idx='7' /&gt;" TimeoutMS="15000" WaitForReady="COMPLETE" />
+                            </ui:UiElementExists.Target>
+                          </ui:UiElementExists>
+                        </Sequence>
+                      </ActivityAction>
+                    </ui:RetryScope.ActivityBody>
+                    <ui:RetryScope.Condition>
+                      <ActivityFunc x:TypeArguments="x:Boolean">
+                        <p:IsTrue DisplayName="Is true (searchClicked)" sap2010:WorkflowViewState.IdRef="IsTrue_10" Input="[searchClicked]" />
+                      </ActivityFunc>
+                    </ui:RetryScope.Condition>
+                  </ui:RetryScope>
+                  <Throw DisplayName="Throw Pending pay increment" Exception="[New BusinessRuleException(&quot;Pending pay increment&quot;)]" sap2010:WorkflowViewState.IdRef="Throw_4" />
+                </Sequence>
+              </If.Then>
+            </If>
             <ui:ClickText ContinueOnError="{x:Null}" DelayBefore="{x:Null}" DelayMS="{x:Null}" ClickType="CLICK_SINGLE" DisplayName="Click Text 'Date' (Newest placement by date)" FormattedText="False" sap2010:WorkflowViewState.IdRef="ClickText_3" KeyModifiers="None" MouseButton="BTN_LEFT" Occurrence="1" SendWindowMessages="False" Text="[out_currentContractEndDate.ToString(&quot;dd-MMM-yyyy&quot;).ToUpper]">
               <ui:ClickText.CursorPosition>
                 <ui:CursorPosition Position="Center">
@@ -760,6 +864,30 @@
                       <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="667d055e482b4cd073e61b5cf2772531" Selector="&lt;wnd app='aurion.exe' cls='UniForm' title='Placement Processing' /&gt;&lt;wnd cls='Button' title='Accept' /&gt;" WaitForReady="COMPLETE" />
                     </ui:Click.Target>
                   </ui:Click>
+                  <ui:UiElementExists sap2010:Annotation.AnnotationText="Pop up to update Employee's Contract Expiry Date" DisplayName="Element Exists 'Yes' button" Exists="[contractExpiryPopUpExists]" sap2010:WorkflowViewState.IdRef="UiElementExists_11">
+                    <ui:UiElementExists.Target>
+                      <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" InformativeScreenshot="b8b178053bdae3808cde8c0810c281bd" Selector="&lt;wnd app='aurion.exe' cls='#32770' title='Aurion' /&gt;&lt;wnd aaname='Yes' /&gt;" TimeoutMS="5000" WaitForReady="COMPLETE" />
+                    </ui:UiElementExists.Target>
+                  </ui:UiElementExists>
+                  <If Condition="[contractExpiryPopUpExists]" DisplayName="If contractExpiryPopUpExists" sap2010:WorkflowViewState.IdRef="If_7">
+                    <If.Then>
+                      <ui:Click DelayBefore="{x:Null}" DelayMS="{x:Null}" ClickType="CLICK_SINGLE" DisplayName="Click 'Yes'" sap2010:WorkflowViewState.IdRef="Click_20" KeyModifiers="None" MouseButton="BTN_LEFT" SendWindowMessages="False" SimulateClick="False">
+                        <ui:Click.CursorPosition>
+                          <ui:CursorPosition Position="Center">
+                            <ui:CursorPosition.OffsetX>
+                              <InArgument x:TypeArguments="x:Int32" />
+                            </ui:CursorPosition.OffsetX>
+                            <ui:CursorPosition.OffsetY>
+                              <InArgument x:TypeArguments="x:Int32" />
+                            </ui:CursorPosition.OffsetY>
+                          </ui:CursorPosition>
+                        </ui:Click.CursorPosition>
+                        <ui:Click.Target>
+                          <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="98684c8a54d4d059d90b49fea1a0f8f9" Selector="&lt;wnd app='aurion.exe' cls='#32770' title='Aurion' /&gt;&lt;wnd aaname='Yes' /&gt;" WaitForReady="COMPLETE" />
+                        </ui:Click.Target>
+                      </ui:Click>
+                    </If.Then>
+                  </If>
                 </Sequence>
               </If.Else>
             </If>
@@ -801,7 +929,7 @@
       </ui:WindowScope.Body>
     </ui:WindowScope>
     <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[&quot;End Aurion_CreateNewContract&quot;]" />
-    <sads:DebugSymbol.Symbol>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</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d3lDOlxVc2Vyc1x1cXNkZWJiZVxEb2N1bWVudHNcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcSFJfRml4ZWRUZXJtQXBwb2ludG1lbnRFeHBpcnlcQXVyaW9uXEF1cmlvbl9DcmVhdGVOZXdDb250cmFjdC54YW1spgJbA6UHDgIBAWE4YVUCAQJpBWmjAQMB/gJqBaIHFgIBBaMHBaMHoQECAQNpcmmgAQMB/wJqhwJqmgIDAfwCcAufBxYCAQajB3KjB54BAgEEcQ11GwMB+wJ2DXoiAwH4AnsNtwEdAwHbArgBDb8BIQMB1wLAAQ31AR0DAcAC9gENtgIdAwGnArcCDecCHQMBkALoAg3FAxIDAcwBxgMNkwQdAwHLAZQEDaIEGAMByQGjBA2xBBgDAcUBsgQNsgT2AQMBwgGzBA2JBRIDAYkBigUNkQUhAwGFAZIFDe4FEgIBSu8FDf0FHAIBRf4FDYwGGAIBQ40GDaQGGAIBMKUGDf0GEgIBFf4GDZ4HHQIBB3iLAXjyAQMB+gJ4/QF4gwIDAfkCe6EBe6sBAwH3AnuPAXuSAQMB9gJ+E68BHgMB3wK0ARO0AYQBAwHcAroBoAG6AcgBAwHaAr0BOb0BTQMB2ALAAbUBwAG/AQMB1gLAAaIBwAGmAQMB1QLDARPtAR4DAcQC8gET8gGEAQMBwQL2AZ8B9gGpAQMBvwL2AYwB9gGQAQMBvgL5AROuAh4DAasCswITswKEAQMBqAK3AqIBtwKsAQMBpgK3ApABtwKTAQMBpQK6AhPfAh4DAZQC5AIT5ALkAQMBkQLoAhvoAmYDAc0B6gIRrgMcAwHdAbEDEcMDHAMBzwGgBKABoATLAQMBygGvBIsBrwT0AQMByAGvBP8BrwSFAgMBxwGjBGqjBHADAcYBsgR6sgTzAQMBwwGzBMgBswSIAgMBigG1BBGHBRwDAY0BjAWgAYwFygIDAYgBjwU5jwVKAwGGAZIFG5IFVAIBS5QFEewFHAIBTe8F0gLvBZoDAgFH7wWuAu8FsQICAUb7BaAB+wWRAgIBSYoGoAGKBpICAgFEjgYPjgblAQIBQI8GD5MGHwIBPZQGD5gGHwIBOpkGD5kG4QECATeaBg+eBh8CATSfBg+jBh8CATGlBhulBnMCARanBhHLBhwCASjOBhH7BhwCARj+Bt8B/gbpAQIBFP4GzQH+BtABAgETgQcTlgceAgELmwcTmweIAQIBCIABF5wBIgMB5AKkARurASQDAeACtAFytAGBAQMB3QLFARfaASIDAckC4gEb6QEkAwHFAvIBcvIBgQEDAcIC+wEXmwIiAwGwAqMCG6oCJAMBrAKzAnKzAoEBAwGpArsCFcQCHgMBoQLFAhXOAh4DAZ0CzwIV1gIeAwGZAtcCFd4CKQMBlQLkArQB5ALhAQMBkgLrAhPrAsUBAwGOAuwCE/MCHAMBigL0AhP7AhwDAYYC/AITiwMrAwHuAYwDE6wDIwMB4AGtAxOtA8UBAwHeAbIDE7kDHAMB2AG6AxPBAxwDAdMBwgMTwgP3AQMB0AG2BBPEBB4DAcABxQQTzAQcAwG8Ac0EE9QEHAMBtgHVBBPkBCsDAZ4B5QQThQUjAwGQAYYFE4YF3AEDAY4BlQUTlQW1AQMBgwGWBROdBRwCAX+eBROlBRwCAXumBRO1BSsCAWO2BRO6BSgCAWC7BRPJBR4CAV7KBRPqBSMCAVDrBRPrBbsBAgFOjgaYAY4G4gECAUGRBqIBkQavAgIBP48G+QGPBvwBAgE+lgaiAZYGrwICATyUBvkBlAb+AQIBO5kGlgGZBt4BAgE4nAaiAZwGrwICATaaBvkBmgb8AQIBNaEGogGhBq8CAgEznwb5AZ8G/gECATKoBhOsBigCAS2tBhO7Bh4CASu8BhPKBh4CASnPBhPTBigCASXUBhPiBh4CASPjBhPnBigCAR7oBhP6BhgCARmCBxWQByACARGRBxWVByoCAQybB3SbB4UBAgEJgQEZiAEiAwHyAokBGYkBmwEDAe8CigEZjgEpAwHsAo8BGZMBJwMB6QKUARmbASIDAeUCqQFHqQFMAwHjAqYBSKYBVQMB4QLGARnUASgDAc8C1QEZ2QEuAwHKAucBR+cBTAMByALkAUjkAVUDAcYC/AEZgwIiAwG6AoQCGZICKAMBtQKTAhmaAiIDAbECqAJHqAJMAwGvAqUCSKUCVQMBrQLBAhvBAkoDAaQCvQJBvQJWAwGiAssCG8sCSgMBoALHAkHHAlkDAZ4C1AJC1AJSAwGcAtECQ9ECXwMBmgLZAqgB2QLRAQMBmALcAkHcAlYDAZYC6wKAAesCwgEDAY8C8QI+8QJDAwGNAu4CP+4CVgMBiwL2Aj/2AlQDAYcCiQNRiQNdAwGEAoMDZYMDgwEDAYIChANjhAN/AwGAAoUDWoUDbwMB/gGBA1aBA2cDAfwBgANZgANmAwH6AYgDYogDfgMB+AH+Amr+AnUDAfYBggNYggNrAwH0Af8CXf8CcQMB8gH8AscB/ALhAQMB8QGHA1uHA3IDAe8BjAPlAYwD7wEDAe0BjAPTAYwD1gEDAewBjwMZpAMkAwHkAakDGakDjgEDAeEBrQNOrQOYAQMB3wG3Az63A8ABAwHbAbQDP7QDVwMB2QG/A0C/A18DAdYBvANBvANdAwHUAcIDgAHCA/QBAwHRAcIEpgHCBJoCAwHBAcoEPsoEQwMBvwHHBD/HBFYDAb0BzwQ/zwRUAwG3AeIEUeIEXQMBtAHcBGXcBIMBAwGyAd0EY90EfwMBsAHeBFreBG8DAa4B2gRW2gRnAwGsAdkEWdkEZgMBqgHhBGLhBH4DAagB1wRq1wR1AwGmAdsEWNsEawMBpAHYBF3YBHEDAaIB1QTHAdUE4QEDAaEB4ARb4ARyAwGfAeUE5QHlBO8BAwGdAeUE0wHlBNYBAwGcAegEGf0EJAMBlAGCBRmCBY4BAwGRAYYFU4YFrwEDAY8BlQWAAZUFsgEDAYQBmwU+mwVDAwGCAZgFP5gFVgMBgAGgBT+gBVQCAXyzBVGzBV0CAXmtBWWtBYMBAgF3rgVjrgV/AgF1rwVarwVvAgFzqwVWqwVnAgFxqgVZqgVmAgFvsgVisgV+AgFtqAVqqAV1AgFrrAVYrAVrAgFpqQVdqQVxAgFnpgXHAaYF4QECAWaxBVuxBXICAWS4BZEBuAWFAgIBYrgFkAK4BZYCAgFhxwWmAccFmgICAV/KBeYBygXwAQIBXcoF1AHKBdcBAgFczQUZ4gUkAgFU5wUZ5wWPAQIBUesFTusFjgECAU+qBpEBqgaFAgIBL6oGkAKqBpYCAgEuuQamAbkGmgICASzIBqYByAb7AQIBKtEGkQHRBoUCAgEn0QaQAtEGlgICASbgBqYB4AaaAgIBJOUGkQHlBucBAgEi5QbyAeUG+AECASHjBq0B4wbKAQIBH+gGIegGPgIBGuoGF/gGIgIBHI4HqAGOB5ICAgESkweTAZMHrQICARCTB7gCkwe/AgIBD5EHXJEHbQIBDYYBRYYBSgMB9QKDAUaDAVMDAfMCiQGDAYkBmAEDAfACjAGsAYwBkwIDAe4CigGTAooBlgIDAe0CkQGsAZEBkwIDAesCjwGxAo8BvgIDAeoCmQFFmQFJAwHoApYBRpYBUwMB5gLGAXrGAYABAwHTAsYB2ALGAe0CAwHRAsYBtALGAbcCAwHQAtIBrAHSAdQBAwHUAtcBlwHXAcUBAwHOAtcB0AHXAdcBAwHNAtUBY9UBcgMBywKBAkWBAkoDAb0C/gFG/gFTAwG7AoQCxgKEAs8CAwG3AoQCogKEAqUCAwG2ApAClwGQAsABAwG5ApACywGQAtEBAwG4ApgCRZgCSQMBtAKVAkaVAlMDAbICkAMbngMmAwHqAZ8DG6MDMAMB5QGpA3qpA4sBAwHiAekEG/cEJgMBmgH4BBv8BDADAZUBggV6ggWLAQMBkgHOBRvcBSYCAVrdBRvhBTACAVXnBXvnBYwBAgFS9gaqAfYGgAICAR2cA64BnAOYAgMB6wGhA5kBoQOzAgMB6QGhA74CoQPFAgMB6AGfA2KfA3MDAeYB9QSuAfUEmAIDAZsB+gSZAfoEswIDAZkB+gS+AvoExQIDAZgB+ARi+ARzAwGWAdoFrgHaBZgCAgFb3wWZAd8FswICAVnfBb4C3wXFAgIBWN0FYt0FcwIBVg==</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -813,7 +941,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Activate_1" sap:VirtualizedContainerService.HintSize="697,51">
+      <sap2010:ViewStateData Id="Activate_1" sap:VirtualizedContainerService.HintSize="847,51">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">False</x:Boolean>
@@ -821,7 +949,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="UiElementExists_3" sap:VirtualizedContainerService.HintSize="697,106" />
+      <sap2010:ViewStateData Id="UiElementExists_3" sap:VirtualizedContainerService.HintSize="847,106" />
       <sap2010:ViewStateData Id="Assign_30" sap:VirtualizedContainerService.HintSize="314,60" />
       <sap2010:ViewStateData Id="SetToClipboard_3" sap:VirtualizedContainerService.HintSize="314,59" />
       <sap2010:ViewStateData Id="SendHotkey_5" sap:VirtualizedContainerService.HintSize="314,154" />
@@ -845,7 +973,7 @@
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="TryCatch_3" sap:VirtualizedContainerService.HintSize="418,978" />
       <sap2010:ViewStateData Id="IsTrue_5" sap:VirtualizedContainerService.HintSize="200,22" />
-      <sap2010:ViewStateData Id="RetryScope_5" sap:VirtualizedContainerService.HintSize="697,1159">
+      <sap2010:ViewStateData Id="RetryScope_5" sap:VirtualizedContainerService.HintSize="847,1159">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -853,7 +981,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="GetVisibleText_1" sap:VirtualizedContainerService.HintSize="697,106" />
+      <sap2010:ViewStateData Id="GetVisibleText_1" sap:VirtualizedContainerService.HintSize="847,106" />
       <sap2010:ViewStateData Id="ClickText_1" sap:VirtualizedContainerService.HintSize="314,134">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
@@ -880,7 +1008,7 @@
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="418,631" />
       <sap2010:ViewStateData Id="IsTrue_1" sap:VirtualizedContainerService.HintSize="200,22" />
-      <sap2010:ViewStateData Id="RetryScope_1" sap:VirtualizedContainerService.HintSize="697,812">
+      <sap2010:ViewStateData Id="RetryScope_1" sap:VirtualizedContainerService.HintSize="847,812">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -909,7 +1037,7 @@
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="TryCatch_2" sap:VirtualizedContainerService.HintSize="418,685" />
       <sap2010:ViewStateData Id="IsTrue_2" sap:VirtualizedContainerService.HintSize="200,22" />
-      <sap2010:ViewStateData Id="RetryScope_2" sap:VirtualizedContainerService.HintSize="697,866">
+      <sap2010:ViewStateData Id="RetryScope_2" sap:VirtualizedContainerService.HintSize="847,866">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -948,7 +1076,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="RetryScope_4" sap:VirtualizedContainerService.HintSize="697,807">
+      <sap2010:ViewStateData Id="RetryScope_4" sap:VirtualizedContainerService.HintSize="847,807">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -1003,7 +1131,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_5" sap:VirtualizedContainerService.HintSize="697,884">
+      <sap2010:ViewStateData Id="If_5" sap:VirtualizedContainerService.HintSize="847,884">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -1061,17 +1189,17 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="CommentOut_11" sap:VirtualizedContainerService.HintSize="697,1500">
+      <sap2010:ViewStateData Id="CommentOut_11" sap:VirtualizedContainerService.HintSize="847,51">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
             <x:Boolean x:Key="IsPinned">False</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Click_3" sap:VirtualizedContainerService.HintSize="697,106" />
-      <sap2010:ViewStateData Id="Click_12" sap:VirtualizedContainerService.HintSize="697,106" />
-      <sap2010:ViewStateData Id="LogMessage_5" sap:VirtualizedContainerService.HintSize="697,91" />
+      <sap2010:ViewStateData Id="Click_3" sap:VirtualizedContainerService.HintSize="847,106" />
+      <sap2010:ViewStateData Id="Click_12" sap:VirtualizedContainerService.HintSize="847,106" />
+      <sap2010:ViewStateData Id="LogMessage_5" sap:VirtualizedContainerService.HintSize="847,91" />
       <sap2010:ViewStateData Id="Click_13" sap:VirtualizedContainerService.HintSize="358,106" />
       <sap2010:ViewStateData Id="Assign_16" sap:VirtualizedContainerService.HintSize="358,60" />
       <sap2010:ViewStateData Id="Assign_17" sap:VirtualizedContainerService.HintSize="358,60" />
@@ -1107,17 +1235,58 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_4" sap:VirtualizedContainerService.HintSize="697,1459">
+      <sap2010:ViewStateData Id="If_4" sap:VirtualizedContainerService.HintSize="847,138">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
             <x:Boolean x:Key="IsPinned">False</x:Boolean>
             <x:Boolean x:Key="IsAnnotationDocked">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="ClickText_3" sap:VirtualizedContainerService.HintSize="697,134" />
-      <sap2010:ViewStateData Id="Click_4" sap:VirtualizedContainerService.HintSize="697,106" />
+      <sap2010:ViewStateData Id="GetVisibleText_5" sap:VirtualizedContainerService.HintSize="847,106" />
+      <sap2010:ViewStateData Id="LogMessage_6" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="Assign_33" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="Assign_34" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_4" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="UiElementExists_9" sap:VirtualizedContainerService.HintSize="314,106" />
+      <sap2010:ViewStateData Id="Click_18" sap:VirtualizedContainerService.HintSize="314,106" />
+      <sap2010:ViewStateData Id="Click_19" sap:VirtualizedContainerService.HintSize="314,133">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsAnnotationDocked">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="UiElementExists_10" sap:VirtualizedContainerService.HintSize="314,106" />
+      <sap2010:ViewStateData Id="Sequence_38" sap:VirtualizedContainerService.HintSize="336,403">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="IsTrue_10" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="RetryScope_10" sap:VirtualizedContainerService.HintSize="314,93">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsAnnotationDocked">True</x:Boolean>
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Throw_4" sap:VirtualizedContainerService.HintSize="314,22" />
+      <sap2010:ViewStateData Id="Sequence_39" sap:VirtualizedContainerService.HintSize="336,1029">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="If_6" sap:VirtualizedContainerService.HintSize="847,1176" />
+      <sap2010:ViewStateData Id="ClickText_3" sap:VirtualizedContainerService.HintSize="847,134" />
+      <sap2010:ViewStateData Id="Click_4" sap:VirtualizedContainerService.HintSize="847,106" />
       <sap2010:ViewStateData Id="SetToClipboard_1" sap:VirtualizedContainerService.HintSize="314,59">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
@@ -1166,7 +1335,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_14" sap:VirtualizedContainerService.HintSize="697,688">
+      <sap2010:ViewStateData Id="Sequence_14" sap:VirtualizedContainerService.HintSize="847,688">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -1185,16 +1354,25 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="UiElementExists_2" sap:VirtualizedContainerService.HintSize="314,106" />
-      <sap2010:ViewStateData Id="Click_9" sap:VirtualizedContainerService.HintSize="314,106" />
-      <sap2010:ViewStateData Id="Sequence_29" sap:VirtualizedContainerService.HintSize="336,376">
+      <sap2010:ViewStateData Id="UiElementExists_2" sap:VirtualizedContainerService.HintSize="464,106" />
+      <sap2010:ViewStateData Id="Click_9" sap:VirtualizedContainerService.HintSize="464,106" />
+      <sap2010:ViewStateData Id="UiElementExists_11" sap:VirtualizedContainerService.HintSize="464,133">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsAnnotationDocked">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Click_20" sap:VirtualizedContainerService.HintSize="314,106" />
+      <sap2010:ViewStateData Id="If_7" sap:VirtualizedContainerService.HintSize="464,253" />
+      <sap2010:ViewStateData Id="Sequence_29" sap:VirtualizedContainerService.HintSize="486,842">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_3" sap:VirtualizedContainerService.HintSize="697,669">
+      <sap2010:ViewStateData Id="If_3" sap:VirtualizedContainerService.HintSize="847,989">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -1225,7 +1403,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_4" sap:VirtualizedContainerService.HintSize="719,11065">
+      <sap2010:ViewStateData Id="Sequence_4" sap:VirtualizedContainerService.HintSize="869,9977">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -1233,7 +1411,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="WindowScope_1" sap:VirtualizedContainerService.HintSize="733,11211">
+      <sap2010:ViewStateData Id="WindowScope_1" sap:VirtualizedContainerService.HintSize="883,10123">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsPinned">False</x:Boolean>
@@ -1249,7 +1427,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_5" sap:VirtualizedContainerService.HintSize="755,11939">
+      <sap2010:ViewStateData Id="Sequence_5" sap:VirtualizedContainerService.HintSize="755,10531">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -1257,7 +1435,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Aurion_CreateNewContract_1" sap:VirtualizedContainerService.HintSize="795,12019" />
+      <sap2010:ViewStateData Id="Aurion_CreateNewContract_1" sap:VirtualizedContainerService.HintSize="795,11091" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>

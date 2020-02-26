@@ -2,6 +2,7 @@
  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
  xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities"
+ xmlns:njl="clr-namespace:Newtonsoft.Json.Linq;assembly=Newtonsoft.Json"
  xmlns:s="clr-namespace:System;assembly=mscorlib"
  xmlns:sads="http://schemas.microsoft.com/netfx/2010/xaml/activities/debugger"
  xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
@@ -20,8 +21,8 @@
     <x:Property Name="in_Status" Type="InArgument(x:String)" />
     <x:Property Name="in_Notes" Type="InArgument(x:String)" />
     <x:Property Name="in_EmployeeNumber" Type="InArgument(x:String)" />
-    <x:Property Name="in_EmailAddress" Type="InArgument(x:String)" />
     <x:Property Name="in_pstName" Type="InArgument(x:String)" />
+    <x:Property Name="in_pstEmailAddresses" Type="InArgument(njl:JObject)" />
   </x:Members>
   <mva:VisualBasic.Settings>
     <x:Null />
@@ -51,6 +52,8 @@
       <x:String>UiPath.Core</x:String>
       <x:String>UiPath.Core.Activities</x:String>
       <x:String>Microsoft.VisualBasic.CompilerServices</x:String>
+      <x:String>Newtonsoft.Json.Linq</x:String>
+      <x:String>Newtonsoft.Json</x:String>
     </sco:Collection>
   </TextExpression.NamespacesForImplementation>
   <TextExpression.ReferencesForImplementation>
@@ -78,6 +81,7 @@
       <AssemblyReference>System.ComponentModel.Composition</AssemblyReference>
       <AssemblyReference>Microsoft.VisualStudio.Services.Common</AssemblyReference>
       <AssemblyReference>UiPath.Studio.Plugin.Workflow</AssemblyReference>
+      <AssemblyReference>Newtonsoft.Json</AssemblyReference>
       <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
@@ -179,6 +183,41 @@
         <InArgument x:TypeArguments="x:String">[ReportEmailTemplate.Replace("{Table}","")]</InArgument>
       </Assign.Value>
     </Assign>
+    <TryCatch DisplayName="Try Catch" sap2010:WorkflowViewState.IdRef="TryCatch_3">
+      <TryCatch.Try>
+        <Sequence sap2010:WorkflowViewState.IdRef="Sequence_8">
+          <Assign DisplayName="Assign emailAddress" sap2010:WorkflowViewState.IdRef="Assign_16">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:String">[emailAddress]</OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:String">[in_pstEmailAddresses(in_pstName.ToLower.Trim).ToString]</InArgument>
+            </Assign.Value>
+          </Assign>
+          <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_7" Level="Info" Message="[&quot;PST name &quot;&quot;&quot; + in_pstName + &quot;&quot;&quot; found.  Assigning email address &quot;&quot;&quot; + in_pstEmailAddresses(in_pstName.ToLower.Trim).ToString + &quot;&quot;&quot;&quot;]" />
+        </Sequence>
+      </TryCatch.Try>
+      <TryCatch.Catches>
+        <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch`1_3">
+          <ActivityAction x:TypeArguments="s:Exception">
+            <ActivityAction.Argument>
+              <DelegateInArgument x:TypeArguments="s:Exception" Name="exception" />
+            </ActivityAction.Argument>
+            <Sequence sap2010:WorkflowViewState.IdRef="Sequence_9">
+              <Assign DisplayName="Assign emailAddress (Default)" sap2010:WorkflowViewState.IdRef="Assign_17">
+                <Assign.To>
+                  <OutArgument x:TypeArguments="x:String">[emailAddress]</OutArgument>
+                </Assign.To>
+                <Assign.Value>
+                  <InArgument x:TypeArguments="x:String">[in_Config("DefaultTaskEmailAddress").ToString]</InArgument>
+                </Assign.Value>
+              </Assign>
+              <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_8" Level="Warn" Message="[&quot;PST name &quot;&quot;&quot; + in_pstName + &quot;&quot;&quot; not found.  Assigning default email address &quot;&quot;&quot; + in_Config(&quot;DefaultTaskEmailAddress&quot;).ToString + &quot;&quot;&quot;&quot;]" />
+            </Sequence>
+          </ActivityAction>
+        </Catch>
+      </TryCatch.Catches>
+    </TryCatch>
     <If Condition="[in_Config(&quot;OperatingEnvironment&quot;).ToString.ToUpper.Trim = &quot;DEV&quot;]" DisplayName="If DEV environment send email using DEV credentials" sap2010:WorkflowViewState.IdRef="If_3">
       <If.Then>
         <Sequence sap2010:WorkflowViewState.IdRef="Sequence_2">
@@ -190,14 +229,13 @@
               <InArgument x:TypeArguments="x:String">[in_Config("OperatingEnvironment").ToString + " - "]</InArgument>
             </Assign.Value>
           </Assign>
-          <Assign DisplayName="Assign emailAddress">
+          <Assign DisplayName="Assign emailAddress" sap2010:WorkflowViewState.IdRef="Assign_14">
             <Assign.To>
               <OutArgument x:TypeArguments="x:String">[emailAddress]</OutArgument>
             </Assign.To>
             <Assign.Value>
               <InArgument x:TypeArguments="x:String">s.debbe@uq.edu.au</InArgument>
             </Assign.Value>
-            <sap2010:WorkflowViewState.IdRef>Assign_14</sap2010:WorkflowViewState.IdRef>
           </Assign>
           <TryCatch DisplayName="Try Catch" sap2010:WorkflowViewState.IdRef="TryCatch_1">
             <TryCatch.Try>
@@ -242,15 +280,6 @@
               </InArgument>
             </Assign.Value>
           </Assign>
-          <Assign DisplayName="Assign emailAddress">
-            <Assign.To>
-              <OutArgument x:TypeArguments="x:String">[emailAddress]</OutArgument>
-            </Assign.To>
-            <Assign.Value>
-              <InArgument x:TypeArguments="x:String">[in_EmailAddress]</InArgument>
-            </Assign.Value>
-            <sap2010:WorkflowViewState.IdRef>Assign_15</sap2010:WorkflowViewState.IdRef>
-          </Assign>
           <TryCatch DisplayName="Try Catch" sap2010:WorkflowViewState.IdRef="TryCatch_2">
             <TryCatch.Try>
               <Sequence sap2010:WorkflowViewState.IdRef="Sequence_7">
@@ -284,7 +313,7 @@
       </If.Else>
     </If>
     <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[&quot;End SendTaskEmail&quot;]" />
-    <sads:DebugSymbol.Symbol>d21DOlxVc2Vyc1x1cXNkZWJiZVxEb2N1bWVudHNcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcSFJfRml4ZWRUZXJtQXBwb2ludG1lbnRFeHBpcnlcRW1haWxcU2VuZFRhc2tFbWFpbC54YW1sZFQDoAIOAgEBXAVcmAEDAY0BXQVoCgMBhgFpBXQKAgF/dQWAAQoCAXiBAQWMAQoCAXGNAQWUAQ4CAW2VAQWcAQ4CAWidAQWdAbEBAgFkngEFpQEOAgFepgEFrQEOAgFZrgEFtQEOAgFUtgEFnQIKAgEEngIFngKWAQIBAlxyXJUBAwGOAV10XZQBAwGHAV8JZhIDAYkBaXZpmAEDAYABawlyEgMBggF1b3WKAQIBeXcJfhICAXuBAWiBAYMBAgFygwEJigESAgF0jwExjwE+AgFumgEwmgFgAgFrlwExlwE+AgFpnQFcnQF9AgFnnQEenQE1AgFlowEwowFmAgFhoAExoAFGAgFfqwEwqwFlAgFcqAExqAFGAgFaswEwswFbAgFXsAExsAFGAgFVtgETtgFqAgEFuAEJ5wEUAgEt6gEJmwIUAgEHngJyngKTAQIBA2Q0ZD0DAYwBYTVhRgMBigFwNHA9AwGFAW01bUgDAYMBfDR8PQIBfnk1eUECAXyIATSIATgCAXeFATWFAT8CAXW5AQvAARQCAU/BAQvJARQCAUvKAQvmARYCAS7rAQv0ARQCASn1AQv9ARQCAST+AQuaAhYCAQi+ATa+AWoCAVK7ATe7AU0CAVDGATbGAUcCAU7DATfDAUUCAUzMAQ/TARoCAT3bARPiAR4CAS/xARHxAUACASztATftAU0CASr6ATb6AUcCASf3ATf3AUUCASWAAg+HAhoCARaPAhOWAh4CAQnNARHRAR8CAUDSARHSAaQCAgE+3AEV4AEjAgEy4QEV4QGxAQIBMIECEYUCHwIBGYYCEYYCpAICAReQAhWUAiMCAQyVAhWVArEBAgEKzQHDBM0B0wQCAUnNAaEBzQG4AQIBR80B3QPNAb8EAgFGzQH0Ac0BhwICAUXNAcwCzQGCAwIBQ80BogPNAdQDAgFB0gF+0gGhAgIBP9wBxwTcAdcEAgE73AGlAdwBvAECATncAeED3AHDBAIBONwB+AHcAYsCAgE33AHQAtwBhgMCATXcAaYD3AHYAwIBM+EBggHhAa4BAgExgQLDBIEC0wQCASKBAqEBgQK4AQIBIIEC3QOBAr8EAgEfgQL0AYEChwICAR6BAswCgQKCAwIBHIECogOBAtQDAgEahgJ+hgKhAgIBGJACxwSQAtIEAgEVkAKlAZACvAECAROQAuEDkALDBAIBEpAC+AGQAosCAgERkALQApAChgMCAQ+QAqYDkALYAwIBDZUCggGVAq4BAgEL</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d21DOlxVc2Vyc1x1cXNkZWJiZVxEb2N1bWVudHNcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcSFJfRml4ZWRUZXJtQXBwb2ludG1lbnRFeHBpcnlcRW1haWxcU2VuZFRhc2tFbWFpbC54YW1sblgDvQIOAgEBYAVgmAEDAZoBYQVsCgMBkwFtBXgKAwGMAXkFhAEKAwGFAYUBBZABCgIBfpEBBZgBDgIBepkBBaABDgIBdaEBBaEBsQECAXGiAQWpAQ4CAWuqAQWxAQ4CAWayAQW5AQ4CAWG6AQXcARACAU/dAQW6AgoCAQS7AgW7ApYBAgECYHJglQEDAZsBYXRhlAEDAZQBYwlqEgMBlgFtdm2YAQMBjQFvCXYSAwGPAXlveYoBAwGGAXsJggESAwGIAYUBaIUBgwECAX+HAQmOARIDAYEBkwExkwE+AgF7ngEwngFgAgF4mwExmwE+AgF2oQFcoQF9AgF0oQEeoQE1AgFypwEwpwFmAgFupAExpAFGAgFsrwEwrwFlAgFprAExrAFGAgFntwEwtwFbAgFktAExtAFGAgFivAEJxgEUAgFazgEN2AEYAgFQ3QET3QFqAgEF3wEJjQIUAgEokAIJuAIUAgEHuwJyuwKTAQIBA2g0aD0DAZkBZTVlRgMBlwF0NHQ9AwGSAXE1cUgDAZABgAE0gAE9AwGLAX01fUEDAYkBjAE0jAE4AwGEAYkBNYkBPwMBggG9AQvEARQCAV3FAQvFAckCAgFbzwEP1gEYAgFV1wEP1wHaAgIBUeABC+cBFAIBSugBC+8BFAIBRvABC4wCFgIBKZECC5oCFAIBJJsCC7cCFgIBCMIBNsIBbgIBYL8BN78BRQIBXsUBeMUBxgICAVzUATrUAWkCAVjRATvRAUkCAVbXAXzXAdcCAgFS5QE25QFqAgFN4gE34gFNAgFL7QE27QFHAgFJ6gE36gFFAgFH8gEP+QEaAgE4gQITiAIeAgEqlwIRlwJAAgEnkwI3kwJNAgElnQIPpAIaAgEWrAITswIeAgEJ8wER9wEfAgE7+AER+AGkAgIBOYICFYYCIwIBLYcCFYcCsQECASueAhGiAh8CARmjAhGjAqQCAgEXrQIVsQIjAgEMsgIVsgKxAQIBCvMBwwTzAdMEAgFE8wGhAfMBuAECAULzAd0D8wG/BAIBQfMB9AHzAYcCAgFA8wHMAvMBggMCAT7zAaID8wHUAwIBPPgBfvgBoQICATqCAscEggLXBAIBNoICpQGCArwBAgE0ggLhA4ICwwQCATOCAvgBggKLAgIBMoIC0AKCAoYDAgEwggKmA4IC2AMCAS6HAoIBhwKuAQIBLJ4CwwSeAtMEAgEingKhAZ4CuAECASCeAt0DngK/BAIBH54C9AGeAocCAgEengLMAp4CggMCARyeAqIDngLUAwIBGqMCfqMCoQICARitAscErQLSBAIBFa0CpQGtArwBAgETrQLhA60CwwQCARKtAvgBrQKLAgIBEa0C0AKtAoYDAgEPrQKmA60C2AMCAQ2yAoIBsgKuAQIBCw==</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -341,6 +370,33 @@
       <sap2010:ViewStateData Id="Assign_3" sap:VirtualizedContainerService.HintSize="901,60" />
       <sap2010:ViewStateData Id="Assign_4" sap:VirtualizedContainerService.HintSize="901,60" />
       <sap2010:ViewStateData Id="Assign_5" sap:VirtualizedContainerService.HintSize="901,60" />
+      <sap2010:ViewStateData Id="Assign_16" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="LogMessage_7" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="Sequence_8" sap:VirtualizedContainerService.HintSize="336,315">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Assign_17" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="LogMessage_8" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="Sequence_9" sap:VirtualizedContainerService.HintSize="336,315">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Catch`1_3" sap:VirtualizedContainerService.HintSize="400,384">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="TryCatch_3" sap:VirtualizedContainerService.HintSize="901,546" />
       <sap2010:ViewStateData Id="Assign_8" sap:VirtualizedContainerService.HintSize="414,60" />
       <sap2010:ViewStateData Id="Assign_14" sap:VirtualizedContainerService.HintSize="414,60" />
       <sap2010:ViewStateData Id="SendMail_1" sap:VirtualizedContainerService.HintSize="314,145">
@@ -373,16 +429,16 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Catch`1_1" sap:VirtualizedContainerService.HintSize="400,469">
+      <sap2010:ViewStateData Id="Catch`1_1" sap:VirtualizedContainerService.HintSize="400,21">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
             <x:Boolean x:Key="IsPinned">False</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="414,631" />
-      <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="436,955">
+      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="414,183" />
+      <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="436,507">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -390,7 +446,6 @@
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="Assign_9" sap:VirtualizedContainerService.HintSize="418,60" />
-      <sap2010:ViewStateData Id="Assign_15" sap:VirtualizedContainerService.HintSize="418,60" />
       <sap2010:ViewStateData Id="SendMail_2" sap:VirtualizedContainerService.HintSize="314,145">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
@@ -437,16 +492,16 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_3" sap:VirtualizedContainerService.HintSize="440,951">
+      <sap2010:ViewStateData Id="Sequence_3" sap:VirtualizedContainerService.HintSize="440,851">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_3" sap:VirtualizedContainerService.HintSize="901,1103" />
+      <sap2010:ViewStateData Id="If_3" sap:VirtualizedContainerService.HintSize="901,999" />
       <sap2010:ViewStateData Id="LogMessage_2" sap:VirtualizedContainerService.HintSize="901,91" />
-      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="923,2944">
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="923,3426">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -454,7 +509,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="SendEmail_1" sap:VirtualizedContainerService.HintSize="963,3024" />
+      <sap2010:ViewStateData Id="SendEmail_1" sap:VirtualizedContainerService.HintSize="963,3506" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>

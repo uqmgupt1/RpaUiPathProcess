@@ -67,9 +67,9 @@
       <AssemblyReference>UiPath.Mail</AssemblyReference>
       <AssemblyReference>System.ValueTuple</AssemblyReference>
       <AssemblyReference>System.ComponentModel.Composition</AssemblyReference>
-      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
       <AssemblyReference>Microsoft.VisualStudio.Services.Common</AssemblyReference>
       <AssemblyReference>UiPath.Studio.Plugin.Workflow</AssemblyReference>
+      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence DisplayName="Unitask_UpdateTaskLog" sap2010:WorkflowViewState.IdRef="Sequence_4">
@@ -78,6 +78,8 @@
       <Variable x:TypeArguments="x:String" Name="json" />
       <Variable x:TypeArguments="x:String" Name="httpRequestResult" />
       <Variable x:TypeArguments="x:Int32" Name="httpRequestStatusCode" />
+      <Variable x:TypeArguments="scg:Dictionary(x:String, x:String)" Name="httpRequestHeaders" />
+      <Variable x:TypeArguments="x:String" Name="httpRequestHeadersText" />
     </Sequence.Variables>
     <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;Begin Unitask_UpdateTaskLog&quot;]" />
     <If sap2010:Annotation.AnnotationText="Unitask task log will be set to success or failed based on value of argument in_SuccessFail" Condition="[in_Success]" DisplayName="If in_Success" sap2010:WorkflowViewState.IdRef="If_1">
@@ -116,8 +118,8 @@
         <InArgument x:TypeArguments="x:String">["{'caseId': " + in_TransactionItem.Reference+ ",'applicantVisible': false,'comment': '" + aurionSuccessFail + "','createdByUsername': '" + System.Environment.UserName + "','createdBySubstituteUsername': null,'createNewTransaction': true}"]</InArgument>
       </Assign.Value>
     </Assign>
-    <WriteLine DisplayName="Write Line" Text="[&quot;json = &quot; + json]" sap2010:WorkflowViewState.IdRef="WriteLine_2" />
-    <ui:HttpClient ConsumerKey="{x:Null}" ConsumerSecret="{x:Null}" ContinueOnError="{x:Null}" OAuth1Token="{x:Null}" OAuth1TokenSecret="{x:Null}" OAuth2Token="{x:Null}" Password="{x:Null}" ResourcePath="{x:Null}" ResponseHeaders="{x:Null}" Username="{x:Null}" AcceptFormat="ANY" sap2010:Annotation.AnnotationText="Update Unitask task log with success or failed status with notes for failed tasks." Body="[json]" BodyFormat="application/xml" ClientCertificate="[Nothing]" ClientCertificatePassword="[Nothing]" DisplayName="HTTP Request" EndPoint="[in_Config(&quot;UnitaskURL&quot;).ToString + &quot;/bonita/API/extension/addCaseHistoryEvent&quot;]" sap2010:WorkflowViewState.IdRef="HttpClient_1" Method="PUT" Result="[httpRequestResult]" StatusCode="[httpRequestStatusCode]" TimeoutMS="6000">
+    <WriteLine DisplayName="Write Line" sap2010:WorkflowViewState.IdRef="WriteLine_2" Text="[&quot;json = &quot; + json]" />
+    <ui:HttpClient ConsumerKey="{x:Null}" ConsumerSecret="{x:Null}" ContinueOnError="{x:Null}" OAuth1Token="{x:Null}" OAuth1TokenSecret="{x:Null}" OAuth2Token="{x:Null}" Password="{x:Null}" ResourcePath="{x:Null}" Username="{x:Null}" AcceptFormat="ANY" sap2010:Annotation.AnnotationText="Update Unitask task log with success or failed status with notes for failed tasks." Body="[json]" BodyFormat="application/xml" ClientCertificate="[Nothing]" ClientCertificatePassword="[Nothing]" DisplayName="HTTP Request" EndPoint="[in_Config(&quot;UnitaskURL&quot;).ToString + &quot;/bonita/API/extension/addCaseHistoryEvent&quot;]" sap2010:WorkflowViewState.IdRef="HttpClient_1" Method="POST" ResponseHeaders="[httpRequestHeaders]" Result="[httpRequestResult]" StatusCode="[httpRequestStatusCode]" TimeoutMS="6000">
       <ui:HttpClient.Attachments>
         <scg:Dictionary x:TypeArguments="x:String, InArgument(x:String)" />
       </ui:HttpClient.Attachments>
@@ -135,8 +137,36 @@
       </ui:HttpClient.UrlSegments>
     </ui:HttpClient>
     <WriteLine DisplayName="Write Line" sap2010:WorkflowViewState.IdRef="WriteLine_1" Text="[&quot;HTTP Response: &quot; + httpRequestStatusCode.ToString + &quot; : &quot; + httpRequestResult]" />
+    <Assign sap2010:WorkflowViewState.IdRef="Assign_4">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">[httpRequestHeadersText]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">
+          <Literal x:TypeArguments="x:String" Value="" />
+        </InArgument>
+      </Assign.Value>
+    </Assign>
+    <ui:ForEach x:TypeArguments="x:Object" CurrentIndex="{x:Null}" DisplayName="For Each" sap2010:WorkflowViewState.IdRef="ForEach`1_2" Values="[httpRequestHeaders]">
+      <ui:ForEach.Body>
+        <ActivityAction x:TypeArguments="x:Object">
+          <ActivityAction.Argument>
+            <DelegateInArgument x:TypeArguments="x:Object" Name="item" />
+          </ActivityAction.Argument>
+          <Assign sap2010:WorkflowViewState.IdRef="Assign_5">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:String">[httpRequestHeadersText]</OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:String">[httpRequestHeadersText.Trim + vbNewLine + item.ToString]</InArgument>
+            </Assign.Value>
+          </Assign>
+        </ActivityAction>
+      </ui:ForEach.Body>
+    </ui:ForEach>
+    <WriteLine DisplayName="Write Line" sap2010:WorkflowViewState.IdRef="WriteLine_5" Text="[httpRequestHeadersText]" />
     <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_4" Level="Info" Message="[&quot;End Unitask_UpdateTaskLog&quot;]" />
-    <sads:DebugSymbol.Symbol>d3dDOlxVc2Vyc1x1cXNkZWJiZVxEb2N1bWVudHNcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcSFJfRml4ZWRUZXJtQXBwb2ludG1lbnRFeHBpcnlcVW5pdGFza1xVbml0YXNrX1VwZGF0ZVRhc2tMb2cueGFtbCJLA4wBDgIBAVIFUqABAgEtUwVuCgIBG28Fdg4CARd3BXd9AgEUeAWIARUCAQiJAQWJAcUBAgEEigEFigGeAQIBAlJyUp0BAgEuU5MBU6EBAgEcVQlfFAIBJmIJbBQCAR50MHSgAgIBGnExcTcCARh3LndMAgEVePMDeP4DAgETeJIGeJgGAgESeJUDeJ0DAgEQeM0FeOIFAgEOeKMEeIkFAgEMeM0DeNgDAgELeO4FeIcGAgEJiQFciQHCAQIBBYoBcooBmwECAQNWC10UAgEpXgte5AECASdjC2oUAgEhawtr4QECAR9bNltOAgEsWDdYSgIBKl54XuEBAgEoaDZoYgIBJGU3ZUoCASJreGveAQIBIA==</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d3dDOlxVc2Vyc1x1cXNkZWJiZVxEb2N1bWVudHNcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcSFJfRml4ZWRUZXJtQXBwb2ludG1lbnRFeHBpcnlcVW5pdGFza1xVbml0YXNrX1VwZGF0ZVRhc2tMb2cueGFtbC1LA6oBDgIBAVQFVKABAgE9VQVwCgIBK3EFeA4CASd5BXl9AgEkegWKARUCARaLAQWLAcUBAgESjAEFlQEOAgEOlgEFpgESAgEHpwEFpwF5AgEEqAEFqAGeAQIBAlRyVJ0BAgE+VZMBVaEBAgEsVwlhFAIBNmQJbhQCAS52MHagAgIBKnMxczcCASh5XHl6AgEletgDeuMDAgEjep8GeqUGAgEievoCeoIDAgEgetoFeu8FAgEeeogEeu4EAgEcerIDer0DAgEbevsFepQGAgEZerwFetIFAgEXiwFciwHCAQIBE5IBC5IBOgIBEY4BMY4BSQIBD5YBkAGWAaYBAgEMnAELowEUAgEIpwFcpwF2AgEFqAFyqAGbAQIBA1gLXxQCATlgC2DkAQIBN2ULbBQCATFtC23hAQIBL6EBNqEBbwIBC54BN54BTwIBCV02XU4CATxaN1pKAgE6YHhg4QECAThqNmpiAgE0ZzdnSgIBMm14bd4BAgEw</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -178,15 +208,19 @@
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="WriteLine_1" sap:VirtualizedContainerService.HintSize="697,61" />
+      <sap2010:ViewStateData Id="Assign_4" sap:VirtualizedContainerService.HintSize="697,60" />
+      <sap2010:ViewStateData Id="Assign_5" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="ForEach`1_2" sap:VirtualizedContainerService.HintSize="697,194" />
+      <sap2010:ViewStateData Id="WriteLine_5" sap:VirtualizedContainerService.HintSize="697,61" />
       <sap2010:ViewStateData Id="LogMessage_4" sap:VirtualizedContainerService.HintSize="697,91" />
-      <sap2010:ViewStateData Id="Sequence_4" sap:VirtualizedContainerService.HintSize="719,1297">
+      <sap2010:ViewStateData Id="Sequence_4" sap:VirtualizedContainerService.HintSize="719,1732">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Unitask_UpdateTaskLog_1" sap:VirtualizedContainerService.HintSize="759,1417" />
+      <sap2010:ViewStateData Id="Unitask_UpdateTaskLog_1" sap:VirtualizedContainerService.HintSize="759,1812" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
