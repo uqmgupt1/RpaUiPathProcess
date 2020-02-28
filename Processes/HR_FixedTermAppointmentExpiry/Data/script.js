@@ -1,11 +1,16 @@
-function(element,input){
-	var xhr = new XMLHttpRequest();
-	xhr.open("POST","yourUrl",true);
-	xhr.setRequestHeader('Content-Type','application/json');
-	xhr.send(JSON.stringify(jsonText));
-	xhr.onreadystatechange = function(){
-		if (xhr.readyState == 4){
-			xhr.status
-			}
-		}
-	};
+async function(element, input) {
+	let status;
+	let response = await fetch("yourUrl", {
+		method:"POST",
+		headers: {
+      			'Content-Type': 'application/json'
+      		},
+		body: JSON.stringify(jsonText),
+	})
+	//.then(data => {return data.json()})
+	//.then(data => console.log(data.json()))
+	.then(res => {status = res.status;})
+	.catch(error => console.log(error));
+        document.getElementsByTagName('iframe')[0].contentDocument.getElementById('taskName').value = status
+return;
+}
