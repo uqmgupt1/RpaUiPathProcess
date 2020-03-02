@@ -3,6 +3,7 @@
  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
  xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities"
  xmlns:p="http://schemas.microsoft.com/workflow/2012/07/xaml/activities"
+ xmlns:s="clr-namespace:System;assembly=mscorlib"
  xmlns:sads="http://schemas.microsoft.com/netfx/2010/xaml/activities/debugger"
  xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
@@ -72,65 +73,89 @@
     <Sequence.Variables>
       <Variable x:TypeArguments="x:String" Name="text" />
     </Sequence.Variables>
-    <ui:RetryScope DisplayName="Retry Scope Select" sap2010:WorkflowViewState.IdRef="RetryScope_1" NumberOfRetries="3" RetryInterval="00:00:05">
-      <ui:RetryScope.ActivityBody>
-        <ActivityAction>
-          <Sequence DisplayName="Action" sap2010:WorkflowViewState.IdRef="Sequence_1">
-            <Sequence.Variables>
-              <Variable x:TypeArguments="ui:UiElement" Name="element" />
-            </Sequence.Variables>
-            <If Condition="[in_Scope Is Nothing]" DisplayName="If scope defined" sap2010:WorkflowViewState.IdRef="If_1">
+    <TryCatch DisplayName="Try Catch">
+      <TryCatch.Try>
+        <ui:RetryScope DisplayName="Retry Scope Select" sap2010:WorkflowViewState.IdRef="RetryScope_1" NumberOfRetries="3" RetryInterval="00:00:05">
+          <ui:RetryScope.ActivityBody>
+            <ActivityAction>
+              <Sequence DisplayName="Action" sap2010:WorkflowViewState.IdRef="Sequence_1">
+                <Sequence.Variables>
+                  <Variable x:TypeArguments="ui:UiElement" Name="element" />
+                </Sequence.Variables>
+                <If Condition="[in_Scope Is Nothing]" DisplayName="If scope defined" sap2010:WorkflowViewState.IdRef="If_1">
+                  <If.Then>
+                    <ui:WaitUiElementAppear DisplayName="Find Full Element" FoundElement="[element]" sap2010:WorkflowViewState.IdRef="WaitUiElementAppear_1" WaitActive="False" WaitVisible="False">
+                      <ui:WaitUiElementAppear.Target>
+                        <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Selector="[in_Selector]" TimeoutMS="1000" WaitForReady="COMPLETE" />
+                      </ui:WaitUiElementAppear.Target>
+                    </ui:WaitUiElementAppear>
+                  </If.Then>
+                  <If.Else>
+                    <ui:ElementScope UiElement="{x:Null}" DisplayName="Element Scope" sap2010:WorkflowViewState.IdRef="ElementScope_1">
+                      <ui:ElementScope.Body>
+                        <ActivityAction x:TypeArguments="x:Object">
+                          <ActivityAction.Argument>
+                            <DelegateInArgument x:TypeArguments="x:Object" Name="ContextTarget" />
+                          </ActivityAction.Argument>
+                          <ui:WaitUiElementAppear DisplayName="Find Sub Element" FoundElement="[element]" sap2010:WorkflowViewState.IdRef="WaitUiElementAppear_2" WaitActive="False" WaitVisible="False">
+                            <ui:WaitUiElementAppear.Target>
+                              <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Selector="[in_Selector]" TimeoutMS="1000" WaitForReady="COMPLETE" />
+                            </ui:WaitUiElementAppear.Target>
+                          </ui:WaitUiElementAppear>
+                        </ActivityAction>
+                      </ui:ElementScope.Body>
+                      <ui:ElementScope.Target>
+                        <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Selector="[in_Scope.Selector.Text]" TimeoutMS="1000" WaitForReady="INTERACTIVE" />
+                      </ui:ElementScope.Target>
+                    </ui:ElementScope>
+                  </If.Else>
+                </If>
+                <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Trace" Message="[&quot;Setting dropdown &quot; + in_Selector + &quot; to &quot; + If(in_Entry.Length &lt; 20, in_Entry, in_Entry.Substring(0, 20) + &quot;...&quot;)]" />
+                <ui:SelectItem ContinueOnError="{x:Null}" Items="{x:Null}" DelayAfter="50" DelayBefore="5" DisplayName="Select Item" sap2010:WorkflowViewState.IdRef="SelectItem_1" Item="[in_Entry]">
+                  <ui:SelectItem.Target>
+                    <ui:Target ClippingRegion="{x:Null}" Selector="{x:Null}" TimeoutMS="{x:Null}" Element="[element]" WaitForReady="INTERACTIVE" />
+                  </ui:SelectItem.Target>
+                </ui:SelectItem>
+                <ui:GetValue ContinueOnError="{x:Null}" DisplayName="Get Selected" sap2010:WorkflowViewState.IdRef="GetValue_1">
+                  <ui:GetValue.Target>
+                    <ui:Target ClippingRegion="{x:Null}" Selector="{x:Null}" TimeoutMS="{x:Null}" Element="[element]" WaitForReady="INTERACTIVE" />
+                  </ui:GetValue.Target>
+                  <ui:GetValue.Value>
+                    <OutArgument x:TypeArguments="x:String">[text]</OutArgument>
+                  </ui:GetValue.Value>
+                </ui:GetValue>
+              </Sequence>
+            </ActivityAction>
+          </ui:RetryScope.ActivityBody>
+          <ui:RetryScope.Condition>
+            <ActivityFunc x:TypeArguments="x:Boolean">
+              <p:IsTrue DisplayName="Is equal" sap2010:WorkflowViewState.IdRef="IsTrue_1" Input="[in_Entry = text]" />
+            </ActivityFunc>
+          </ui:RetryScope.Condition>
+        </ui:RetryScope>
+      </TryCatch.Try>
+      <TryCatch.Catches>
+        <Catch x:TypeArguments="s:Exception">
+          <ActivityAction x:TypeArguments="s:Exception">
+            <ActivityAction.Argument>
+              <DelegateInArgument x:TypeArguments="s:Exception" Name="exception" />
+            </ActivityAction.Argument>
+            <If Condition="[exception.InnerException Is Nothing]">
               <If.Then>
-                <ui:WaitUiElementAppear DisplayName="Find Full Element" FoundElement="[element]" sap2010:WorkflowViewState.IdRef="WaitUiElementAppear_1" WaitActive="False" WaitVisible="False">
-                  <ui:WaitUiElementAppear.Target>
-                    <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Selector="[in_Selector]" TimeoutMS="1000" WaitForReady="COMPLETE" />
-                  </ui:WaitUiElementAppear.Target>
-                </ui:WaitUiElementAppear>
+                <Rethrow sap2010:WorkflowViewState.IdRef="Rethrow_1" />
               </If.Then>
               <If.Else>
-                <ui:ElementScope UiElement="{x:Null}" DisplayName="Element Scope" sap2010:WorkflowViewState.IdRef="ElementScope_1">
-                  <ui:ElementScope.Body>
-                    <ActivityAction x:TypeArguments="x:Object">
-                      <ActivityAction.Argument>
-                        <DelegateInArgument x:TypeArguments="x:Object" Name="ContextTarget" />
-                      </ActivityAction.Argument>
-                      <ui:WaitUiElementAppear DisplayName="Find Sub Element" FoundElement="[element]" sap2010:WorkflowViewState.IdRef="WaitUiElementAppear_2" WaitActive="False" WaitVisible="False">
-                        <ui:WaitUiElementAppear.Target>
-                          <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Selector="[in_Selector]" TimeoutMS="1000" WaitForReady="COMPLETE" />
-                        </ui:WaitUiElementAppear.Target>
-                      </ui:WaitUiElementAppear>
-                    </ActivityAction>
-                  </ui:ElementScope.Body>
-                  <ui:ElementScope.Target>
-                    <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Selector="[in_Scope.Selector.Text]" TimeoutMS="1000" WaitForReady="INTERACTIVE" />
-                  </ui:ElementScope.Target>
-                </ui:ElementScope>
+                <Throw DisplayName="Throw inner exception" Exception="[exception.InnerException]" sap2010:WorkflowViewState.IdRef="Throw_1" />
               </If.Else>
+              <sap2010:WorkflowViewState.IdRef>If_2</sap2010:WorkflowViewState.IdRef>
             </If>
-            <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Trace" Message="[&quot;Setting dropdown &quot; + in_Selector + &quot; to &quot; + If(in_Entry.Length &lt; 20, in_Entry, in_Entry.Substring(0, 20) + &quot;...&quot;)]" />
-            <ui:SelectItem ContinueOnError="{x:Null}" Items="{x:Null}" DelayAfter="50" DelayBefore="5" DisplayName="Select Item" sap2010:WorkflowViewState.IdRef="SelectItem_1" Item="[in_Entry]">
-              <ui:SelectItem.Target>
-                <ui:Target ClippingRegion="{x:Null}" Selector="{x:Null}" TimeoutMS="{x:Null}" Element="[element]" WaitForReady="INTERACTIVE" />
-              </ui:SelectItem.Target>
-            </ui:SelectItem>
-            <ui:GetValue ContinueOnError="{x:Null}" DisplayName="Get Selected" sap2010:WorkflowViewState.IdRef="GetValue_1">
-              <ui:GetValue.Target>
-                <ui:Target ClippingRegion="{x:Null}" Selector="{x:Null}" TimeoutMS="{x:Null}" Element="[element]" WaitForReady="INTERACTIVE" />
-              </ui:GetValue.Target>
-              <ui:GetValue.Value>
-                <OutArgument x:TypeArguments="x:String">[text]</OutArgument>
-              </ui:GetValue.Value>
-            </ui:GetValue>
-          </Sequence>
-        </ActivityAction>
-      </ui:RetryScope.ActivityBody>
-      <ui:RetryScope.Condition>
-        <ActivityFunc x:TypeArguments="x:Boolean">
-          <p:IsTrue DisplayName="Is equal" sap2010:WorkflowViewState.IdRef="IsTrue_1" Input="[in_Entry = text]" />
-        </ActivityFunc>
-      </ui:RetryScope.Condition>
-    </ui:RetryScope>
-    <sads:DebugSymbol.Symbol>d19DOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUk1TX0hSRUFGb3JtRGF0YUV4dHJhY3Rpb25cTkhNUkNcRGF0YUVudHJ5XExpc3RTZWxlY3QueGFtbB5HA4YBDgIBAUsFhAEVAgECS4YBS5ABAgEuS3RLdwIBLU4LfBYCAQeBAQuBAXMCAQNSDW0SAgEcbg1ulQICARZvDXMdAgEOdA17GwIBCIEBXYEBcAIBBFIbUjICAR1UEVgqAgEnWxFrIwIBHm57bpICAgEXb1NvVwIBE29kb2cCARJvtgFvwgECARBxZ3FyAgEUeTl5PwIBCnZndnICAQxUVlRhAgErVlZWZQIBKVZwVnYCAShpVmlwAgEmaXtpgQECASVhF2UwAgEfYVthZgIBI2NcY2sCASFjdmN8AgEg</sads:DebugSymbol.Symbol>
+          </ActivityAction>
+          <sap2010:WorkflowViewState.IdRef>Catch`1_1</sap2010:WorkflowViewState.IdRef>
+        </Catch>
+      </TryCatch.Catches>
+      <sap2010:WorkflowViewState.IdRef>TryCatch_1</sap2010:WorkflowViewState.IdRef>
+    </TryCatch>
+    <sads:DebugSymbol.Symbol>d19DOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUk1TX0hSRUFGb3JtRGF0YUV4dHJhY3Rpb25cTkhNUkNcRGF0YUVudHJ5XExpc3RTZWxlY3QueGFtbCRIA58BDgIBAUwFnQEQAgECTgmHARkCAQqPAQ2XARICAQNOigFOlAECATZOeE57AgE1UQ9/GgIBD4QBD4QBdwIBC48BG48BQgIBBJEBEZEBSAIBCZQBEZQBjwECAQZVEXAWAgEkcRFxmQICAR5yEXYhAgEWdxF+HwIBEIQBYYQBdAIBDJQBRpQBYgIBB1UfVTYCASVXFVsuAgEvXhVuJwIBJnF/cZYCAgEfcldyWwIBG3JocmsCARpyugFyxgECARh0a3R2AgEcfD18QwIBEnlreXYCARRXWldlAgEzWVpZaQIBMVl0WXoCATBsWmx0AgEubH9shQECAS1kG2g0AgEnZF9kagIBK2ZgZm8CASlmemaAAQIBKA==</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -157,14 +182,26 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="819,1127">
+      <sap2010:ViewStateData Id="Rethrow_1" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="Throw_1" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="If_2" sap:VirtualizedContainerService.HintSize="464,208" />
+      <sap2010:ViewStateData Id="Catch`1_1" sap:VirtualizedContainerService.HintSize="801,21">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="815,1230" />
+      <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="837,1354">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="ListSelect_1" sap:VirtualizedContainerService.HintSize="859,1247" />
+      <sap2010:ViewStateData Id="ListSelect_1" sap:VirtualizedContainerService.HintSize="877,1434" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>

@@ -1,7 +1,8 @@
-﻿<Activity mc:Ignorable="sap sap2010 sads" x:Class="Process_EnterNewApplication" mva:VisualBasic.Settings="{x:Null}" sap2010:WorkflowViewState.IdRef="Process_EnterNewApplication_1"
+﻿<Activity mc:Ignorable="sap sap2010 sads" x:Class="Process_EnterNewApplication"
  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
  xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities"
+ xmlns:s="clr-namespace:System;assembly=mscorlib"
  xmlns:sads="http://schemas.microsoft.com/netfx/2010/xaml/activities/debugger"
  xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
@@ -10,6 +11,13 @@
  xmlns:sxl="clr-namespace:System.Xml.Linq;assembly=System.Xml.Linq"
  xmlns:ui="http://schemas.uipath.com/workflow/activities"
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <x:Members>
+    <x:Property Name="in_XMLApplication" Type="InArgument(sxl:XElement)" />
+  </x:Members>
+  <mva:VisualBasic.Settings>
+    <x:Null />
+  </mva:VisualBasic.Settings>
+  <sap2010:WorkflowViewState.IdRef>Process_EnterNewApplication_1</sap2010:WorkflowViewState.IdRef>
   <TextExpression.NamespacesForImplementation>
     <sco:Collection x:TypeArguments="x:String">
       <x:String>System.Activities</x:String>
@@ -58,59 +66,16 @@
       <AssemblyReference>System.ServiceModel</AssemblyReference>
       <AssemblyReference>System.ValueTuple</AssemblyReference>
       <AssemblyReference>System.ComponentModel.Composition</AssemblyReference>
+      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
-  <Sequence DisplayName="Process_EnterNewApplication" sap2010:WorkflowViewState.IdRef="Sequence_1">
+  <Sequence sap2010:Annotation.AnnotationText="Takes an Application.xml file and enters this data into a new HREA application form." DisplayName="Process_EnterNewApplication" sap2010:WorkflowViewState.IdRef="Sequence_1">
     <Sequence.Variables>
       <Variable x:TypeArguments="x:String" Default="\\nas02.storage.uq.edu.au\CA\ITS\Academic Services\RPA\DEV\RMS_HREAFormDataExtraction\" Name="rootPath" />
       <Variable x:TypeArguments="x:String" Name="rootDrive" />
       <Variable x:TypeArguments="x:String" Default="\\nas02.storage.uq.edu.au\CA\ITS\Academic Services\RPA\DEV\RMS_HREAFormDataExtraction\New Application\dev.xml" Name="testFile" />
-      <Variable x:TypeArguments="sxl:XElement" Name="xmlApplication" />
+      <Variable x:TypeArguments="s:DateTime" Default="[Now]" Name="startTime" />
     </Sequence.Variables>
-    <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke MountFileServer workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_1" UnSafe="False" WorkflowFileName="FileServing\MountFileServer.xaml">
-      <ui:InvokeWorkflowFile.Arguments>
-        <InArgument x:TypeArguments="x:String" x:Key="in_Credentials">my creds</InArgument>
-        <InArgument x:TypeArguments="x:String" x:Key="in_MappedDrive">[rootPath.TrimEnd("\"c)]</InArgument>
-        <OutArgument x:TypeArguments="x:String" x:Key="out_DriveLetter">[rootDrive]</OutArgument>
-      </ui:InvokeWorkflowFile.Arguments>
-    </ui:InvokeWorkflowFile>
-    <Assign DisplayName="Assign local test file" sap2010:WorkflowViewState.IdRef="Assign_1">
-      <Assign.To>
-        <OutArgument x:TypeArguments="x:String">[testFile]</OutArgument>
-      </Assign.To>
-      <Assign.Value>
-        <InArgument x:TypeArguments="x:String">[testFile.Replace(rootPath, rootDrive)]</InArgument>
-      </Assign.Value>
-    </Assign>
-    <Assign DisplayName="Assign loaded xelement" sap2010:WorkflowViewState.IdRef="Assign_2">
-      <Assign.To>
-        <OutArgument x:TypeArguments="sxl:XElement">[xmlApplication]</OutArgument>
-      </Assign.To>
-      <Assign.Value>
-        <InArgument x:TypeArguments="sxl:XElement">[XElement.Load(testFile)]</InArgument>
-      </Assign.Value>
-    </Assign>
-    <ui:ForEach x:TypeArguments="sxl:XElement" CurrentIndex="{x:Null}" DisplayName="For Each" sap2010:WorkflowViewState.IdRef="ForEach`1_2" Values="[xmlApplication.DescendantsAndSelf]">
-      <ui:ForEach.Body>
-        <ActivityAction x:TypeArguments="sxl:XElement">
-          <ActivityAction.Argument>
-            <DelegateInArgument x:TypeArguments="sxl:XElement" Name="element" />
-          </ActivityAction.Argument>
-          <If Condition="[Not element.HasElements AndAlso element.Value.Contains(rootPath)]" DisplayName="If has value and contains path" sap2010:WorkflowViewState.IdRef="If_1">
-            <If.Then>
-              <Assign DisplayName="Assign short drive" sap2010:WorkflowViewState.IdRef="Assign_3">
-                <Assign.To>
-                  <OutArgument x:TypeArguments="x:String">[element.Value]</OutArgument>
-                </Assign.To>
-                <Assign.Value>
-                  <InArgument x:TypeArguments="x:String">[element.Value.Replace(rootPath, rootDrive)]</InArgument>
-                </Assign.Value>
-              </Assign>
-            </If.Then>
-          </If>
-        </ActivityAction>
-      </ui:ForEach.Body>
-    </ui:ForEach>
     <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke HREALogin workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_2" UnSafe="False" WorkflowFileName="NHMRC\HREALogin.xaml">
       <ui:InvokeWorkflowFile.Arguments>
         <scg:Dictionary x:TypeArguments="x:String, Argument" />
@@ -118,29 +83,26 @@
     </ui:InvokeWorkflowFile>
     <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke HREANewApplication workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_3" UnSafe="False" WorkflowFileName="NHMRC\HREANewApplication.xaml">
       <ui:InvokeWorkflowFile.Arguments>
-        <InArgument x:TypeArguments="sxl:XElement" x:Key="in_ApplicationDetails">[xmlApplication]</InArgument>
+        <InArgument x:TypeArguments="sxl:XElement" x:Key="in_ApplicationDetails">[in_XMLApplication]</InArgument>
       </ui:InvokeWorkflowFile.Arguments>
     </ui:InvokeWorkflowFile>
-    <sads:DebugSymbol.Symbol>d2BDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUk1TX0hSRUFGb3JtRGF0YUV4dHJhY3Rpb25cUHJvY2Vzc19FbnRlck5ld0FwcGxpY2F0aW9uLnhhbWwaPwN9DgIBAUE0QYwBAgEDQzRDowECAQJGBUwdAgEcTQVUDgIBFVUFXA4CARFdBXESAgEKcgV2HQIBCHcFex0CAQRKSUpUAgEhSEdITwIBIElHSV8CAR5GvAFG3gECAR1SMFJXAgEYTzFPOwIBFlo0Wk0CARRXNVdFAgESXZQBXbkBAgEQYwtuEAIBC3K2AXLMAQIBCXlSeWICAQZ3vwF33gECAQVjGWNdAgEMZQ9sGAIBDWo6amYCAQ9nO2dKAgEO</sads:DebugSymbol.Symbol>
+    <ui:LogMessage DisplayName="Log Message" Level="Info" Message="[&quot;Data entry took &quot; &amp; (Now - startTime).ToString]" sap2010:WorkflowViewState.IdRef="LogMessage_1" />
+    <sads:DebugSymbol.Symbol>d2BDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUk1TX0hSRUFGb3JtRGF0YUV4dHJhY3Rpb25cUHJvY2Vzc19FbnRlck5ld0FwcGxpY2F0aW9uLnhhbWwLSANbDgIBAUo0SowBAgEETDRMowECAQNNNk09AgECTwVTHQIBC1QFWB0CAQdZBVm2AQIBBU+2AU/MAQIBDFZSVmUCAQlUvwFU3gECAQhZQ1mEAQIBBg==</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_1" sap:VirtualizedContainerService.HintSize="480,87" />
-      <sap2010:ViewStateData Id="Assign_1" sap:VirtualizedContainerService.HintSize="480,60" />
-      <sap2010:ViewStateData Id="Assign_2" sap:VirtualizedContainerService.HintSize="480,60" />
-      <sap2010:ViewStateData Id="Assign_3" sap:VirtualizedContainerService.HintSize="242,60" />
-      <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="464,208" />
-      <sap2010:ViewStateData Id="ForEach`1_2" sap:VirtualizedContainerService.HintSize="480,342" />
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_2" sap:VirtualizedContainerService.HintSize="480,87" />
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_3" sap:VirtualizedContainerService.HintSize="480,87" />
-      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="502,1047">
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_2" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_3" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="LogMessage_1" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="336,511">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsAnnotationDocked">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Process_EnterNewApplication_1" sap:VirtualizedContainerService.HintSize="542,1127" />
+      <sap2010:ViewStateData Id="Process_EnterNewApplication_1" sap:VirtualizedContainerService.HintSize="376,591" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
