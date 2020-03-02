@@ -2,6 +2,8 @@
  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
  xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities"
+ xmlns:p="http://schemas.microsoft.com/workflow/2012/07/xaml/activities"
+ xmlns:s="clr-namespace:System;assembly=mscorlib"
  xmlns:sads="http://schemas.microsoft.com/netfx/2010/xaml/activities/debugger"
  xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
@@ -43,6 +45,7 @@
       <x:String>System.Windows.Markup</x:String>
       <x:String>UiPath.Core</x:String>
       <x:String>UiPath.Core.Activities</x:String>
+      <x:String>Microsoft.VisualBasic.CompilerServices</x:String>
     </sco:Collection>
   </TextExpression.NamespacesForImplementation>
   <TextExpression.ReferencesForImplementation>
@@ -73,7 +76,7 @@
       <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
-  <Sequence DisplayName="Unitask_UpdateTaskLog" sap2010:WorkflowViewState.IdRef="Sequence_4">
+  <Sequence sap2010:Annotation.AnnotationText="An entry is created in &quot;Recommendations and advice&quot; to reflect the success or failure of the processed queue item.  A java script is run in a browser running Unitask.  This bypasses the need to authenticate the java script.  The java script POSTs a JSON file which creates an entry in the Unitask task's log which is listed in the &quot;Recommendations and advise&quot; section.  The java script output result is scraped from the &quot;Task Name&quot; field in the &quot;UQ Custom Worklist&quot; browser.  &quot;200&quot; indicates a successful creation of the log entry.&#xD;&#xA;&#xD;&#xA;in_Arg&#xD;&#xA;   in_systemErrorNotes                  String&#xD;&#xA;   in_Config                                     Dictionary(String,Object)&#xD;&#xA;   in_TransactionItem                     QueueItem&#xD;&#xA;   in_Success                                    Boolean&#xD;&#xA;   in_uqCustomWorklistBrowser   Browser&#xD;&#xA;" DisplayName="Unitask_UpdateTaskLog" sap2010:WorkflowViewState.IdRef="Sequence_4">
     <Sequence.Variables>
       <Variable x:TypeArguments="x:String" Name="aurionSuccessFail" />
       <Variable x:TypeArguments="x:String" Name="json" />
@@ -84,7 +87,6 @@
       <Variable x:TypeArguments="x:String" Name="js" />
       <Variable x:TypeArguments="x:String" Name="url" />
       <Variable x:TypeArguments="x:String" Name="taskNameResult" />
-      <Variable x:TypeArguments="ui:UiElement" Name="taskNameAttribute" />
     </Sequence.Variables>
     <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;Begin Unitask_UpdateTaskLog&quot;]" />
     <If sap2010:Annotation.AnnotationText="Unitask task log will be set to success or failed based on value of argument in_SuccessFail" Condition="[in_Success]" DisplayName="If in_Success" sap2010:WorkflowViewState.IdRef="If_1">
@@ -173,20 +175,50 @@
                 <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Selector="{x:Null}" TimeoutMS="{x:Null}" WaitForReady="COMPLETE" />
               </ui:InjectJsScript.Target>
             </ui:InjectJsScript>
-            <ui:WaitUiElementAppear DisplayName="Find Element 'Task Name'" FoundElement="[taskNameAttribute]" sap2010:WorkflowViewState.IdRef="WaitUiElementAppear_1" WaitActive="False" WaitVisible="True">
-              <ui:WaitUiElementAppear.Target>
-                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="6fc4b780da184221ccddc0876499f6c6" Selector="&lt;webctrl src='../../../portal/resource/app/worklist/worklist/content/' tag='IFRAME' /&gt;&lt;webctrl id='taskName' tag='INPUT' /&gt;" WaitForReady="COMPLETE" />
-              </ui:WaitUiElementAppear.Target>
-            </ui:WaitUiElementAppear>
-            <ui:WaitAttribute TimeoutMS="{x:Null}" sap2010:Annotation.AnnotationText="'Task Name' &quot;readyState&quot; is &quot;1&quot;" Attribute="readyState" AttributeValue="[&quot;1&quot;]" DisplayName="Wait Attribute" Element="[taskNameAttribute]" sap2010:WorkflowViewState.IdRef="WaitAttribute_1" />
-            <ui:GetFullText DisplayName="Get Full Text 'Task Name'" sap2010:WorkflowViewState.IdRef="GetFullText_1" IgnoreHidden="False">
-              <ui:GetFullText.Target>
-                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="e69e294ad66a1e7d697951448d2b21dd" Selector="&lt;webctrl tag='IFRAME' /&gt;&lt;webctrl id='taskName' tag='INPUT' /&gt;" WaitForReady="COMPLETE" />
-              </ui:GetFullText.Target>
-              <ui:GetFullText.Text>
-                <OutArgument x:TypeArguments="x:String">[taskNameResult]</OutArgument>
-              </ui:GetFullText.Text>
-            </ui:GetFullText>
+            <TryCatch DisplayName="TC: Retry Scope : Get Full Text 'Task Name'" sap2010:WorkflowViewState.IdRef="TryCatch_1">
+              <TryCatch.Try>
+                <ui:RetryScope DisplayName="Retry Scope : Get Full Text 'Task Name'" sap2010:WorkflowViewState.IdRef="RetryScope_1" NumberOfRetries="10" RetryInterval="00:00:01">
+                  <ui:RetryScope.ActivityBody>
+                    <ActivityAction>
+                      <Sequence DisplayName="Action" sap2010:WorkflowViewState.IdRef="Sequence_6">
+                        <Assign DisplayName="Assign taskNameResult = &quot;&quot;" sap2010:WorkflowViewState.IdRef="Assign_10">
+                          <Assign.To>
+                            <OutArgument x:TypeArguments="x:String">[taskNameResult]</OutArgument>
+                          </Assign.To>
+                          <Assign.Value>
+                            <InArgument x:TypeArguments="x:String">
+                              <Literal x:TypeArguments="x:String" Value="" />
+                            </InArgument>
+                          </Assign.Value>
+                        </Assign>
+                        <ui:GetValue ContinueOnError="{x:Null}" DisplayName="Get Text 'Task Name'" sap2010:WorkflowViewState.IdRef="GetValue_1">
+                          <ui:GetValue.Target>
+                            <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="b4e029231d44bfcc5a00b76c86044c90" Selector="&lt;webctrl tag='IFRAME' /&gt;&lt;webctrl id='taskName' tag='INPUT' /&gt;" WaitForReady="COMPLETE" />
+                          </ui:GetValue.Target>
+                          <ui:GetValue.Value>
+                            <OutArgument x:TypeArguments="x:String">[taskNameResult]</OutArgument>
+                          </ui:GetValue.Value>
+                        </ui:GetValue>
+                      </Sequence>
+                    </ActivityAction>
+                  </ui:RetryScope.ActivityBody>
+                  <ui:RetryScope.Condition>
+                    <ActivityFunc x:TypeArguments="x:Boolean">
+                      <p:IsTrue sap2010:Annotation.AnnotationText="taskNameResult &lt;&gt; &quot;&quot;" DisplayName="Is true" sap2010:WorkflowViewState.IdRef="IsTrue_1" Input="[taskNameResult &lt;&gt; &quot;&quot;]" />
+                    </ActivityFunc>
+                  </ui:RetryScope.Condition>
+                </ui:RetryScope>
+              </TryCatch.Try>
+              <TryCatch.Catches>
+                <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch`1_1">
+                  <ActivityAction x:TypeArguments="s:Exception">
+                    <ActivityAction.Argument>
+                      <DelegateInArgument x:TypeArguments="s:Exception" Name="exception" />
+                    </ActivityAction.Argument>
+                  </ActivityAction>
+                </Catch>
+              </TryCatch.Catches>
+            </TryCatch>
             <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_5" Level="Info" Message="[&quot;Task log update result is &quot;&quot;&quot; + taskNameResult + &quot;&quot;&quot;&quot;]" />
             <If Condition="[taskNameResult.Trim.Equals(&quot;200&quot;)]" DisplayName="If taskNameResult.Trim.Equals(&quot;200&quot;)" sap2010:WorkflowViewState.IdRef="If_2">
               <If.Then>
@@ -201,11 +233,11 @@
       </ui:BrowserScope.Body>
     </ui:BrowserScope>
     <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_4" Level="Info" Message="[&quot;End Unitask_UpdateTaskLog&quot;]" />
-    <sads:DebugSymbol.Symbol>d3dDOlxVc2Vyc1x1cXNkZWJiZVxEb2N1bWVudHNcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcSFJfRml4ZWRUZXJtQXBwb2ludG1lbnRFeHBpcnlcVW5pdGFza1xVbml0YXNrX1VwZGF0ZVRhc2tMb2cueGFtbD1MA80BDgIBAVkFWaABAgFSWgV1CgIBQHYFygEXAgEEywEFywGeAQIBAllyWZ0BAgFTWpMBWqEBAgFBXAlmFAIBS2kJcxQCAUN2c3aRAQIBPnwLxwEWAgEFywFyywGbAQIBA10LZBQCAU5lC2XkAQIBTGoLcRQCAUZyC3LhAQIBRH0NgQEbAgE9ggENiQEWAgE5igENkQEWAgE1kgENkgGXAQIBMZMBDZoBFgIBLJsBDaIBFgIBJqMBDaoBFgIBIKsBDa8BIQIBHbABDbQBJgIBGbUBDbUBswICARS2AQ29AR4CARC+AQ2+Ad8BAgENvwENxgESAgEGYjZiTgIBUV83X0oCAU9leGXhAQIBTW82b2ICAUlsN2xKAgFHcnhy3gECAUWHATiHAT8CATyEATmEAUkCATqPATiPAagCAgE4jAE5jAE/AgE2kgFTkgFjAgE0kgEmkgEsAgEymAE4mAGIAQIBL5UBOZUBPgIBLaABOKABUwIBKZ0BOZ0BPQIBJ6gBOKgBVQIBI6UBOaUBPQIBIasBrwGrAbUBAgEesAFZsAFuAgEbsgGgAbIBqQICARq1AbIBtQHDAQIBGLUBlgG1AaIBAgEXtQHpAbUB/gECARW4AaABuAHrAQIBE7sBObsBSQIBEb4Ber4B3AECAQ6/ARu/AUoCAQfBARHBAaIBAgELxAERxAGqAQIBCcEBfsEBnwECAQzEAX/EAacBAgEK</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d3dDOlxVc2Vyc1x1cXNkZWJiZVxEb2N1bWVudHNcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcSFJfRml4ZWRUZXJtQXBwb2ludG1lbnRFeHBpcnlcVW5pdGFza1xVbml0YXNrX1VwZGF0ZVRhc2tMb2cueGFtbEBPA+0BDgIBAVsFW6ABAgFVXAV3CgIBQ3gF6gEXAgEE6wEF6wGeAQIBAltyW50BAgFWXJMBXKEBAgFEXgloFAIBTmsJdRQCAUZ4c3iRAQIBQX4L5wEWAgEF6wFy6wGbAQIBA18LZhQCAVFnC2fkAQIBT2wLcxQCAUl0C3ThAQIBR38NgwEbAgFAhAENiwEWAgE8jAENkwEWAgE4lAENlAGXAQIBNJUBDZwBFgIBL50BDaQBFgIBKaUBDawBFgIBI60BDbEBIQIBILIBDd0BGAIBEN4BDd4B3wECAQ3fAQ3mARICAQZkNmROAgFUYTdhSgIBUmd4Z+EBAgFQcTZxYgIBTG43bkoCAUp0eHTeAQIBSIkBOIkBPwIBP4YBOYYBSQIBPZEBOJEBqAICATuOATmOAT8CATmUAVOUAWMCATeUASaUASwCATWaATiaAYgBAgEylwE5lwE+AgEwogE4ogFTAgEsnwE5nwE9AgEqqgE4qgFVAgEmpwE5pwE9AgEkrQGvAa0BtQECASG0ARHSASECARHeAXreAdwBAgEO3wEb3wFKAgEH4QER4QGiAQIBC+QBEeQBqgECAQm0AagBtAGyAQIBH7QBlQG0AZkBAgEetwEXygEiAgEVzwEXzwHcAQIBEuEBfuEBnwECAQzkAX/kAacBAgEKuAEZwQEiAgEawgEZyQEnAgEWzwGxAc8B2QECARO+AR++AU4CAR26AUW6AVUCARvHAUXHAVUCARfEAawBxAH3AQIBGQ==</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
-      <sap2010:ViewStateData Id="LogMessage_1" sap:VirtualizedContainerService.HintSize="697,91" />
+      <sap2010:ViewStateData Id="LogMessage_1" sap:VirtualizedContainerService.HintSize="689,91" />
       <sap2010:ViewStateData Id="Assign_1" sap:VirtualizedContainerService.HintSize="314,60" />
       <sap2010:ViewStateData Id="LogMessage_2" sap:VirtualizedContainerService.HintSize="314,91" />
       <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="336,315">
@@ -224,11 +256,11 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="697,490">
+      <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="689,123">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsAnnotationDocked">True</x:Boolean>
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
             <x:Boolean x:Key="IsPinned">False</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
@@ -255,42 +287,68 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="WaitUiElementAppear_1" sap:VirtualizedContainerService.HintSize="653,106" />
-      <sap2010:ViewStateData Id="WaitAttribute_1" sap:VirtualizedContainerService.HintSize="653,114">
+      <sap2010:ViewStateData Id="Assign_10" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="GetValue_1" sap:VirtualizedContainerService.HintSize="314,106" />
+      <sap2010:ViewStateData Id="Sequence_6" sap:VirtualizedContainerService.HintSize="336,330">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="IsTrue_1" sap:VirtualizedContainerService.HintSize="200,49">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsAnnotationDocked">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="GetFullText_1" sap:VirtualizedContainerService.HintSize="653,106" />
+      <sap2010:ViewStateData Id="RetryScope_1" sap:VirtualizedContainerService.HintSize="358,538" />
+      <sap2010:ViewStateData Id="Catch`1_1" sap:VirtualizedContainerService.HintSize="404,21">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="653,765">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="LogMessage_5" sap:VirtualizedContainerService.HintSize="653,91" />
       <sap2010:ViewStateData Id="LogMessage_6" sap:VirtualizedContainerService.HintSize="314,91" />
       <sap2010:ViewStateData Id="LogMessage_7" sap:VirtualizedContainerService.HintSize="314,91" />
       <sap2010:ViewStateData Id="If_2" sap:VirtualizedContainerService.HintSize="653,238" />
-      <sap2010:ViewStateData Id="Sequence_5" sap:VirtualizedContainerService.HintSize="675,1720">
+      <sap2010:ViewStateData Id="Sequence_5" sap:VirtualizedContainerService.HintSize="675,2079">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="BrowserScope_1" sap:VirtualizedContainerService.HintSize="697,1866">
+      <sap2010:ViewStateData Id="BrowserScope_1" sap:VirtualizedContainerService.HintSize="689,2225">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="LogMessage_4" sap:VirtualizedContainerService.HintSize="697,91" />
-      <sap2010:ViewStateData Id="Sequence_4" sap:VirtualizedContainerService.HintSize="719,2782">
+      <sap2010:ViewStateData Id="LogMessage_4" sap:VirtualizedContainerService.HintSize="689,91" />
+      <sap2010:ViewStateData Id="Sequence_4" sap:VirtualizedContainerService.HintSize="711,2981">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsAnnotationDocked">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Unitask_UpdateTaskLog_1" sap:VirtualizedContainerService.HintSize="759,2862" />
+      <sap2010:ViewStateData Id="Unitask_UpdateTaskLog_1" sap:VirtualizedContainerService.HintSize="759,3569" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>

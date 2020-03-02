@@ -80,11 +80,12 @@
       <Variable x:TypeArguments="x:String" Name="robotTasksString" />
       <Variable x:TypeArguments="njl:JObject" Name="robotTasksJson" />
       <Variable x:TypeArguments="scg:IEnumerable(njl:JToken)" Name="robotTasksList" />
+      <Variable x:TypeArguments="x:Int32" Default="0" Name="counter" />
     </Sequence.Variables>
     <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;Begin Unitask_CreateQueueItems&quot;]" />
-    <TryCatch DisplayName="Try Catch">
+    <TryCatch DisplayName="Try Catch" sap2010:WorkflowViewState.IdRef="TryCatch_1">
       <TryCatch.Try>
-        <ui:RetryScope DisplayName="Retry Scope" NumberOfRetries="3" RetryInterval="00:00:05">
+        <ui:RetryScope DisplayName="Retry Scope" sap2010:WorkflowViewState.IdRef="RetryScope_1" NumberOfRetries="3" RetryInterval="00:00:05">
           <ui:RetryScope.ActivityBody>
             <ActivityAction>
               <ui:OpenBrowser UiBrowser="{x:Null}" BrowserType="Chrome" DisplayName="Open Browser" Hidden="False" sap2010:WorkflowViewState.IdRef="OpenBrowser_1" NewSession="True" Private="False" Url="[in_Config(&quot;UnitaskURL&quot;).ToString + &quot;/bonita/API/extension/getStorageInfoForTasksAssignedToBot&quot;]">
@@ -121,32 +122,28 @@
           </ui:RetryScope.ActivityBody>
           <ui:RetryScope.Condition>
             <ActivityFunc x:TypeArguments="x:Boolean">
-              <p:IsTrue sap2010:Annotation.AnnotationText="robotTasksString &lt;&gt; &quot;&quot;" DisplayName="Is true" Input="[robotTasksString &lt;&gt; &quot;&quot;]" sap2010:WorkflowViewState.IdRef="IsTrue_1" />
+              <p:IsTrue sap2010:Annotation.AnnotationText="robotTasksString &lt;&gt; &quot;&quot;" DisplayName="Is true" sap2010:WorkflowViewState.IdRef="IsTrue_1" Input="[robotTasksString &lt;&gt; &quot;&quot;]" />
             </ActivityFunc>
           </ui:RetryScope.Condition>
-          <sap2010:WorkflowViewState.IdRef>RetryScope_1</sap2010:WorkflowViewState.IdRef>
         </ui:RetryScope>
       </TryCatch.Try>
       <TryCatch.Catches>
-        <Catch x:TypeArguments="s:Exception">
+        <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch`1_1">
           <ActivityAction x:TypeArguments="s:Exception">
             <ActivityAction.Argument>
               <DelegateInArgument x:TypeArguments="s:Exception" Name="exception" />
             </ActivityAction.Argument>
           </ActivityAction>
-          <sap2010:WorkflowViewState.IdRef>Catch`1_1</sap2010:WorkflowViewState.IdRef>
         </Catch>
       </TryCatch.Catches>
-      <sap2010:WorkflowViewState.IdRef>TryCatch_1</sap2010:WorkflowViewState.IdRef>
     </TryCatch>
-    <If Condition="[robotTasksString.Equals(&quot;&quot;)]" DisplayName="If robotTasksString.Equals(&quot;&quot;)">
+    <If Condition="[robotTasksString.Equals(&quot;&quot;)]" DisplayName="If robotTasksString.Equals(&quot;&quot;)" sap2010:WorkflowViewState.IdRef="If_1">
       <If.Then>
         <Throw DisplayName="Throw Unitask task list not found" Exception="[New SystemException(&quot;Unitask task list not found.&quot;)]" sap2010:WorkflowViewState.IdRef="Throw_1" />
       </If.Then>
-      <sap2010:WorkflowViewState.IdRef>If_1</sap2010:WorkflowViewState.IdRef>
     </If>
     <ui:DeserializeJson x:TypeArguments="njl:JObject" DisplayName="Deserialize JSON" sap2010:WorkflowViewState.IdRef="DeserializeJson`1_1" JsonObject="[robotTasksJson]" JsonString="[robotTasksString]" />
-    <Assign sap2010:WorkflowViewState.IdRef="Assign_2">
+    <Assign DisplayName="Assign robotTasksList" sap2010:WorkflowViewState.IdRef="Assign_2">
       <Assign.To>
         <OutArgument x:TypeArguments="scg:IEnumerable(njl:JToken)">[robotTasksList]</OutArgument>
       </Assign.To>
@@ -166,13 +163,23 @@
                 <scg:Dictionary x:TypeArguments="x:String, InArgument" />
               </ui:AddQueueItem.ItemInformation>
             </ui:AddQueueItem>
+            <Assign DisplayName="Assign counter + 1">
+              <Assign.To>
+                <OutArgument x:TypeArguments="x:Int32">[counter]</OutArgument>
+              </Assign.To>
+              <Assign.Value>
+                <InArgument x:TypeArguments="x:Int32">[counter + 1]</InArgument>
+              </Assign.Value>
+              <sap2010:WorkflowViewState.IdRef>Assign_3</sap2010:WorkflowViewState.IdRef>
+            </Assign>
             <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[&quot;Case ID &quot;&quot;&quot; + task.ToString + &quot;&quot;&quot; added to queue&quot;]" />
           </Sequence>
         </ActivityAction>
       </ui:ForEach.Body>
     </ui:ForEach>
+    <ui:LogMessage DisplayName="Log Message" Level="Info" Message="[counter.ToString + &quot; queue item(s) created&quot;]" sap2010:WorkflowViewState.IdRef="LogMessage_4" />
     <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_3" Level="Info" Message="[&quot;End Unitask_CreateQueueItems&quot;]" />
-    <sads:DebugSymbol.Symbol>d3pDOlxVc2Vyc1x1cXNkZWJiZVxEb2N1bWVudHNcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcSFJfRml4ZWRUZXJtQXBwb2ludG1lbnRFeHBpcnlcVW5pdGFza1xVbml0YXNrX0NyZWF0ZVF1ZXVlSXRlbXMueGFtbChOA7ABDgIBAVQFVKMBAgExVQWNARACARyOAQWTAQoCAReUAQWUAcwBAgESlQEFnAEOAgEPnQEFrQESAgEErgEFrgGhAQIBAlRyVKABAgEyVwmAARkCAR2OAROOATwCARiQAQmQAbgBAgEalAG1AZQByQECARWUAZcBlAGpAQIBE5oBQ5oBbAIBEZcBRJcBVAIBEJ0BkAGdAaIBAgEOowELqgEWAgEFrgFyrgGeAQIBA1dUV14CATBXQldFAgEvWg93IAIBIXwPfNgBAgEekAFKkAGLAQIBG6QBDagBHwIBCakBDakB2wECAQZayQFavwICAS1gFXQgAgEifIABfKoBAgEfpAH/AaQBkAICAQykAbsBpAH0AQIBCqkBeqkB2AECAQdhF2ogAgEpaxdyJQIBJHMXc34CASNnHWdMAgEsY0NjVQIBKnBDcFUCASVtlQFtswECAShtvgFtxAECASc=</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d3pDOlxVc2Vyc1x1cXNkZWJiZVxEb2N1bWVudHNcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcSFJfRml4ZWRUZXJtQXBwb2ludG1lbnRFeHBpcnlcVW5pdGFza1xVbml0YXNrX0NyZWF0ZVF1ZXVlSXRlbXMueGFtbC5OA7cBDgIBAVMzUzYCAQJVBVWjAQIBOlYFiwEQAgEljAEFkAEKAgEgkQEFkQHMAQIBG5IBBZkBDgIBGJoBBbMBEgIBCLQBBbQBrgECAQW1AQW1AaEBAgEDVXJVoAECATtYCYABGQIBJowBE4wBPAIBIY4BCY4BuAECASORAbUBkQHJAQIBHpEBlwGRAakBAgEclwFDlwFsAgEalAFElAFUAgEZmgGQAZoBogECARegAQuwARYCAQm0AUO0AXwCAQa1AXK1AZ4BAgEEWIMBWI0BAgE5WHFYdAIBOFsPeCACASp9D33YAQIBJ44BSo4BiwECASShAQ2lAR8CARKmAQ2uARYCAQ2vAQ2vAdsBAgEKW8kBW78CAgE2YRV1IAIBK32rAX3VAQIBKKEB/wGhAZACAgEVoQG7AaEB9AECAROrATerAUQCARCoATioAUECAQ6vAXqvAdgBAgELYhdrIAIBMmwXcyUCAS10F3R+AgEsaB1oTAIBNWRDZFUCATNxQ3FVAgEubpUBbrMBAgExbr4BbsQBAgEw</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -224,15 +231,16 @@
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="AddQueueItem_1" sap:VirtualizedContainerService.HintSize="314,22" />
+      <sap2010:ViewStateData Id="Assign_3" sap:VirtualizedContainerService.HintSize="314,60" />
       <sap2010:ViewStateData Id="LogMessage_2" sap:VirtualizedContainerService.HintSize="314,91" />
-      <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="336,277">
+      <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="336,377">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="ForEach`1_1" sap:VirtualizedContainerService.HintSize="464,411">
+      <sap2010:ViewStateData Id="ForEach`1_1" sap:VirtualizedContainerService.HintSize="464,511">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -240,15 +248,16 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="LogMessage_4" sap:VirtualizedContainerService.HintSize="464,91" />
       <sap2010:ViewStateData Id="LogMessage_3" sap:VirtualizedContainerService.HintSize="464,91" />
-      <sap2010:ViewStateData Id="Sequence_3" sap:VirtualizedContainerService.HintSize="486,2211">
+      <sap2010:ViewStateData Id="Sequence_3" sap:VirtualizedContainerService.HintSize="486,2442">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Unitask_CreateQueueItems_1" sap:VirtualizedContainerService.HintSize="526,2291" />
+      <sap2010:ViewStateData Id="Unitask_CreateQueueItems_1" sap:VirtualizedContainerService.HintSize="526,2522" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
