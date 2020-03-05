@@ -21,6 +21,7 @@
     <x:Property Name="out_uqCustomWorklistBrowser" Type="OutArgument(ui:Browser)" />
     <x:Property Name="out_bonitaPortalBrowser" Type="OutArgument(ui:Browser)" />
     <x:Property Name="out_pstEmailAddresses" Type="OutArgument(njl:JObject)" />
+    <x:Property Name="in_FirstRun" Type="InArgument(x:Boolean)" />
   </x:Members>
   <mva:VisualBasic.Settings>
     <x:Null />
@@ -351,17 +352,30 @@
                   <FlowStep x:Name="__ReferenceID6" sap2010:WorkflowViewState.IdRef="FlowStep_14">
                     <Sequence sap2010:Annotation.AnnotationText="Contains a log message indicating that login was successful.&#xA;&#xA;(Optionally) May contain any activities that much be executed after login succuess." DisplayName="Login Success" sap2010:WorkflowViewState.IdRef="Sequence_18">
                       <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_6" Level="Info" Message="[&quot;Unitask successfully logged in&quot;]" />
-                      <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" sap2010:Annotation.AnnotationText="Queue Items are created from list in API &quot;.../bonita/API/extension/getStorageInfoForTasksAssignedToBot&quot;" DisplayName="Invoke Unitask_CreateQueueItems workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_4" UnSafe="False" WorkflowFileName="Unitask\Unitask_CreateQueueItems.xaml">
-                        <ui:InvokeWorkflowFile.Arguments>
-                          <InArgument x:TypeArguments="scg:Dictionary(x:String, x:Object)" x:Key="in_Config">[in_Config]</InArgument>
-                        </ui:InvokeWorkflowFile.Arguments>
-                      </ui:InvokeWorkflowFile>
-                      <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke Unitask_LoadPSTemailAddresses workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_3" UnSafe="False" WorkflowFileName="Unitask\Unitask_LoadPSTemailAddresses.xaml">
-                        <ui:InvokeWorkflowFile.Arguments>
-                          <OutArgument x:TypeArguments="njl:JObject" x:Key="out_pstEmailAddresses">[out_pstEmailAddresses]</OutArgument>
-                        </ui:InvokeWorkflowFile.Arguments>
-                      </ui:InvokeWorkflowFile>
-                      <ui:LogMessage DisplayName="Log Message" Level="Info" Message="[&quot;Unitask post login activities completed&quot;]" sap2010:WorkflowViewState.IdRef="LogMessage_7" />
+                      <If sap2010:Annotation.AnnotationText="Create queue items and load PST email addresses if first run" Condition="[in_FirstRun]" DisplayName="If in_FirstRun">
+                        <If.Then>
+                          <Sequence>
+                            <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" sap2010:Annotation.AnnotationText="Queue Items are created from list in API &quot;.../bonita/API/extension/getStorageInfoForTasksAssignedToBot&quot;" DisplayName="Invoke Unitask_CreateQueueItems workflow" UnSafe="False" WorkflowFileName="Unitask\Unitask_CreateQueueItems.xaml">
+                              <ui:InvokeWorkflowFile.Arguments>
+                                <InArgument x:TypeArguments="scg:Dictionary(x:String, x:Object)" x:Key="in_Config">[in_Config]</InArgument>
+                              </ui:InvokeWorkflowFile.Arguments>
+                              <sap2010:WorkflowViewState.IdRef>InvokeWorkflowFile_5</sap2010:WorkflowViewState.IdRef>
+                            </ui:InvokeWorkflowFile>
+                            <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke Unitask_LoadPSTemailAddresses workflow" UnSafe="False" WorkflowFileName="Unitask\Unitask_LoadPSTemailAddresses.xaml">
+                              <ui:InvokeWorkflowFile.Arguments>
+                                <OutArgument x:TypeArguments="njl:JObject" x:Key="out_pstEmailAddresses">[out_pstEmailAddresses]</OutArgument>
+                              </ui:InvokeWorkflowFile.Arguments>
+                              <sap2010:WorkflowViewState.IdRef>InvokeWorkflowFile_6</sap2010:WorkflowViewState.IdRef>
+                            </ui:InvokeWorkflowFile>
+                            <ui:LogMessage DisplayName="Log Message" Level="Info" Message="[&quot;Unitask setup activities completed&quot;]" sap2010:WorkflowViewState.IdRef="LogMessage_8" />
+                            <sap2010:WorkflowViewState.IdRef>Sequence_24</sap2010:WorkflowViewState.IdRef>
+                          </Sequence>
+                        </If.Then>
+                        <If.Else>
+                          <ui:LogMessage DisplayName="Log Message" Level="Info" Message="[&quot;Unitask setup activities already ran&quot;]" sap2010:WorkflowViewState.IdRef="LogMessage_9" />
+                        </If.Else>
+                        <sap2010:WorkflowViewState.IdRef>If_3</sap2010:WorkflowViewState.IdRef>
+                      </If>
                     </Sequence>
                   </FlowStep>
                 </FlowDecision.False>
@@ -379,7 +393,7 @@
     <x:Reference>__ReferenceID5</x:Reference>
     <x:Reference>__ReferenceID6</x:Reference>
     <x:Reference>__ReferenceID7</x:Reference>
-    <sads:DebugSymbol.Symbol>d3hDOlxVc2Vyc1x1cXNkZWJiZVxEb2N1bWVudHNcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcSFJfRml4ZWRUZXJtQXBwb2ludG1lbnRFeHBpcnlcVW5pdGFza1xVbml0YXNrX0xvZ2luV2l0aFJldHJ5LnhhbWxjAXABcgEDAVABVQECVAP/Ag8CAQFbCWUUAgF1aA2cAhgCASqeAj+eAkwCASjgAhXtAiACARugAkOgAmcCARjZAhnZAuUBAgEVowIZwgIkAgELxQIdzwIoAgECXAtcnwECAXpdC2QUAgF2ahGGAhwCATOOAhWYAiACASvhAhfhArUBAgEm4gIX5gIvAgEi5wIX6wIvAgEe7AIX7AK+AQIBHNkCTtkCuAECARalAh2wAigCARC4AiG+AiwCAQzGAh/NAigCAQbOAh/OAsYBAgEDXHhcnAECAXtiNWI2AgF5XzZfRAIBd2sT/QEeAgE4/gEThQIcAgE0jwIXlgIgAgEvlwIXlwK/AQIBLOEChAHhArIBAgEn5AJu5AJ5AgEk4gLtAuIClAMCASPpAmTpAnsCASDnAtwB5wKIAgIBH+wCVewCjAECAR2mAh+vAjECARG5AiO9AjsCAQ3LAknLAlsCAQnIAkrIAlgCAQfOAowBzgLDAQIBBGwV8gEmAgE/8wEV/AEmAgE5gwI/gwJEAgE3gAJAgAJLAgE1lAJDlAJHAgEykQJEkQJPAgEwlwKEAZcCvAECAS2mAo0BpgKsAQIBE6wCJawCjAECARK7AmW7AmsCAQ+5AsACuQLnAgIBDmzKAWzpAQIBc2zuAWycAgIBcXIb7wEmAgFA8wHaAfMB9QECAT3zAfoB8wG+AgIBO/kBG/kBkwECATp5HXmVAQIBcHodfjICAWt/HYwBIgIBZY0BHZEBMgIBYJIBHbEBIgIBTLIBHcABKAIBSsEBHcsBLQIBR8wBHdoBKAIBRdsBHekBKAIBQ+oBHe4BLQIBQXybAXzrAQIBb3z2AXz8AQIBbnpmenwCAWx/K39BAgFmgQEhigEyAgFojwGbAY8BuQICAWSPAcQCjwHKAgIBY40BZ40BfwIBYZIBK5IBQwIBTZQBIa8BLAIBT74BsAG+AY8CAgFLwQHTAcEB2QECAUjJAbAByQH8AQIBSdgBsAHYAbQCAgFG5wGwAecBiAICAUTqAYYC6gGMAgIBQoEBqwKBAfsCAgFqhwEnhwHdAQIBaZUBI5UBqgICAVqWASOaATECAVabASOfATcCAVKgASOuAS4CAVCVAYoBlQGYAQIBX5UBmwKVAacCAgFdlQGFApUBkQICAVuYAbYBmAHjAQIBWZYBtgKWAcICAgFXnQG2AZ0B4wECAVWbAaACmwGsAgIBU6wBtgGsAeMBAgFR</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d3hDOlxVc2Vyc1x1cXNkZWJiZVxEb2N1bWVudHNcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcSFJfRml4ZWRUZXJtQXBwb2ludG1lbnRFeHBpcnlcVW5pdGFza1xVbml0YXNrX0xvZ2luV2l0aFJldHJ5LnhhbWxoAXABcgEDAVABVQECVQONAw8CAQFcCWYUAgF7aQ2dAhgCATCfAj+fAkwCAS7hAhX7AiACARuhAkOhAmcCARjaAhnaAuUBAgEVpAIZwwIkAgELxgId0AIoAgECXQtdnwEDAYABXgtlFAIBfGsRhwIcAgE5jwIVmQIgAgEx4gIX4gK1AQIBLOMCF/oCHAIBHNoCTtoCuAECARamAh2xAigCARC5AiG/AiwCAQzHAh/OAigCAQbPAh/PAsYBAgEDXXhdnAEDAYEBYzVjNgIBf2A2YEQCAX1sE/4BHgIBPv8BE4YCHAIBOpACF5cCIAIBNZgCF5gCvwECATLiAoQB4gKyAQIBLeMChgHjApUBAgEd5QIb9AImAgEh9wIb9wK/AQIBH6cCH7ACMQIBEboCI74COwIBDcwCScwCWwIBCckCSskCWAIBB88CjAHPAsMBAgEEbRXzASYCAUX0ARX9ASYCAT+EAj+EAkQCAT2BAkCBAksCATuVAkOVAkcCATiSAkSSAk8CATaYAoQBmAK8AQIBM+YCHesCNQIBKOwCHfECNQIBJPICHfICvwECASL3Aln3Ao0BAgEgpwKNAacCrAECAROtAiWtAowBAgESvAJlvAJrAgEPugLAAroC5wICAQ5tygFt6QECAXlt7gFtnAICAXdzG/ABJgIBRvQB2gH0AfUBAgFD9AH6AfQBvgICAUH6ARv6AZMBAgFA6AJ06AJ/AgEq5gK8AuYC4wICASnuAmruAoEBAgEm7AKrAewC1wECASXyAlvyAo0BAgEjeh16lQECAXZ7HX8yAgFxgAEdjQEiAgFrjgEdkgEyAgFmkwEdsgEiAgFSswEdwQEoAgFQwgEdzAEtAgFNzQEd2wEoAgFL3AEd6gEoAgFJ6wEd7wEtAgFHfZsBfesBAgF1ffYBffwBAgF0e2Z7fAIBcoABK4ABQQIBbIIBIYsBMgIBbpABmwGQAbkCAgFqkAHEApABygICAWmOAWeOAX8CAWeTASuTAUMCAVOVASGwASwCAVW/AbABvwGPAgIBUcIB0wHCAdkBAgFOygGwAcoB/AECAU/ZAbAB2QG0AgIBTOgBsAHoAYgCAgFK6wGGAusBjAICAUiCAasCggH7AgIBcIgBJ4gB3QECAW+WASOWAaoCAgFglwEjmwExAgFcnAEjoAE3AgFYoQEjrwEuAgFWlgGKAZYBmAECAWWWAZsClgGnAgIBY5YBhQKWAZECAgFhmQG2AZkB4wECAV+XAbYClwHCAgIBXZ4BtgGeAeMBAgFbnAGgApwBrAICAVmtAbYBrQHjAQIBVw==</sads:DebugSymbol.Symbol>
   </Flowchart>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -616,17 +630,32 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="LogMessage_6" sap:VirtualizedContainerService.HintSize="314,91" />
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_4" sap:VirtualizedContainerService.HintSize="314,144">
+      <sap2010:ViewStateData Id="LogMessage_6" sap:VirtualizedContainerService.HintSize="675,91" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_5" sap:VirtualizedContainerService.HintSize="314,144">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsAnnotationDocked">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_3" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="LogMessage_7" sap:VirtualizedContainerService.HintSize="314,91" />
-      <sap2010:ViewStateData Id="Sequence_18" sap:VirtualizedContainerService.HintSize="336,744">
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_6" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="LogMessage_8" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="Sequence_24" sap:VirtualizedContainerService.HintSize="336,526">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="LogMessage_9" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="If_3" sap:VirtualizedContainerService.HintSize="675,701">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsAnnotationDocked">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Sequence_18" sap:VirtualizedContainerService.HintSize="697,1013">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
