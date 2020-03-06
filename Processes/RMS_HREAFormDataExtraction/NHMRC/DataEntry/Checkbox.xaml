@@ -2,7 +2,6 @@
  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
  xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities"
- xmlns:p="http://schemas.microsoft.com/workflow/2012/07/xaml/activities"
  xmlns:s="clr-namespace:System;assembly=mscorlib"
  xmlns:sads="http://schemas.microsoft.com/netfx/2010/xaml/activities/debugger"
  xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
@@ -14,7 +13,8 @@
   <x:Members>
     <x:Property Name="in_Choice" Type="InArgument(x:Boolean)" />
     <x:Property Name="in_Selector" Type="InArgument(x:String)" />
-    <x:Property Name="in_Scope" Type="InArgument(ui:UiElement)" />
+    <x:Property Name="in_Scope" Type="InArgument(x:String)" />
+    <x:Property Name="in_Loading" Type="InArgument(x:String)" />
   </x:Members>
   <mva:VisualBasic.Settings>
     <x:Null />
@@ -67,20 +67,22 @@
       <AssemblyReference>System.ValueTuple</AssemblyReference>
       <AssemblyReference>System.ComponentModel.Composition</AssemblyReference>
       <AssemblyReference>UiPath.Studio.Plugin.Workflow</AssemblyReference>
+      <AssemblyReference>System.Collections.Immutable</AssemblyReference>
+      <AssemblyReference>Microsoft.VisualStudio.Services.Common</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence DisplayName="Checkbox" sap2010:WorkflowViewState.IdRef="Sequence_1">
     <Sequence.Variables>
-      <Variable x:TypeArguments="x:Boolean" Name="status" />
+      <Variable x:TypeArguments="ui:UiElement" Name="element" />
     </Sequence.Variables>
-    <TryCatch DisplayName="Try Catch">
+    <TryCatch DisplayName="Try Catch" sap2010:WorkflowViewState.IdRef="TryCatch_1">
       <TryCatch.Try>
         <ui:RetryScope DisplayName="Retry Scope Checkbox" sap2010:WorkflowViewState.IdRef="RetryScope_1" NumberOfRetries="3" RetryInterval="00:00:05">
           <ui:RetryScope.ActivityBody>
             <ActivityAction>
               <Sequence DisplayName="Action" sap2010:WorkflowViewState.IdRef="Sequence_2">
                 <Sequence.Variables>
-                  <Variable x:TypeArguments="ui:UiElement" Name="element" />
+                  <Variable x:TypeArguments="ui:UiElement" Name="loading" />
                 </Sequence.Variables>
                 <If Condition="[in_Scope Is Nothing]" DisplayName="If scope defined" sap2010:WorkflowViewState.IdRef="If_1">
                   <If.Then>
@@ -105,68 +107,67 @@
                         </ActivityAction>
                       </ui:ElementScope.Body>
                       <ui:ElementScope.Target>
-                        <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Selector="[in_Scope.Selector.Text]" TimeoutMS="1000" WaitForReady="INTERACTIVE" />
+                        <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Selector="[in_Scope]" TimeoutMS="1000" WaitForReady="COMPLETE" />
                       </ui:ElementScope.Target>
                     </ui:ElementScope>
                   </If.Else>
                 </If>
+                <If Condition="[in_Loading IsNot Nothing]" DisplayName="If loading bar is set">
+                  <If.Then>
+                    <ui:WaitUiElementAppear DisplayName="Find Loading Element" FoundElement="[loading]" sap2010:WorkflowViewState.IdRef="WaitUiElementAppear_3" WaitActive="False" WaitVisible="False">
+                      <ui:WaitUiElementAppear.Target>
+                        <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Selector="[in_Loading]" TimeoutMS="1000" WaitForReady="COMPLETE" />
+                      </ui:WaitUiElementAppear.Target>
+                    </ui:WaitUiElementAppear>
+                  </If.Then>
+                  <sap2010:WorkflowViewState.IdRef>If_4</sap2010:WorkflowViewState.IdRef>
+                </If>
                 <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Trace" Message="[&quot;Setting checkbox &quot; + in_Selector + &quot; to &quot; &amp; in_Choice]" />
                 <If Condition="[in_Choice]" DisplayName="If State is True else False" sap2010:WorkflowViewState.IdRef="If_2">
                   <If.Then>
-                    <ui:Check ContinueOnError="{x:Null}" Action="Check" DelayAfter="50" DelayBefore="5" sap2010:WorkflowViewState.IdRef="Check_1">
+                    <ui:Check ContinueOnError="{x:Null}" Action="Check" DelayAfter="50" DelayBefore="50" sap2010:WorkflowViewState.IdRef="Check_1">
                       <ui:Check.Target>
-                        <ui:Target ClippingRegion="{x:Null}" Selector="{x:Null}" TimeoutMS="{x:Null}" Element="[element]" WaitForReady="INTERACTIVE" />
+                        <ui:Target ClippingRegion="{x:Null}" Selector="{x:Null}" TimeoutMS="{x:Null}" Element="[element]" WaitForReady="COMPLETE" />
                       </ui:Check.Target>
                     </ui:Check>
                   </If.Then>
                   <If.Else>
-                    <ui:Check ContinueOnError="{x:Null}" Action="Uncheck" DelayAfter="50" DelayBefore="5" DisplayName="Uncheck" sap2010:WorkflowViewState.IdRef="Check_2">
+                    <ui:Check ContinueOnError="{x:Null}" Action="Uncheck" DelayAfter="50" DelayBefore="50" DisplayName="Uncheck" sap2010:WorkflowViewState.IdRef="Check_2">
                       <ui:Check.Target>
-                        <ui:Target ClippingRegion="{x:Null}" Selector="{x:Null}" TimeoutMS="{x:Null}" Element="[element]" WaitForReady="INTERACTIVE" />
+                        <ui:Target ClippingRegion="{x:Null}" Selector="{x:Null}" TimeoutMS="{x:Null}" Element="[element]" WaitForReady="COMPLETE" />
                       </ui:Check.Target>
                     </ui:Check>
                   </If.Else>
                 </If>
-                <ui:GetAttribute ContinueOnError="{x:Null}" Attribute="checked" DisplayName="Get Checked Attribute" sap2010:WorkflowViewState.IdRef="GetAttribute_1">
-                  <ui:GetAttribute.Result>
-                    <OutArgument x:TypeArguments="x:Boolean">[status]</OutArgument>
-                  </ui:GetAttribute.Result>
-                  <ui:GetAttribute.Target>
-                    <ui:Target ClippingRegion="{x:Null}" Selector="{x:Null}" Element="[element]" TimeoutMS="1000" WaitForReady="INTERACTIVE" />
-                  </ui:GetAttribute.Target>
-                </ui:GetAttribute>
+                <ui:WaitAttribute TimeoutMS="{x:Null}" Attribute="style" AttributeValue="[&quot;display: none;&quot;]" ContinueOnError="True" DisplayName="Wait Finished Loading Attribute" Element="[loading]" sap2010:WorkflowViewState.IdRef="WaitAttribute_2" />
+                <ui:WaitAttribute Attribute="checked" AttributeValue="[in_Choice]" DisplayName="Wait Checked Attribute Set" Element="[element]" sap2010:WorkflowViewState.IdRef="WaitAttribute_1" TimeoutMS="3000" />
               </Sequence>
             </ActivityAction>
           </ui:RetryScope.ActivityBody>
           <ui:RetryScope.Condition>
-            <ActivityFunc x:TypeArguments="x:Boolean">
-              <p:IsTrue DisplayName="Is true" sap2010:WorkflowViewState.IdRef="IsTrue_1" Input="[in_Choice = status]" />
-            </ActivityFunc>
+            <ActivityFunc x:TypeArguments="x:Boolean" />
           </ui:RetryScope.Condition>
         </ui:RetryScope>
       </TryCatch.Try>
       <TryCatch.Catches>
-        <Catch x:TypeArguments="s:Exception">
+        <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch`1_1">
           <ActivityAction x:TypeArguments="s:Exception">
             <ActivityAction.Argument>
               <DelegateInArgument x:TypeArguments="s:Exception" Name="exception" />
             </ActivityAction.Argument>
-            <If Condition="[exception.InnerException Is Nothing]">
+            <If Condition="[exception.InnerException Is Nothing]" sap2010:WorkflowViewState.IdRef="If_3">
               <If.Then>
                 <Rethrow sap2010:WorkflowViewState.IdRef="Rethrow_1" />
               </If.Then>
               <If.Else>
                 <Throw DisplayName="Throw inner exception" Exception="[exception.InnerException]" sap2010:WorkflowViewState.IdRef="Throw_1" />
               </If.Else>
-              <sap2010:WorkflowViewState.IdRef>If_3</sap2010:WorkflowViewState.IdRef>
             </If>
           </ActivityAction>
-          <sap2010:WorkflowViewState.IdRef>Catch`1_1</sap2010:WorkflowViewState.IdRef>
         </Catch>
       </TryCatch.Catches>
-      <sap2010:WorkflowViewState.IdRef>TryCatch_1</sap2010:WorkflowViewState.IdRef>
     </TryCatch>
-    <sads:DebugSymbol.Symbol>d11DOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUk1TX0hSRUFGb3JtRGF0YUV4dHJhY3Rpb25cTkhNUkNcRGF0YUVudHJ5XENoZWNrYm94LnhhbWwrSAOqAQ4CAQFMBagBEAIBAk4JkgEZAgEKmgENogESAgEDTowBTpYBAgE9TnpOfQIBPFEPigEaAgEPjwEPjwF5AgELmgEbmgFCAgEEnAERnAFIAgEJnwERnwGPAQIBBlURcBYCAStxEXHUAQIBJ3IRgQEWAgEYggERiQEjAgEQjwFgjwF2AgEMnwFGnwFiAgEHVR9VNgIBLFcVWy4CATZeFW4nAgEtcX9x0QECAShyH3IsAgEZdBV4IAIBIXsVfyACARuCAUeCAVACARSEAT6EAUYCARKHAVaHAWECARWHAWyHAXICARdXWldlAgE6WVpZaQIBOFl0WXoCATdsWmx0AgE1bH9shQECATRkG2g0AgEudFR0WAIBJHRldGgCASN2b3Z6AgEle1Z7WgIBHntne2oCAR19b316AgEfZF9kagIBMmZgZm8CATBmemaAAQIBLw==</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d11DOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUk1TX0hSRUFGb3JtRGF0YUV4dHJhY3Rpb25cTkhNUkNcRGF0YUVudHJ5XENoZWNrYm94LnhhbWw0SgOrAQ4CAQFOBakBEAIBAlAJlgEZAgEKngENpQESAgEDUIwBUJYBAgFJUHpQfQIBSFMPkAEaAgELngEbngFCAgEEoAERoAFIAgEJowERowGPAQIBBlcRchYCATVzEXwWAgEsfRF91AECASh+EY0BFgIBGY4BEY4BhQICAROPARGPAdYBAgEMowFGowFiAgEHVx9XNgIBNlkVXS4CAUJgFXAnAgE4cx9zOwIBLXUVeS4CAS99f33RAQIBKX4ffiwCARqAARWEASACASKHARWLASACARyOAYgBjgGOAQIBGI4BWY4BdwIBF44BQo4BSQIBFo4BxQGOAdABAgEUjwHNAY8B0wECARKPAUaPAVMCARCPAS2PATYCAQ+PAYUBjwGQAQIBDVlaWWUCAUZbWltpAgFEW3RbegIBQ25abmYCAUBucW53AgE/ZhtqNAIBOXVddWgCATN3WndoAgExd3N3eQIBMIABVIABWAIBJYABZYABaQIBJIIBb4IBegIBJocBVocBWgIBH4cBZ4cBawIBHokBb4kBegIBIGZfZmoCAT1oYGhvAgE7aHpogAECATo=</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -174,20 +175,22 @@
       <sap2010:ViewStateData Id="WaitUiElementAppear_2" sap:VirtualizedContainerService.HintSize="314,68" />
       <sap2010:ViewStateData Id="ElementScope_1" sap:VirtualizedContainerService.HintSize="414,176" />
       <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="753,323" />
+      <sap2010:ViewStateData Id="WaitUiElementAppear_3" sap:VirtualizedContainerService.HintSize="314,68" />
+      <sap2010:ViewStateData Id="If_4" sap:VirtualizedContainerService.HintSize="753,215" />
       <sap2010:ViewStateData Id="LogMessage_1" sap:VirtualizedContainerService.HintSize="753,91" />
       <sap2010:ViewStateData Id="Check_1" sap:VirtualizedContainerService.HintSize="314,68" />
       <sap2010:ViewStateData Id="Check_2" sap:VirtualizedContainerService.HintSize="314,68" />
       <sap2010:ViewStateData Id="If_2" sap:VirtualizedContainerService.HintSize="753,215" />
-      <sap2010:ViewStateData Id="GetAttribute_1" sap:VirtualizedContainerService.HintSize="753,96" />
-      <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="775,969">
+      <sap2010:ViewStateData Id="WaitAttribute_2" sap:VirtualizedContainerService.HintSize="753,87" />
+      <sap2010:ViewStateData Id="WaitAttribute_1" sap:VirtualizedContainerService.HintSize="753,87" />
+      <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="775,1342">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="IsTrue_1" sap:VirtualizedContainerService.HintSize="200,22" />
-      <sap2010:ViewStateData Id="RetryScope_1" sap:VirtualizedContainerService.HintSize="797,1150" />
+      <sap2010:ViewStateData Id="RetryScope_1" sap:VirtualizedContainerService.HintSize="797,1516" />
       <sap2010:ViewStateData Id="Rethrow_1" sap:VirtualizedContainerService.HintSize="200,22" />
       <sap2010:ViewStateData Id="Throw_1" sap:VirtualizedContainerService.HintSize="200,22" />
       <sap2010:ViewStateData Id="If_3" sap:VirtualizedContainerService.HintSize="464,208" />
@@ -199,15 +202,15 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="815,1377" />
-      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="837,1501">
+      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="815,1743" />
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="837,1867">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Checkbox_1" sap:VirtualizedContainerService.HintSize="877,1581" />
+      <sap2010:ViewStateData Id="Checkbox_1" sap:VirtualizedContainerService.HintSize="877,1947" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>

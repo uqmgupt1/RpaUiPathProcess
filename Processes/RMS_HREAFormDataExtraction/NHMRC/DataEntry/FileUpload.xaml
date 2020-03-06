@@ -13,7 +13,7 @@
   <x:Members>
     <x:Property Name="in_FilePath" Type="InArgument(x:String)" />
     <x:Property Name="in_Selector" Type="InArgument(x:String)" />
-    <x:Property Name="in_Scope" Type="InArgument(ui:UiElement)" />
+    <x:Property Name="in_Scope" Type="InArgument(x:String)" />
   </x:Members>
   <mva:VisualBasic.Settings>
     <x:Null />
@@ -42,6 +42,7 @@
       <x:String>System.Windows.Markup</x:String>
       <x:String>UiPath.Core</x:String>
       <x:String>UiPath.Core.Activities</x:String>
+      <x:String>System.Net</x:String>
     </sco:Collection>
   </TextExpression.NamespacesForImplementation>
   <TextExpression.ReferencesForImplementation>
@@ -68,6 +69,7 @@
       <AssemblyReference>System.ComponentModel.Composition</AssemblyReference>
       <AssemblyReference>System.Collections.Immutable</AssemblyReference>
       <AssemblyReference>Microsoft.VisualStudio.Services.Common</AssemblyReference>
+      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence DisplayName="File Upload" sap2010:WorkflowViewState.IdRef="Sequence_2">
@@ -82,7 +84,7 @@
         <InArgument x:TypeArguments="x:String">[Path.GetFileName(in_FilePath)]</InArgument>
       </Assign.Value>
     </Assign>
-    <TryCatch DisplayName="Try Catch">
+    <TryCatch DisplayName="Try Catch" sap2010:WorkflowViewState.IdRef="TryCatch_1">
       <TryCatch.Try>
         <ui:RetryScope DisplayName="Retry Scope Upload" sap2010:WorkflowViewState.IdRef="RetryScope_1" NumberOfRetries="3" RetryInterval="00:00:05">
           <ui:RetryScope.ActivityBody>
@@ -115,7 +117,7 @@
                         </ActivityAction>
                       </ui:ElementScope.Body>
                       <ui:ElementScope.Target>
-                        <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Selector="[in_Scope.Selector.Text]" TimeoutMS="1000" WaitForReady="INTERACTIVE" />
+                        <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Selector="[in_Scope]" TimeoutMS="1000" WaitForReady="INTERACTIVE" />
                       </ui:ElementScope.Target>
                     </ui:ElementScope>
                   </If.Else>
@@ -151,12 +153,12 @@
                       <Sequence DisplayName="Do" sap2010:WorkflowViewState.IdRef="Sequence_6">
                         <ui:SetValue ContinueOnError="{x:Null}" DelayAfter="1" DelayBefore="1" DisplayName="Set Text File name" sap2010:WorkflowViewState.IdRef="SetValue_2" Text="[Path.GetFullPath(in_FilePath)]">
                           <ui:SetValue.Target>
-                            <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="&lt;wnd aaname='File name:' cls='Edit' /&gt;" WaitForReady="INTERACTIVE" />
+                            <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="&lt;wnd aaname='File name:' cls='Edit' /&gt;" WaitForReady="COMPLETE" />
                           </ui:SetValue.Target>
                         </ui:SetValue>
                         <ui:SendHotkey DelayBetweenKeys="{x:Null}" Activate="True" ClickBeforeTyping="False" DelayBefore="1" DelayMS="1" DisplayName="Send Open Hotkey" EmptyField="False" sap2010:WorkflowViewState.IdRef="SendHotkey_2" Key="enter" KeyModifiers="None" SendWindowMessages="False" SpecialKey="True">
                           <ui:SendHotkey.Target>
-                            <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="&lt;wnd aaname='Open' cls='Button' /&gt;" WaitForReady="INTERACTIVE" />
+                            <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="&lt;wnd aaname='Open' cls='Button' /&gt;" WaitForReady="COMPLETE" />
                           </ui:SendHotkey.Target>
                         </ui:SendHotkey>
                       </Sequence>
@@ -174,6 +176,14 @@
                     <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="&lt;html app='chrome.exe' title='New application - NHMRC Portal' /&gt;&lt;webctrl id='FormFrame' tag='IFRAME' /&gt;&lt;webctrl tag='IFRAME' parentid='popupModal' /&gt;&lt;webctrl id='startupload' tag='BUTTON' /&gt;" WaitForReady="INTERACTIVE" />
                   </ui:SendHotkey.Target>
                 </ui:SendHotkey>
+                <Assign DisplayName="Assign escaped filename" sap2010:WorkflowViewState.IdRef="Assign_4">
+                  <Assign.To>
+                    <OutArgument x:TypeArguments="x:String">[filename]</OutArgument>
+                  </Assign.To>
+                  <Assign.Value>
+                    <InArgument x:TypeArguments="x:String">[WebUtility.HtmlEncode(filename)]</InArgument>
+                  </Assign.Value>
+                </Assign>
                 <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_5" Level="Trace" Message="[&quot;Checking &quot; + filename]" />
               </Sequence>
             </ActivityAction>
@@ -190,27 +200,24 @@
         </ui:RetryScope>
       </TryCatch.Try>
       <TryCatch.Catches>
-        <Catch x:TypeArguments="s:Exception">
+        <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch`1_1">
           <ActivityAction x:TypeArguments="s:Exception">
             <ActivityAction.Argument>
               <DelegateInArgument x:TypeArguments="s:Exception" Name="exception" />
             </ActivityAction.Argument>
-            <If Condition="[exception.InnerException Is Nothing]">
+            <If Condition="[exception.InnerException Is Nothing]" sap2010:WorkflowViewState.IdRef="If_2">
               <If.Then>
                 <Rethrow sap2010:WorkflowViewState.IdRef="Rethrow_1" />
               </If.Then>
               <If.Else>
                 <Throw DisplayName="Throw inner exception" Exception="[exception.InnerException]" sap2010:WorkflowViewState.IdRef="Throw_1" />
               </If.Else>
-              <sap2010:WorkflowViewState.IdRef>If_2</sap2010:WorkflowViewState.IdRef>
             </If>
           </ActivityAction>
-          <sap2010:WorkflowViewState.IdRef>Catch`1_1</sap2010:WorkflowViewState.IdRef>
         </Catch>
       </TryCatch.Catches>
-      <sap2010:WorkflowViewState.IdRef>TryCatch_1</sap2010:WorkflowViewState.IdRef>
     </TryCatch>
-    <sads:DebugSymbol.Symbol>d19DOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUk1TX0hSRUFGb3JtRGF0YUV4dHJhY3Rpb25cTkhNUkNcRGF0YUVudHJ5XEZpbGVVcGxvYWQueGFtbEJJA9YBDgIBAU0FVA4CAUpVBdQBEAIBAlIwUk8CAU1PMU87AgFLVwm+ARkCAQrGAQ3OARICAQNXigFXlAECAUlXeFd7AgFIWg+yARoCAQ23AQ+7ASQCAQvGARvGAUICAQTIARHIAUgCAQnLARHLAY8BAgEGXxF6FgIBN3sRiQEcAgEyigERigHRAQIBMIsBEY8BIQIBK5ABEZABpQECASiRARGlASICARqmARGqASoCARirARGrAaEBAgEWrAERsAEhAgERsQERsQGmAQIBDrkBabkBkwICAQzLAUbLAWICAQdfH182AgE4YRVlLgIBQmgVeCcCATl7THtPAgE2hwFrhwF2AgE0e0B7QwIBM4oBf4oBzgECATGNAWuNAcECAgEviwF+iwGBAQIBLosBcosBdQIBLYsB7gGLAfUBAgEskAF/kAGiAQIBKZEB1gGRAYMCAgEnlwEXogEiAgEbqAFrqAGYAQIBGasBf6sBngECAReuAWuuAcMCAgEVrAF9rAGAAQIBFKwBcawBdAIBE6wB7gGsAfUBAgESsQF/sQGjAQIBD2FaYWUCAUZjWmNpAgFEY3RjegIBQ3ZadnQCAUF2f3aFAQIBQG4bcjQCATqYARmcAScCASGdARmhASkCARxuX25qAgE+cGBwbwIBPHB6cIABAgE7mAFMmAFPAgElmAGzAZgB1AECASSYAVyYAV8CASOaAXOaAaEBAgEmnwFznwGdAQIBIJ0BhgGdAYkBAgEfnQF6nQF9AgEenQHvAZ0B9gECAR0=</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d19DOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUk1TX0hSRUFGb3JtRGF0YUV4dHJhY3Rpb25cTkhNUkNcRGF0YUVudHJ5XEZpbGVVcGxvYWQueGFtbEVLA90BDgIBAU8FVg4CAVBXBdsBEAIBAlQwVE8CAVNRMVE7AgFRWQnIARkCAQrQAQ3XARICAQNZigFZlAECAU9ZeFl7AgFOXA+8ARoCAQ3BAQ/FASQCAQvQARvQAUICAQTSARHSAUgCAQnVARHVAY8BAgEGYRF8FgIBO30RiwEcAgE2jAERjAHRAQIBNI0BEZEBIQIBL5IBEZIBpQECASyTARGnASICAR6oARGsASoCARytARGtAaEBAgEargERsgEhAgEVswERugEaAgERuwERuwGmAQIBDsMBacMBkwICAQzVAUbVAWICAQdhH2E2AgE8YxVnLgIBSGoVeicCAT59TH1PAgE6iQFriQF2AgE4fUB9QwIBN4wBf4wBzgECATWPAWuPAcECAgEzjQF+jQGBAQIBMo0Bco0BdQIBMY0B7gGNAfUBAgEwkgF/kgGiAQIBLZMB1gGTAYMCAgErmQEXpAEiAgEfqgFrqgGYAQIBHa0Bf60BngECARuwAWuwAcMCAgEZrgF9rgGAAQIBGK4Bca4BdAIBF64B7gGuAfUBAgEWuAE8uAFdAgEUtQE9tQFHAgESuwF/uwGjAQIBD2NaY2UCAUxlWmVpAgFKZXRlegIBSXhaeGYCAUZ4cXh3AgFFcBt0NAIBP5oBGZ4BJwIBJZ8BGaMBKQIBIHBfcGoCAUNyYHJvAgFBcnpygAECAUCaAUyaAU8CASmaAbMBmgHUAQIBKJoBXJoBXwIBJ5wBc5wBoQECASqhAXOhAZ0BAgEknwGGAZ8BiQECASOfAXqfAX0CASKfAe8BnwH2AQIBIQ==</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -236,8 +243,9 @@
       <sap2010:ViewStateData Id="WaitUiElementVanish_1" sap:VirtualizedContainerService.HintSize="753,68" />
       <sap2010:ViewStateData Id="LogMessage_4" sap:VirtualizedContainerService.HintSize="753,91" />
       <sap2010:ViewStateData Id="SendHotkey_3" sap:VirtualizedContainerService.HintSize="753,116" />
+      <sap2010:ViewStateData Id="Assign_4" sap:VirtualizedContainerService.HintSize="753,60" />
       <sap2010:ViewStateData Id="LogMessage_5" sap:VirtualizedContainerService.HintSize="753,91" />
-      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="775,2023">
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="775,2123">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -246,7 +254,7 @@
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="UiElementExists_1" sap:VirtualizedContainerService.HintSize="314,68" />
-      <sap2010:ViewStateData Id="RetryScope_1" sap:VirtualizedContainerService.HintSize="797,2250">
+      <sap2010:ViewStateData Id="RetryScope_1" sap:VirtualizedContainerService.HintSize="797,2350">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -265,15 +273,15 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="815,2477" />
-      <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="837,2701">
+      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="815,2577" />
+      <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="837,2801">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="FileUpload_1" sap:VirtualizedContainerService.HintSize="877,2781" />
+      <sap2010:ViewStateData Id="FileUpload_1" sap:VirtualizedContainerService.HintSize="877,2881" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
