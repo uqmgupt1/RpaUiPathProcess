@@ -72,6 +72,7 @@
       <AssemblyReference>System.ComponentModel.Composition</AssemblyReference>
       <AssemblyReference>Microsoft.VisualStudio.Services.Common</AssemblyReference>
       <AssemblyReference>System.Data.Entity</AssemblyReference>
+      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence sap2010:Annotation.AnnotationText="This XAML creates and sends a summary email with details of each transcation in the run.&#xA;&#xA;BRE and system exception counts are inserted in the email template along with a summary table of each transaction.&#xA;&#xA;No email will be sent if the Asset &quot;HR_FTAE_SummaryEmailAddress&quot; is left blank.  If in the DEV environmnent the email will be sent to the developer's email address.&#xA;in_Arg&#xA;     in_breCount                       Int32&#xA;     in_Config                            Dictionary(String, Object)&#xA;     in_DTasHTML                     String&#xA;     in_exceptionCount            Int32&#xA;     in_TransactionNumber     Int32&#xA;&#xA;&#xA;" DisplayName="SendSummaryEmail" sap2010:WorkflowViewState.IdRef="Sequence_1">
@@ -91,7 +92,7 @@
         <InArgument x:TypeArguments="x:Int32">[in_TransactionNumber - 1 - in_breCount - in_exceptionCount]</InArgument>
       </Assign.Value>
     </Assign>
-    <If Condition="[in_TransactionNumber - 1  &gt; 0]" DisplayName="If no tasks found for processing" sap2010:WorkflowViewState.IdRef="If_1">
+    <If Condition="[in_TransactionNumber - 1  &gt; 0]" DisplayName="If no tasks found for processing, remove summary text" sap2010:WorkflowViewState.IdRef="If_1">
       <If.Then>
         <Assign DisplayName="Assign messageText (Summary)" sap2010:WorkflowViewState.IdRef="Assign_2">
           <Assign.To>
@@ -131,14 +132,28 @@
           <InArgument x:TypeArguments="x:String">[ReportEmailTemplate.Replace("{ProcessName}","FTAE")]</InArgument>
         </Assign.Value>
       </Assign>
-      <Assign DisplayName="Assign ReportEmailTemplate" sap2010:WorkflowViewState.IdRef="Assign_5">
-        <Assign.To>
-          <OutArgument x:TypeArguments="x:String">[ReportEmailTemplate]</OutArgument>
-        </Assign.To>
-        <Assign.Value>
-          <InArgument x:TypeArguments="x:String">[ReportEmailTemplate.Replace("{Table}",in_DTasHTML)]</InArgument>
-        </Assign.Value>
-      </Assign>
+      <If Condition="[in_TransactionNumber - 1  &gt; 0]" DisplayName="If No tasks to process, remove summary table" sap2010:WorkflowViewState.IdRef="If_4">
+        <If.Then>
+          <Assign DisplayName="Assign ReportEmailTemplate" sap2010:WorkflowViewState.IdRef="Assign_13">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:String">[ReportEmailTemplate]</OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:String">[ReportEmailTemplate.Replace("{Table}","")]</InArgument>
+            </Assign.Value>
+          </Assign>
+        </If.Then>
+        <If.Else>
+          <Assign DisplayName="Assign ReportEmailTemplate" sap2010:WorkflowViewState.IdRef="Assign_5">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:String">[ReportEmailTemplate]</OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:String">[ReportEmailTemplate.Replace("{Table}",in_DTasHTML)]</InArgument>
+            </Assign.Value>
+          </Assign>
+        </If.Else>
+      </If>
       <ui:CommentOut DisplayName="Comment Out" sap2010:WorkflowViewState.IdRef="CommentOut_1">
         <ui:CommentOut.Body>
           <Sequence DisplayName="Ignored Activities" sap2010:WorkflowViewState.IdRef="Sequence_6">
@@ -206,7 +221,7 @@
                   </Sequence>
                 </If.Else>
               </If>
-              <TryCatch DisplayName="Try Catch">
+              <TryCatch DisplayName="Try Catch" sap2010:WorkflowViewState.IdRef="TryCatch_2">
                 <TryCatch.Try>
                   <ui:SendMail Bcc="{x:Null}" Cc="{x:Null}" Email="{x:Null}" MailMessage="{x:Null}" Name="{x:Null}" Password="{x:Null}" TimeoutMS="{x:Null}" Body="[ReportEmailTemplate]" DisplayName="Send SMTP Mail Message" EnableSSL="True" From="noreply@uq.edu.au" sap2010:WorkflowViewState.IdRef="SendMail_1" IsBodyHtml="True" Port="[CInt(in_Config(&quot;UQ_SMTP_PORT&quot;).ToString)]" SecureConnection="Auto" Server="[in_Config(&quot;UQ_SMTP_SERVER&quot;).ToString]" Subject="[operatingEnvironment + &quot;FTAE Report Summary&quot;]" To="[emailAddress]">
                     <ui:SendMail.Files>
@@ -215,26 +230,22 @@
                   </ui:SendMail>
                 </TryCatch.Try>
                 <TryCatch.Catches>
-                  <Catch x:TypeArguments="s:Exception">
+                  <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch`1_2">
                     <ActivityAction x:TypeArguments="s:Exception">
                       <ActivityAction.Argument>
                         <DelegateInArgument x:TypeArguments="s:Exception" Name="exception" />
                       </ActivityAction.Argument>
-                      <Sequence>
-                        <ui:SendMail Bcc="{x:Null}" Cc="{x:Null}" Email="{x:Null}" MailMessage="{x:Null}" Name="{x:Null}" Password="{x:Null}" TimeoutMS="{x:Null}" Body="[ReportEmailTemplate]" DisplayName="Send SMTP Mail Message" EnableSSL="True" From="noreply@uq.edu.au" IsBodyHtml="True" Port="[CInt(in_Config(&quot;UQ_SMTP_PORT&quot;).ToString)]" SecureConnection="Auto" Server="[in_Config(&quot;UQ_SMTP_SERVER&quot;).ToString]" Subject="[operatingEnvironment + &quot;FTAE Report Summary&quot;]" To="[emailAddress]">
+                      <Sequence sap2010:WorkflowViewState.IdRef="Sequence_8">
+                        <ui:SendMail Bcc="{x:Null}" Cc="{x:Null}" Email="{x:Null}" MailMessage="{x:Null}" Name="{x:Null}" Password="{x:Null}" TimeoutMS="{x:Null}" Body="[ReportEmailTemplate]" DisplayName="Send SMTP Mail Message" EnableSSL="True" From="noreply@uq.edu.au" sap2010:WorkflowViewState.IdRef="SendMail_2" IsBodyHtml="True" Port="[CInt(in_Config(&quot;UQ_SMTP_PORT&quot;).ToString)]" SecureConnection="Auto" Server="[in_Config(&quot;UQ_SMTP_SERVER&quot;).ToString]" Subject="[operatingEnvironment + &quot;FTAE Report Summary&quot;]" To="[emailAddress]">
                           <ui:SendMail.Files>
                             <scg:List x:TypeArguments="InArgument(x:String)" Capacity="0" />
                           </ui:SendMail.Files>
-                          <sap2010:WorkflowViewState.IdRef>SendMail_2</sap2010:WorkflowViewState.IdRef>
                         </ui:SendMail>
-                        <ui:LogMessage DisplayName="Log Message" Level="Warn" Message="[&quot;Send email error.  Resending&quot;]" sap2010:WorkflowViewState.IdRef="LogMessage_7" />
-                        <sap2010:WorkflowViewState.IdRef>Sequence_8</sap2010:WorkflowViewState.IdRef>
+                        <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_7" Level="Warn" Message="[&quot;Send email error.  Resending&quot;]" />
                       </Sequence>
                     </ActivityAction>
-                    <sap2010:WorkflowViewState.IdRef>Catch`1_2</sap2010:WorkflowViewState.IdRef>
                   </Catch>
                 </TryCatch.Catches>
-                <sap2010:WorkflowViewState.IdRef>TryCatch_2</sap2010:WorkflowViewState.IdRef>
               </TryCatch>
               <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_6" Level="Info" Message="[&quot;Summary email sent to &quot; + emailAddress]" />
             </Sequence>
@@ -253,7 +264,7 @@
       </TryCatch.Catches>
     </TryCatch>
     <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[&quot;End SendSummaryEmail&quot;]" />
-    <sads:DebugSymbol.Symbol>d3BDOlxVc2Vyc1x1cXNkZWJiZVxEb2N1bWVudHNcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcSFJfRml4ZWRUZXJtQXBwb2ludG1lbnRFeHBpcnlcRW1haWxcU2VuZFN1bW1hcnlFbWFpbC54YW1sSU0DgQIOAgEBVQVVmwECAXFWBV0OAgFqXgVzCgIBW3QFdLEBAgFXdQWcARACAUSdAQX+ARACAQT/AQX/AZkBAgECVXJVmAECAXJbL1trAgFtWDBYPgIBa14TXjcCAVxgCWcSAgFiaglxEgIBXnRcdH0CAVp0HnQ1AgFYdgd9EAIBUX4HhQEQAgFMhgEHjQEQAgFGjgEHmwEXAgFFnwEJ8gEOAgEH+gEN+gG+AQIBBf8Bcv8BlgECAQNiNWJCAgFjbzRvrQECAWFsNWxCAgFfezJ7aAIBVHgzeEgCAVKDATKDAWcCAU+AATOAAUgCAU2LATKLAWYCAUmIATOIAUgCAUefARefAXQCAQihAQ2hAboBAgFCpAEN8AEYAgEK+gF6+gG7AQIBBqEBeqEBtwECAUOlAQ/QARQCASrRAQ/uARoCAQ7vAQ/vAbQBAgELpQEdpQF5AgErpwETuAEeAgE3uwETzgEeAgEt0wET1wEhAgEe3wEX6AEiAgEP7wF87wGxAQIBDKgBFa8BHgIBPbABFbcBHgIBOLwBFcUBHgIBM8YBFc0BHgIBLtMBnQTTAa0EAgEo0wGjAdMBugECASbTAd8D0wGZBAIBJNMB9gHTAYkCAgEj0wHOAtMBhAMCASHTAaQD0wHWAwIBH+ABGeUBJwIBEuYBGeYBtQECARCtAUCtAXQCAUCqAUGqAVcCAT61AUC1AWsCATuyAUGyAU8CATnCARvCAUoCATa+AUG+AVcCATTLAUDLAWsCATHIAUHIAU8CAS/gAfYD4AGGBAIBHOABqQHgAcABAgEa4AG4A+AB8gMCARjgAfwB4AGPAgIBF+ABpwLgAd0CAgEV4AH9AuABrwMCARPmAVfmAYMBAgER</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d3BDOlxVc2Vyc1x1cXNkZWJiZVxEb2N1bWVudHNcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcSFJfRml4ZWRUZXJtQXBwb2ludG1lbnRFeHBpcnlcRW1haWxcU2VuZFN1bW1hcnlFbWFpbC54YW1sTk4DjAIOAgEBVgVWmwECAXlXBV4OAgFyXwV0CgIBY3UFdbEBAgFfdgWrARACAUSsAQWJAhACAQSKAgWKApkBAgECVnJWmAECAXpcL1xrAgF1WTBZPgIBc18TXzcCAWRhCWgSAgFqawlyEgIBZnVcdX0CAWJ1HnU1AgFgdwd+EAIBWX8HhgEQAgFUhwEHnAEMAgFGnQEHqgEXAgFFrgEJ/QEOAgEHhQINhQK+AQIBBYoCcooClgECAQNjNWNCAgFrcDRwrQECAWltNW1CAgFnfDJ8aAIBXHkzeUgCAVqEATKEAWcCAVeBATOBAUgCAVWHARWHATkCAUeJAQuQARQCAU+TAQuaARQCAUmuAReuAXQCAQiwAQ2wAboBAgFCswEN+wEYAgEKhQJ6hQK7AQIBBo4BNo4BYQIBUosBN4sBTAIBUJgBNpgBagIBTJUBN5UBTAIBSrABerABtwECAUO0AQ/fARQCASrgAQ/5ARoCAQ76AQ/6AbQBAgELtAEdtAF5AgErtgETxwEeAgE3ygET3QEeAgEt4gET5gEhAgEe7gEX9QEiAgEP+gF8+gGxAQIBDLcBFb4BHgIBPb8BFcYBHgIBOMsBFdQBHgIBM9UBFdwBHgIBLuIBnQTiAa0EAgEo4gGjAeIBugECASbiAd8D4gGZBAIBJOIB9gHiAYkCAgEj4gHOAuIBhAMCASHiAaQD4gHWAwIBH+8BGfMBJwIBEvQBGfQBtQECARC8AUC8AXQCAUC5AUG5AVcCAT7EAUDEAWsCATvBAUHBAU8CATnRARvRAUoCATbNAUHNAVcCATTaAUDaAWsCATHXAUHXAU8CAS/vAaME7wGzBAIBHO8BqQHvAcABAgEa7wHlA+8BnwQCARjvAfwB7wGPAgIBF+8B1ALvAYoDAgEV7wGqA+8B3AMCARP0AYYB9AGyAQIBEQ==</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -263,9 +274,11 @@
       <sap2010:ViewStateData Id="Assign_6" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="932,208" />
       <sap2010:ViewStateData Id="ReadTextFile_1" sap:VirtualizedContainerService.HintSize="932,59" />
-      <sap2010:ViewStateData Id="Assign_3" sap:VirtualizedContainerService.HintSize="242,60" />
-      <sap2010:ViewStateData Id="Assign_4" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="Assign_3" sap:VirtualizedContainerService.HintSize="509,60" />
+      <sap2010:ViewStateData Id="Assign_4" sap:VirtualizedContainerService.HintSize="509,60" />
+      <sap2010:ViewStateData Id="Assign_13" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="Assign_5" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="If_4" sap:VirtualizedContainerService.HintSize="509,208" />
       <sap2010:ViewStateData Id="Assign_9" sap:VirtualizedContainerService.HintSize="242,102">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
@@ -280,7 +293,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="CommentOut_1" sap:VirtualizedContainerService.HintSize="242,51">
+      <sap2010:ViewStateData Id="CommentOut_1" sap:VirtualizedContainerService.HintSize="509,51">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">False</x:Boolean>
@@ -288,7 +301,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_4" sap:VirtualizedContainerService.HintSize="932,475">
+      <sap2010:ViewStateData Id="Sequence_4" sap:VirtualizedContainerService.HintSize="932,623">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -380,7 +393,7 @@
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="LogMessage_2" sap:VirtualizedContainerService.HintSize="932,91" />
-      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="954,3044">
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="954,3192">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -388,7 +401,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="SendEmail_1" sap:VirtualizedContainerService.HintSize="994,3124" />
+      <sap2010:ViewStateData Id="SendEmail_1" sap:VirtualizedContainerService.HintSize="994,3373" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
