@@ -14,6 +14,8 @@
   <x:Members>
     <x:Property Name="in_Application" Type="InArgument(sxl:XElement)" />
     <x:Property Name="in_Browser" Type="InArgument(ui:Browser)" />
+    <x:Property Name="in_PageFrame" Type="InArgument(ui:UiElement)" />
+    <x:Property Name="in_LoadingWheel" Type="InArgument(ui:UiElement)" />
   </x:Members>
   <mva:VisualBasic.Settings>
     <x:Null />
@@ -71,6 +73,7 @@
       <AssemblyReference>UiPath.Studio.Plugin.Workflow</AssemblyReference>
       <AssemblyReference>System.Collections.Immutable</AssemblyReference>
       <AssemblyReference>Microsoft.VisualStudio.Services.Common</AssemblyReference>
+      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence DisplayName="Interventional/Clinical Trials research" sap2010:WorkflowViewState.IdRef="Sequence_2">
@@ -81,9 +84,6 @@
             <DelegateInArgument x:TypeArguments="x:Object" Name="ContextTarget" />
           </ActivityAction.Argument>
           <Sequence DisplayName="Enter Data" sap2010:WorkflowViewState.IdRef="Sequence_5">
-            <Sequence.Variables>
-              <Variable x:TypeArguments="ui:UiElement" Name="formFrame" />
-            </Sequence.Variables>
             <ui:Click DelayBefore="{x:Null}" DelayMS="{x:Null}" ClickType="CLICK_SINGLE" DisplayName="Click General tab" sap2010:WorkflowViewState.IdRef="Click_4" KeyModifiers="None" MouseButton="BTN_LEFT" SendWindowMessages="False" SimulateClick="True">
               <ui:Click.CursorPosition>
                 <ui:CursorPosition Position="Center">
@@ -99,16 +99,22 @@
                 <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="&lt;webctrl id='FormFrame' tag='IFRAME' /&gt;&#xA;&lt;webctrl tag='DIV' class='*nav-tabs' /&gt;&#xA;&lt;webctrl tag='A' aaname='General' /&gt;" WaitForReady="INTERACTIVE" />
               </ui:Click.Target>
             </ui:Click>
-            <ui:WaitUiElementAppear DisplayName="Find Form Frame" FoundElement="[formFrame]" sap2010:WorkflowViewState.IdRef="WaitUiElementAppear_2" WaitActive="False" WaitVisible="False">
+            <ui:WaitUiElementAppear DisplayName="Refresh Loading Element" FoundElement="[in_LoadingWheel]" sap2010:WorkflowViewState.IdRef="WaitUiElementAppear_1" WaitActive="False" WaitVisible="False">
               <ui:WaitUiElementAppear.Target>
-                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="&lt;webctrl id='FormFrame' tag='IFRAME' /&gt;&lt;webctrl tag='DIV' class='tab-content' /&gt;" WaitForReady="COMPLETE" />
+                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Selector="[in_LoadingWheel.Selector.Text]" TimeoutMS="1000" WaitForReady="COMPLETE" />
               </ui:WaitUiElementAppear.Target>
             </ui:WaitUiElementAppear>
+            <ui:WaitUiElementAppear DisplayName="Refresh Page Element" FoundElement="[in_PageFrame]" sap2010:WorkflowViewState.IdRef="WaitUiElementAppear_2" WaitActive="False" WaitVisible="False">
+              <ui:WaitUiElementAppear.Target>
+                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Selector="[in_PageFrame.Selector.Text]" TimeoutMS="1000" WaitForReady="COMPLETE" />
+              </ui:WaitUiElementAppear.Target>
+            </ui:WaitUiElementAppear>
+            <ui:WaitAttribute TimeoutMS="{x:Null}" Attribute="style" AttributeValue="[&quot;display: none;&quot;]" ContinueOnError="True" DisplayName="Wait Finished Loading Attribute" Element="[in_LoadingWheel]" sap2010:WorkflowViewState.IdRef="WaitAttribute_1" />
             <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke M6.1 Q515 Paragraph workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_29" UnSafe="False" WorkflowFileName="NHMRC\DataEntry\Paragraph.xaml">
               <ui:InvokeWorkflowFile.Arguments>
                 <InArgument x:TypeArguments="x:String" x:Key="in_Entry">[in_Application.Element("q515").Value]</InArgument>
                 <InArgument x:TypeArguments="x:String" x:Key="in_Selector">&lt;webctrl id='Q515_ifr' tag='IFRAME' /&gt;</InArgument>
-                <InArgument x:TypeArguments="ui:UiElement" x:Key="in_Scope">[formFrame]</InArgument>
+                <InArgument x:TypeArguments="x:String" x:Key="in_Scope">[in_PageFrame.Selector.Text]</InArgument>
               </ui:InvokeWorkflowFile.Arguments>
             </ui:InvokeWorkflowFile>
             <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke M6.2 Q906 YesNo workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_30" UnSafe="False" WorkflowFileName="NHMRC\DataEntry\YesNo.xaml">
@@ -116,7 +122,8 @@
                 <InArgument x:TypeArguments="x:String" x:Key="in_Choice">[in_Application.Element("q906").Value]</InArgument>
                 <InArgument x:TypeArguments="x:String" x:Key="in_YesSelector">&lt;webctrl id='Q906-A1210' tag='INPUT' /&gt;</InArgument>
                 <InArgument x:TypeArguments="x:String" x:Key="in_NoSelector">&lt;webctrl id='Q906-A1211' tag='INPUT' /&gt;</InArgument>
-                <InArgument x:TypeArguments="ui:UiElement" x:Key="in_Scope">[formFrame]</InArgument>
+                <InArgument x:TypeArguments="x:String" x:Key="in_Scope">[in_PageFrame.Selector.Text]</InArgument>
+                <InArgument x:TypeArguments="ui:UiElement" x:Key="in_Loading">[in_LoadingWheel]</InArgument>
               </ui:InvokeWorkflowFile.Arguments>
             </ui:InvokeWorkflowFile>
             <If Condition="[in_Application.Element(&quot;q906&quot;).Value = &quot;Yes&quot;]" DisplayName="If M6.2 is Yes" sap2010:WorkflowViewState.IdRef="If_2">
@@ -126,7 +133,8 @@
                     <InArgument x:TypeArguments="x:String" x:Key="in_Choice">[in_Application.Element("q93").Value]</InArgument>
                     <InArgument x:TypeArguments="x:String" x:Key="in_YesSelector">&lt;webctrl id='Q93-A137' tag='INPUT' /&gt;</InArgument>
                     <InArgument x:TypeArguments="x:String" x:Key="in_NoSelector">&lt;webctrl id='Q93-A138' tag='INPUT' /&gt;</InArgument>
-                    <InArgument x:TypeArguments="ui:UiElement" x:Key="in_Scope">[formFrame]</InArgument>
+                    <InArgument x:TypeArguments="x:String" x:Key="in_Scope">[in_PageFrame.Selector.Text]</InArgument>
+                    <InArgument x:TypeArguments="ui:UiElement" x:Key="in_Loading">[in_LoadingWheel]</InArgument>
                   </ui:InvokeWorkflowFile.Arguments>
                 </ui:InvokeWorkflowFile>
               </If.Then>
@@ -153,28 +161,32 @@
                       <ui:InvokeWorkflowFile.Arguments>
                         <InArgument x:TypeArguments="x:Boolean" x:Key="in_Choice">[clinicalTrials.Contains("Drug/s")]</InArgument>
                         <InArgument x:TypeArguments="x:String" x:Key="in_Selector">&lt;webctrl id='Q1125-A1570' tag='INPUT' /&gt;</InArgument>
-                        <InArgument x:TypeArguments="ui:UiElement" x:Key="in_Scope">[formFrame]</InArgument>
+                        <InArgument x:TypeArguments="x:String" x:Key="in_Scope">[in_PageFrame.Selector.Text]</InArgument>
+                        <InArgument x:TypeArguments="ui:UiElement" x:Key="in_Loading">[in_LoadingWheel]</InArgument>
                       </ui:InvokeWorkflowFile.Arguments>
                     </ui:InvokeWorkflowFile>
                     <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke M6.2.1.1 A1571 Device/s Checkbox workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_35" UnSafe="False" WorkflowFileName="NHMRC\DataEntry\Checkbox.xaml">
                       <ui:InvokeWorkflowFile.Arguments>
                         <InArgument x:TypeArguments="x:Boolean" x:Key="in_Choice">[clinicalTrials.Contains("Device/s")]</InArgument>
                         <InArgument x:TypeArguments="x:String" x:Key="in_Selector">&lt;webctrl id='Q1125-A1571' tag='INPUT' /&gt;</InArgument>
-                        <InArgument x:TypeArguments="ui:UiElement" x:Key="in_Scope">[formFrame]</InArgument>
+                        <InArgument x:TypeArguments="x:String" x:Key="in_Scope">[in_PageFrame.Selector.Text]</InArgument>
+                        <InArgument x:TypeArguments="ui:UiElement" x:Key="in_Loading">[in_LoadingWheel]</InArgument>
                       </ui:InvokeWorkflowFile.Arguments>
                     </ui:InvokeWorkflowFile>
                     <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke M6.2.1.1 A2132 Xenotransplantation Checkbox workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_36" UnSafe="False" WorkflowFileName="NHMRC\DataEntry\Checkbox.xaml">
                       <ui:InvokeWorkflowFile.Arguments>
                         <InArgument x:TypeArguments="x:Boolean" x:Key="in_Choice">[clinicalTrials.Contains("Xenotransplantation")]</InArgument>
                         <InArgument x:TypeArguments="x:String" x:Key="in_Selector">&lt;webctrl id='Q1125-A2132' tag='INPUT' /&gt;</InArgument>
-                        <InArgument x:TypeArguments="ui:UiElement" x:Key="in_Scope">[formFrame]</InArgument>
+                        <InArgument x:TypeArguments="x:String" x:Key="in_Scope">[in_PageFrame.Selector.Text]</InArgument>
+                        <InArgument x:TypeArguments="ui:UiElement" x:Key="in_Loading">[in_LoadingWheel]</InArgument>
                       </ui:InvokeWorkflowFile.Arguments>
                     </ui:InvokeWorkflowFile>
                     <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke M6.2.1.1 A1892 Other Checkbox workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_37" UnSafe="False" WorkflowFileName="NHMRC\DataEntry\Checkbox.xaml">
                       <ui:InvokeWorkflowFile.Arguments>
                         <InArgument x:TypeArguments="x:Boolean" x:Key="in_Choice">[clinicalTrials.Contains("Other")]</InArgument>
                         <InArgument x:TypeArguments="x:String" x:Key="in_Selector">&lt;webctrl id='Q1125-A1892' tag='INPUT' /&gt;</InArgument>
-                        <InArgument x:TypeArguments="ui:UiElement" x:Key="in_Scope">[formFrame]</InArgument>
+                        <InArgument x:TypeArguments="x:String" x:Key="in_Scope">[in_PageFrame.Selector.Text]</InArgument>
+                        <InArgument x:TypeArguments="ui:UiElement" x:Key="in_Loading">[in_LoadingWheel]</InArgument>
                       </ui:InvokeWorkflowFile.Arguments>
                     </ui:InvokeWorkflowFile>
                   </Sequence>
@@ -208,6 +220,17 @@
                               <ui:Target ClippingRegion="{x:Null}" Selector="{x:Null}" TimeoutMS="{x:Null}" Element="[tab]" WaitForReady="INTERACTIVE" />
                             </ui:Click.Target>
                           </ui:Click>
+                          <ui:WaitUiElementAppear DisplayName="Refresh Loading Element" FoundElement="[in_LoadingWheel]" sap2010:WorkflowViewState.IdRef="WaitUiElementAppear_3" WaitActive="False" WaitVisible="False">
+                            <ui:WaitUiElementAppear.Target>
+                              <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Selector="[in_LoadingWheel.Selector.Text]" TimeoutMS="1000" WaitForReady="COMPLETE" />
+                            </ui:WaitUiElementAppear.Target>
+                          </ui:WaitUiElementAppear>
+                          <ui:WaitUiElementAppear DisplayName="Refresh Page Element" FoundElement="[in_PageFrame]" sap2010:WorkflowViewState.IdRef="WaitUiElementAppear_4" WaitActive="False" WaitVisible="False">
+                            <ui:WaitUiElementAppear.Target>
+                              <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Selector="[in_PageFrame.Selector.Text]" TimeoutMS="1000" WaitForReady="COMPLETE" />
+                            </ui:WaitUiElementAppear.Target>
+                          </ui:WaitUiElementAppear>
+                          <ui:WaitAttribute TimeoutMS="{x:Null}" Attribute="style" AttributeValue="[&quot;display: none;&quot;]" ContinueOnError="True" DisplayName="Wait Finished Loading Attribute" Element="[in_LoadingWheel]" sap2010:WorkflowViewState.IdRef="WaitAttribute_2" />
                           <ui:GetValue ContinueOnError="{x:Null}" DisplayName="Get Tab Title Text" sap2010:WorkflowViewState.IdRef="GetValue_1">
                             <ui:GetValue.Target>
                               <ui:Target ClippingRegion="{x:Null}" Selector="{x:Null}" TimeoutMS="{x:Null}" Element="[tab]" WaitForReady="INTERACTIVE" />
@@ -236,8 +259,9 @@
                               </Assign>
                               <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke M6.2.1.1.1.1 Q1160 SetupMulti workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_43" UnSafe="False" WorkflowFileName="NHMRC\DataEntry\SetupMulti.xaml">
                                 <ui:InvokeWorkflowFile.Arguments>
-                                  <InArgument x:TypeArguments="x:String" x:Key="in_FirstItemSelector">&lt;webctrl id='FormFrame' tag='IFRAME' /&gt;&lt;webctrl id='Q1160_*' tag='INPUT' type='text' /&gt;</InArgument>
-                                  <InArgument x:TypeArguments="ui:UiElement" x:Key="in_PageScope">[in_Browser]</InArgument>
+                                  <InArgument x:TypeArguments="x:String" x:Key="in_FirstItemSelector">&lt;webctrl id='Q1160_*' tag='INPUT' type='text' /&gt;</InArgument>
+                                  <InArgument x:TypeArguments="x:String" x:Key="in_PageScope">[in_PageFrame.Selector.Text]</InArgument>
+                                  <InArgument x:TypeArguments="ui:UiElement" x:Key="in_Loading">[in_LoadingWheel]</InArgument>
                                   <OutArgument x:TypeArguments="x:String" x:Key="out_ParentSelector">[tableSelector]</OutArgument>
                                 </ui:InvokeWorkflowFile.Arguments>
                               </ui:InvokeWorkflowFile>
@@ -250,6 +274,7 @@
                                     <Sequence DisplayName="Body" sap2010:WorkflowViewState.IdRef="Sequence_18">
                                       <Sequence.Variables>
                                         <Variable x:TypeArguments="ui:UiElement" Name="parent" />
+                                        <Variable x:TypeArguments="ui:UiElement" Name="tableScope" />
                                       </Sequence.Variables>
                                       <ui:Click DelayBefore="{x:Null}" DelayMS="{x:Null}" ClickType="CLICK_SINGLE" DisplayName="Click add new row" sap2010:WorkflowViewState.IdRef="Click_2" KeyModifiers="None" MouseButton="BTN_LEFT" SendWindowMessages="False" SimulateClick="True">
                                         <ui:Click.CursorPosition>
@@ -266,15 +291,25 @@
                                           <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="[tableSelector + &quot;&lt;webctrl aaname='Add Row' tag='INPUT' /&gt;&quot;]" WaitForReady="INTERACTIVE" />
                                         </ui:Click.Target>
                                       </ui:Click>
-                                      <ui:WaitUiElementAppear DisplayName="Find Table Element" FoundElement="[parent]" sap2010:WorkflowViewState.IdRef="WaitUiElementAppear_3" WaitActive="False" WaitVisible="False">
+                                      <ui:WaitAttribute TimeoutMS="{x:Null}" Attribute="style" AttributeValue="[&quot;display: none;&quot;]" ContinueOnError="True" DisplayName="Wait Finished Loading Attribute" Element="[in_LoadingWheel]" sap2010:WorkflowViewState.IdRef="WaitAttribute_3" />
+                                      <Assign DisplayName="Assign adjusted position" sap2010:WorkflowViewState.IdRef="Assign_6">
+                                        <Assign.To>
+                                          <OutArgument x:TypeArguments="x:Int32">[position]</OutArgument>
+                                        </Assign.To>
+                                        <Assign.Value>
+                                          <InArgument x:TypeArguments="x:Int32">[position + 1]</InArgument>
+                                        </Assign.Value>
+                                      </Assign>
+                                      <ui:WaitUiElementAppear DisplayName="Find Table Element" FoundElement="[tableScope]" sap2010:WorkflowViewState.IdRef="WaitUiElementAppear_5" WaitActive="False" WaitVisible="False">
                                         <ui:WaitUiElementAppear.Target>
-                                          <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="[tableSelector + &quot;&lt;webctrl id='LTP*' tag='DIV' idx='&quot; &amp; position + 1 &amp; &quot;' /&gt;&quot;]" WaitForReady="COMPLETE" />
+                                          <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="&lt;webctrl id='FormFrame' tag='IFRAME' /&gt;&lt;webctrl idx='{{position}}' id='LTP15104a9d-9314-4c92-b9dd-9ad22cc35281' tag='DIV' /&gt;" WaitForReady="COMPLETE" />
                                         </ui:WaitUiElementAppear.Target>
                                       </ui:WaitUiElementAppear>
                                       <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke M6.2.1.1.1.1_DrugDetails workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_45" UnSafe="False" WorkflowFileName="NHMRC\Pages\M6.2.1.1.1.1_DrugDetails.xaml">
                                         <ui:InvokeWorkflowFile.Arguments>
                                           <InArgument x:TypeArguments="sxl:XElement" x:Key="in_DrugDetails">[drug]</InArgument>
-                                          <InArgument x:TypeArguments="ui:UiElement" x:Key="in_TableScope">[parent]</InArgument>
+                                          <InArgument x:TypeArguments="x:String" x:Key="in_TableScope">[tableScope.Selector.Text]</InArgument>
+                                          <InArgument x:TypeArguments="ui:UiElement" x:Key="in_Loading">[in_LoadingWheel]</InArgument>
                                         </ui:InvokeWorkflowFile.Arguments>
                                       </ui:InvokeWorkflowFile>
                                     </Sequence>
@@ -298,8 +333,9 @@
                               </Assign>
                               <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke M6.2.1.1.2.1 Q1095 SetupMulti workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_44" UnSafe="False" WorkflowFileName="NHMRC\DataEntry\SetupMulti.xaml">
                                 <ui:InvokeWorkflowFile.Arguments>
-                                  <InArgument x:TypeArguments="x:String" x:Key="in_FirstItemSelector">&lt;webctrl id='FormFrame' tag='IFRAME' /&gt;&lt;webctrl id='Q1095_*' tag='INPUT' type='text' /&gt;</InArgument>
-                                  <InArgument x:TypeArguments="ui:UiElement" x:Key="in_PageScope">[in_Browser]</InArgument>
+                                  <InArgument x:TypeArguments="x:String" x:Key="in_FirstItemSelector">&lt;webctrl id='Q1095_*' tag='INPUT' type='text' /&gt;</InArgument>
+                                  <InArgument x:TypeArguments="x:String" x:Key="in_PageScope">[in_PageFrame.Selector.Text]</InArgument>
+                                  <InArgument x:TypeArguments="ui:UiElement" x:Key="in_Loading">[in_LoadingWheel]</InArgument>
                                   <OutArgument x:TypeArguments="x:String" x:Key="out_ParentSelector">[tableSelector]</OutArgument>
                                 </ui:InvokeWorkflowFile.Arguments>
                               </ui:InvokeWorkflowFile>
@@ -311,7 +347,7 @@
                                     </ActivityAction.Argument>
                                     <Sequence DisplayName="Body" sap2010:WorkflowViewState.IdRef="Sequence_20">
                                       <Sequence.Variables>
-                                        <Variable x:TypeArguments="ui:UiElement" Name="parent" />
+                                        <Variable x:TypeArguments="ui:UiElement" Name="tableScope" />
                                       </Sequence.Variables>
                                       <ui:Click DelayBefore="{x:Null}" DelayMS="{x:Null}" ClickType="CLICK_SINGLE" DisplayName="Click add new row" sap2010:WorkflowViewState.IdRef="Click_3" KeyModifiers="None" MouseButton="BTN_LEFT" SendWindowMessages="False" SimulateClick="True">
                                         <ui:Click.CursorPosition>
@@ -328,15 +364,25 @@
                                           <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="[tableSelector + &quot;&lt;webctrl aaname='Add Row' tag='INPUT' /&gt;&quot;]" WaitForReady="INTERACTIVE" />
                                         </ui:Click.Target>
                                       </ui:Click>
-                                      <ui:WaitUiElementAppear DisplayName="Find Table Element" FoundElement="[parent]" sap2010:WorkflowViewState.IdRef="WaitUiElementAppear_5" WaitActive="False" WaitVisible="False">
+                                      <ui:WaitAttribute TimeoutMS="{x:Null}" Attribute="style" AttributeValue="[&quot;display: none;&quot;]" ContinueOnError="True" DisplayName="Wait Finished Loading Attribute" Element="[in_LoadingWheel]" sap2010:WorkflowViewState.IdRef="WaitAttribute_4" />
+                                      <Assign DisplayName="Assign adjusted position" sap2010:WorkflowViewState.IdRef="Assign_7">
+                                        <Assign.To>
+                                          <OutArgument x:TypeArguments="x:Int32">[position]</OutArgument>
+                                        </Assign.To>
+                                        <Assign.Value>
+                                          <InArgument x:TypeArguments="x:Int32">[position + 1]</InArgument>
+                                        </Assign.Value>
+                                      </Assign>
+                                      <ui:WaitUiElementAppear DisplayName="Find Table Element" FoundElement="[tableScope]" sap2010:WorkflowViewState.IdRef="WaitUiElementAppear_7" WaitActive="False" WaitVisible="False">
                                         <ui:WaitUiElementAppear.Target>
-                                          <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="[tableSelector + &quot;&lt;webctrl id='LTP*' tag='DIV' idx='&quot; &amp; position + 1 &amp; &quot;' /&gt;&quot;]" WaitForReady="COMPLETE" />
+                                          <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="&lt;webctrl id='FormFrame' tag='IFRAME' /&gt;&#xD;&#xA;&lt;webctrl idx='{{position}}' id='LTPdf9f0229-7898-4f16-9e35-2edb3f7eccd3' tag='DIV' /&gt;" WaitForReady="COMPLETE" />
                                         </ui:WaitUiElementAppear.Target>
                                       </ui:WaitUiElementAppear>
                                       <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke M6.2.1.1.2.1_DeviceDetails workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_46" UnSafe="False" WorkflowFileName="NHMRC\Pages\M6.2.1.1.2.1_DeviceDetails.xaml">
                                         <ui:InvokeWorkflowFile.Arguments>
                                           <InArgument x:TypeArguments="sxl:XElement" x:Key="in_DeviceDetails">[device]</InArgument>
-                                          <InArgument x:TypeArguments="ui:UiElement" x:Key="in_TableScope">[parent]</InArgument>
+                                          <InArgument x:TypeArguments="x:String" x:Key="in_TableScope">[tableScope.Selector.Text]</InArgument>
+                                          <InArgument x:TypeArguments="ui:UiElement" x:Key="in_Loading">[in_LoadingWheel]</InArgument>
                                         </ui:InvokeWorkflowFile.Arguments>
                                       </ui:InvokeWorkflowFile>
                                     </Sequence>
@@ -360,11 +406,12 @@
                                   <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Selector="&lt;webctrl id='FormFrame' tag='IFRAME' /&gt;&lt;webctrl tag='DIV' class='tab-content' /&gt;&lt;webctrl aaname='Clear content selection' tag='A' /&gt;" TimeoutMS="500" WaitForReady="INTERACTIVE" />
                                 </ui:Click.Target>
                               </ui:Click>
+                              <ui:WaitAttribute TimeoutMS="{x:Null}" Attribute="style" AttributeValue="[&quot;display: none;&quot;]" ContinueOnError="True" DisplayName="Wait Finished Loading Attribute" Element="[in_LoadingWheel]" sap2010:WorkflowViewState.IdRef="WaitAttribute_5" />
                               <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke M6.2.1.1.3.1 Q1631 Paragraph workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_38" UnSafe="False" WorkflowFileName="NHMRC\DataEntry\Paragraph.xaml">
                                 <ui:InvokeWorkflowFile.Arguments>
                                   <InArgument x:TypeArguments="x:String" x:Key="in_Entry">[in_Application.Element("q1634").Value]</InArgument>
                                   <InArgument x:TypeArguments="x:String" x:Key="in_Selector">&lt;webctrl id='Q1632_ifr' tag='IFRAME' /&gt;</InArgument>
-                                  <InArgument x:TypeArguments="ui:UiElement" x:Key="in_Scope">[formFrame]</InArgument>
+                                  <InArgument x:TypeArguments="x:String" x:Key="in_Scope">[in_PageFrame.Selector.Text]</InArgument>
                                 </ui:InvokeWorkflowFile.Arguments>
                               </ui:InvokeWorkflowFile>
                               <If Condition="[in_Application.Element(&quot;q1636&quot;) IsNot Nothing AndAlso Not in_Application.Element(&quot;q1636&quot;).IsEmpty]" DisplayName="If M6.2.1.1.3.2 is Set" sap2010:WorkflowViewState.IdRef="If_8">
@@ -373,7 +420,7 @@
                                     <ui:InvokeWorkflowFile.Arguments>
                                       <InArgument x:TypeArguments="x:String" x:Key="in_FilePath">[in_Application.Element("q1636").Value]</InArgument>
                                       <InArgument x:TypeArguments="x:String" x:Key="in_Selector">&lt;webctrl id='Q1634_btnUpload' tag='INPUT' /&gt;</InArgument>
-                                      <InArgument x:TypeArguments="ui:UiElement" x:Key="in_Scope">[formFrame]</InArgument>
+                                      <InArgument x:TypeArguments="x:String" x:Key="in_Scope">[in_PageFrame.Selector.Text]</InArgument>
                                     </ui:InvokeWorkflowFile.Arguments>
                                   </ui:InvokeWorkflowFile>
                                 </If.Then>
@@ -383,6 +430,8 @@
                               <ui:InvokeWorkflowFile.Arguments>
                                 <InArgument x:TypeArguments="sxl:XElement" x:Key="in_Application">[in_Application]</InArgument>
                                 <InArgument x:TypeArguments="ui:Browser" x:Key="in_Browser">[in_Browser]</InArgument>
+                                <InArgument x:TypeArguments="ui:UiElement" x:Key="in_PageFrame">[in_PageFrame]</InArgument>
+                                <InArgument x:TypeArguments="ui:UiElement" x:Key="in_Loading">[in_LoadingWheel]</InArgument>
                               </ui:InvokeWorkflowFile.Arguments>
                             </ui:InvokeWorkflowFile>
                           </Switch>
@@ -399,7 +448,7 @@
                   <ui:InvokeWorkflowFile.Arguments>
                     <InArgument x:TypeArguments="x:String" x:Key="in_Entry">[in_Application.Element("q917").Value]</InArgument>
                     <InArgument x:TypeArguments="x:String" x:Key="in_Selector">&lt;webctrl id='Q917_ifr' tag='IFRAME' /&gt;</InArgument>
-                    <InArgument x:TypeArguments="ui:UiElement" x:Key="in_Scope">[formFrame]</InArgument>
+                    <InArgument x:TypeArguments="x:String" x:Key="in_Scope">[in_PageFrame.Selector.Text]</InArgument>
                   </ui:InvokeWorkflowFile.Arguments>
                 </ui:InvokeWorkflowFile>
               </If.Then>
@@ -410,7 +459,7 @@
                   <ui:InvokeWorkflowFile.Arguments>
                     <InArgument x:TypeArguments="x:String" x:Key="in_Entry">[in_Application.Element("q1414").Value]</InArgument>
                     <InArgument x:TypeArguments="x:String" x:Key="in_Selector">&lt;webctrl id='Q1414_ifr' tag='IFRAME' /&gt;</InArgument>
-                    <InArgument x:TypeArguments="ui:UiElement" x:Key="in_Scope">[formFrame]</InArgument>
+                    <InArgument x:TypeArguments="x:String" x:Key="in_Scope">[in_PageFrame.Selector.Text]</InArgument>
                   </ui:InvokeWorkflowFile.Arguments>
                 </ui:InvokeWorkflowFile>
               </If.Then>
@@ -419,45 +468,52 @@
         </ActivityAction>
       </ui:BrowserScope.Body>
     </ui:BrowserScope>
-    <sads:DebugSymbol.Symbol>d3pDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUk1TX0hSRUFGb3JtRGF0YUV4dHJhY3Rpb25cTkhNUkNcUGFnZXNcTTYuMV9JbnRlcnZlbnRpb25hbENsaW5pY2FsVHJpYWxzUmVzZWFyY2gueGFtbJYBTAOnAw4CAQFNBaUDFwIBAk1zTYEBAwG9AVMLogMWAgEDVw1lGAMBuwFmDWomAwG3AWsNcSUDAbEBcg15JQMBqgF6DYUBEgMBoQGGAQ2LAxICARSMAw2WAxICAQyXAw2hAxICAQRjZ2P3AQMBvAFmUGZdAwG5AWhnaMUBAwG4AW1JbW8DAbYBbkxueAMBtQFvTW9YAwGzAWvJAWvpAQMBsgF1T3V8AwGwAXZOdnsDAa8BdEp0cAMBrgF3TXdYAwGsAXLFAXLhAQMBqwF6G3pfAwGiAXwRgwEpAwGjAYYBG4YBowECARWIARGJAxwCARaMAxuMA6oBAgENjgMRlAMpAgEOlwMblwOwAQIBBZkDEZ8DKQIBBn9Tf34DAakBgAFSgAF9AwGoAX5OfnMDAacBgQFRgQFcAwGlAXzKAXzmAQMBpAGMARO0AR4DAYQBtQETuQElAwGAAboBE4gDIAIBF5ADTZADcwIBE5EDUJEDfAIBEpIDUZIDXAIBEI4D0QGOA/EBAgEPmwNNmwN0AgELnANQnAN9AgEKnQNRnQNcAgEImQPOAZkD7gECAQeQARWXAR4DAZ0BmAEVngEtAwGXAZ8BFaUBLQMBkQGmARWsAS0DAYsBrQEVswEtAwGFAbcBbbcByQEDAYMBtQFitQF9AwGCAbUBLbUBOQMBgQG6AaYBugGyAQIBf8ABGYUDJAIBGJUBQpUBdQMBoAGSAUOSAVMDAZ4BmwFUmwGCAQMBnAGaAVOaAXYDAZsBnAFVnAFgAwGZAZgB3AGYAfsBAwGYAaIBVKIBggEDAZYBoQFToQF4AwGVAaMBVaMBYAMBkwGfAd4BnwH9AQMBkgGpAVSpAYIBAwGQAagBU6gBgwEDAY8BqgFVqgFgAwGNAaYB6QGmAYgCAwGMAbABVLABggEDAYoBrwFTrwF1AwGJAbEBVbEBYAMBhwGtAdsBrQH6AQMBhgHEARvSASYCAXzTARvaASkCAXbbARuEAyQCARnQAXXQAXwCAX3YAUfYAVECAXjVAXXVAXwCAXrbAWvbAXcCARrfAR2cAigCAVedAh3aAigCATjbAh39AigCASX+Ah2DAzUCAR/dAR/dAb8BAgEc5QEf7AEoAgFz7QEf8wE3AgFs9AEfmwIsAgFYowIfqgIoAgFUqwIfsQI3AgFNsgIf2QIsAgE53AIf6gIqAgE06wIf8QI3AgEu8gIf/AIkAgEmgANjgANzAgEjgQNdgQNpAgEh/gLzAf4CnAICASDdAYwB3QG8AQIBHeoBWOoBkQECAXXnAVnnAW0CAXTxAWbxAXUCAXHvAWfvAcoBAgFw8AFj8AFvAgFu7QHlAe0BhgICAW30AcQB9AHaAQIBa/QBV/QBYwIBafoBJZgCMAIBWagCWKgCkwECAValAlmlAm8CAVWvAmavAnUCAVKtAmetAsoBAgFRrgJjrgJvAgFPqwLlAasChgICAU6yAsYBsgLeAQIBTLICV7ICYwIBSrgCJdYCMAIBOugCZOgC/AECATfoAocC6AKMAgIBNtwCfNwCggECATXtAlvtAoIBAgEz7gJe7gKLAQIBMu8CX+8CagIBMOsC5AHrAoQCAgEv8gIt8gKmAQIBJ/QCI/oCOwIBKP4BJ4wCMgIBZo0CJ5ECQAIBYJICJ5cCPwIBWrwCJ8oCMgIBR8sCJ88CQAIBQdACJ9UCPwIBO/cCYvcClAECAS34AmP4Am4CASv2AmL2AokBAgEq9ALvAfQCkAICASmKAoEBigLPAQIBZ40CbY0CdwIBZI8CgQGPAvMBAgFhlAJtlAJzAgFelQJslQJ0AgFckgLoAZICkwICAVvIAoEByALPAQIBSMsCbcsCdwIBRc0CgQHNAvMBAgFC0gJv0gJ3AgE/0wJs0wJ0AgE90ALqAdAClwICATw=</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d5IBQzpcVXNlcnNcc3BhbWlzaFxEb2N1bWVudHNcVWlQYXRoXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXFJNU19IUkVBRm9ybURhdGFFeHRyYWN0aW9uXE5ITVJDXFBhZ2VzXE02LjFfSW50ZXJ2ZW50aW9uYWxDbGluaWNhbFRyaWFsc1Jlc2VhcmNoLnhhbWzOAU8D2AMOAgEBUAXWAxcCAQJQc1CBAQMB+gFWC9MDFgIBA1cNZRgDAfgBZg1qJgMB8wFrDW8mAwHuAXANcIkCAwHoAXENdyUDAeMBeA2AASUDAdsBgQENjQESAwHRAY4BDbwDEgIBEr0DDccDEgIBC8gDDdIDEgIBBGNnY/cBAwH5AWZYZmsDAfYBaFJocwMB9QFofmiEAQMB9AFrVWtlAwHxAW1SbXADAfABbXttgQEDAe8BcIQBcIoBAwHtAXBVcHMDAewBcD5wRQMB6wFwwQFw1AEDAekBc0lzbwMB5wF0THR4AwHmAXVJdWUDAeUBcckBcekBAwHkAXtPe3wDAeIBfE58ewMB4QF6SnpwAwHgAX1JfWUDAd8Bfk9+YAMB3QF4xQF44QEDAdwBgQEbgQFfAwHSAYMBEYsBKQMB0wGOARuOAaMBAgETkAERugMcAgEUvQMbvQOqAQIBDL8DEcUDKQIBDcgDG8gDsAECAQXKAxHQAykCAQaGAVOGAX4DAdoBhwFShwF9AwHZAYUBToUBcwMB2AGIAU2IAWkDAdcBiQFTiQFkAwHVAYMBygGDAeYBAwHUAZQBE8ABHgMBsAHBARPFASUDAawBxgETuQMgAgEVwQNNwQNzAgERwgNQwgN8AgEQwwNNwwNpAgEPvwPRAb8D8QECAQ7MA03MA3QCAQrNA1DNA30CAQnOA03OA2kCAQjKA84BygPuAQIBB5gBFZ8BHgMBzQGgARWnAS0DAcYBqAEVrwEtAwG/AbABFbcBLQMBuAG4ARW/AS0DAbEBwwFtwwHJAQMBrwHBAWLBAX0DAa4BwQEtwQE5AwGtAcYBpgHGAbIBAwGrAcwBGbYDJAIBFp0BQp0BdQMB0AGaAUOaAVMDAc4BowFUowGCAQMBzAGiAVOiAXYDAcsBpAFRpAFtAwHKAaUBV6UBaAMByAGgAdwBoAH7AQMBxwGrAVSrAYIBAwHFAaoBU6oBeAMBxAGsAVGsAW0DAcMBrQFXrQFoAwHBAagB3gGoAf0BAwHAAbMBVLMBggEDAb4BsgFTsgGDAQMBvQG0AVG0AW0DAbwBtQFXtQFoAwG6AbAB6QGwAYgCAwG5AbsBVLsBggEDAbcBugFTugF1AwG2AbwBUbwBbQMBtQG9AVe9AWgDAbMBuAHbAbgB+gEDAbIB0AEb3gEmAwGoAd8BG+MBNAMBowHkARvoATQDAZ4B6QEb6QGXAgMBmAHqARvxASkDAZIB8gEbtQMkAgEX3AF13AF8AwGpAd8BZt8BeQMBpgHhAWDhAYEBAwGlAeEBjAHhAZIBAwGkAeQBY+QBcwMBoQHmAWDmAX4DAaAB5gGJAeYBjwEDAZ8B6QGSAekBmAEDAZ0B6QFj6QGBAQMBnAHpAUzpAVMDAZsB6QHPAekB4gEDAZkB7wFH7wFRAwGUAewBdewBfAMBlgHyAWvyAXcCARj2AR2/AigCAWjAAh2IAygCAT6JAx2sAygCASetAx20AzUCAR30AR/0Ab8BAgEa/AEfgwIoAwGPAYQCH4sCNwMBhwGMAh++AiwCAWnGAh/NAigCAWXOAh/VAjcCAV3WAh+HAywCAT+KAx+YAyoCATqZAx+ZA5sCAgE0mgMfoAM3AgEvoQMfqwMkAgEorwNjrwNzAgElsgNfsgNwAgEjsANdsANpAgEhsQNhsQNvAgEfrQPzAa0DnAICAR70AYwB9AG8AQIBG4ECWIECkQEDAZEB/gFZ/gFtAwGQAYkCZokCdQMBjQGGAmeGAp0BAwGMAYcCX4cCewMBiwGIAmGIAnIDAYkBhALlAYQChgIDAYgBjALEAYwC2gEDAYYBjAJXjAJjAwGEAZICJbsCMAIBassCWMsCkwECAWfIAlnIAm8CAWbTAmbTAnUCAWPQAmfQAp0BAgFi0QJf0QJ7AgFh0gJh0gJyAgFfzgLlAc4ChgICAV7WAsYB1gLeAQIBXNYCV9YCYwIBWtwCJYQDMAIBQJYDZJYD/AECAT2WA4cClgOMAgIBPIoDfIoDggECATuZA5YBmQOcAQIBOZkDZ5kDhQECATiZA1CZA1cCATeZA9MBmQPmAQIBNZwDW5wDggECATOdA16dA4sBAgEyngNbngN3AgExmgPkAZoDhAICATChAy2hA6YBAgEpowMjqQM7AgEqlwInpQIyAwGBAaYCJ6YCowICAXunAieuAjACAXavAiezAkACAXK0Aie6Aj8CAWvgAifuAjICAVfvAifvAqMCAgFR8AIn9wIwAgFM+AIn/AJAAgFI/QIngwM/AgFBpgNipgOUAQIBLqcDX6cDewIBLaUDYqUDiQECASyjA+8BowOQAgIBK6MCgQGjAs8BAwGCAaYCngGmAqQBAwGAAaYCb6YCjQECAX+mAlimAl8CAX6mAtsBpgLuAQIBfKwCUawCXwIBeakCUqkCXAIBd68Cba8CewIBdLECgQGxAosCAgFztgJttgJzAgFwtwJotwKCAQIBb7gCabgCegIBbbQC6AG0ApMCAgFs7AKBAewCzwECAVjvAp4B7wKkAQIBVu8Cb+8CjQECAVXvAljvAl8CAVTvAtsB7wLuAQIBUvUCUfUCXwIBT/ICUvICXAIBTfgCbfgCewIBSvoCgQH6ApUCAgFJ/wJv/wJ3AgFGgANogAOCAQIBRYEDaYEDegIBQ/0C6gH9ApcCAgFC</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
-      <sap2010:ViewStateData Id="Click_4" sap:VirtualizedContainerService.HintSize="691,68" />
-      <sap2010:ViewStateData Id="WaitUiElementAppear_2" sap:VirtualizedContainerService.HintSize="691,68" />
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_29" sap:VirtualizedContainerService.HintSize="691,87" />
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_30" sap:VirtualizedContainerService.HintSize="691,87" />
+      <sap2010:ViewStateData Id="Click_4" sap:VirtualizedContainerService.HintSize="662,68" />
+      <sap2010:ViewStateData Id="WaitUiElementAppear_1" sap:VirtualizedContainerService.HintSize="662,68" />
+      <sap2010:ViewStateData Id="WaitUiElementAppear_2" sap:VirtualizedContainerService.HintSize="662,68" />
+      <sap2010:ViewStateData Id="WaitAttribute_1" sap:VirtualizedContainerService.HintSize="662,87" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_29" sap:VirtualizedContainerService.HintSize="662,87" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_30" sap:VirtualizedContainerService.HintSize="662,87" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_32" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="If_2" sap:VirtualizedContainerService.HintSize="691,234" />
+      <sap2010:ViewStateData Id="If_2" sap:VirtualizedContainerService.HintSize="662,234" />
       <sap2010:ViewStateData Id="Assign_3" sap:VirtualizedContainerService.HintSize="314,60" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_34" sap:VirtualizedContainerService.HintSize="314,87" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_35" sap:VirtualizedContainerService.HintSize="314,87" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_36" sap:VirtualizedContainerService.HintSize="314,87" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_37" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="Sequence_11" sap:VirtualizedContainerService.HintSize="544,692">
+      <sap2010:ViewStateData Id="Sequence_11" sap:VirtualizedContainerService.HintSize="515,692">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="FindChildren_1" sap:VirtualizedContainerService.HintSize="544,68" />
-      <sap2010:ViewStateData Id="Click_1" sap:VirtualizedContainerService.HintSize="506,68" />
-      <sap2010:ViewStateData Id="GetValue_1" sap:VirtualizedContainerService.HintSize="506,68" />
+      <sap2010:ViewStateData Id="FindChildren_1" sap:VirtualizedContainerService.HintSize="515,68" />
+      <sap2010:ViewStateData Id="Click_1" sap:VirtualizedContainerService.HintSize="477,68" />
+      <sap2010:ViewStateData Id="WaitUiElementAppear_3" sap:VirtualizedContainerService.HintSize="477,68" />
+      <sap2010:ViewStateData Id="WaitUiElementAppear_4" sap:VirtualizedContainerService.HintSize="477,68" />
+      <sap2010:ViewStateData Id="WaitAttribute_2" sap:VirtualizedContainerService.HintSize="477,87" />
+      <sap2010:ViewStateData Id="GetValue_1" sap:VirtualizedContainerService.HintSize="477,68" />
       <sap2010:ViewStateData Id="LogMessage_1" sap:VirtualizedContainerService.HintSize="314,91" />
       <sap2010:ViewStateData Id="Assign_4" sap:VirtualizedContainerService.HintSize="352,60" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_43" sap:VirtualizedContainerService.HintSize="352,87" />
       <sap2010:ViewStateData Id="Click_2" sap:VirtualizedContainerService.HintSize="314,68" />
-      <sap2010:ViewStateData Id="WaitUiElementAppear_3" sap:VirtualizedContainerService.HintSize="314,68" />
+      <sap2010:ViewStateData Id="WaitAttribute_3" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="Assign_6" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="WaitUiElementAppear_5" sap:VirtualizedContainerService.HintSize="314,68" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_45" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="Sequence_18" sap:VirtualizedContainerService.HintSize="336,427">
+      <sap2010:ViewStateData Id="Sequence_18" sap:VirtualizedContainerService.HintSize="336,654">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="ForEach`1_2" sap:VirtualizedContainerService.HintSize="352,560">
+      <sap2010:ViewStateData Id="ForEach`1_2" sap:VirtualizedContainerService.HintSize="352,787">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -465,7 +521,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_19" sap:VirtualizedContainerService.HintSize="374,910">
+      <sap2010:ViewStateData Id="Sequence_19" sap:VirtualizedContainerService.HintSize="374,1138">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -475,16 +531,18 @@
       <sap2010:ViewStateData Id="Assign_5" sap:VirtualizedContainerService.HintSize="352,60" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_44" sap:VirtualizedContainerService.HintSize="352,87" />
       <sap2010:ViewStateData Id="Click_3" sap:VirtualizedContainerService.HintSize="314,68" />
-      <sap2010:ViewStateData Id="WaitUiElementAppear_5" sap:VirtualizedContainerService.HintSize="314,68" />
+      <sap2010:ViewStateData Id="WaitAttribute_4" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="Assign_7" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="WaitUiElementAppear_7" sap:VirtualizedContainerService.HintSize="314,68" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_46" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="Sequence_20" sap:VirtualizedContainerService.HintSize="336,427">
+      <sap2010:ViewStateData Id="Sequence_20" sap:VirtualizedContainerService.HintSize="336,654">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="ForEach`1_3" sap:VirtualizedContainerService.HintSize="352,560">
+      <sap2010:ViewStateData Id="ForEach`1_3" sap:VirtualizedContainerService.HintSize="352,787">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -492,7 +550,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_21" sap:VirtualizedContainerService.HintSize="374,910">
+      <sap2010:ViewStateData Id="Sequence_21" sap:VirtualizedContainerService.HintSize="374,1138">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -501,10 +559,11 @@
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="Click_6" sap:VirtualizedContainerService.HintSize="464,68" />
+      <sap2010:ViewStateData Id="WaitAttribute_5" sap:VirtualizedContainerService.HintSize="464,87" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_38" sap:VirtualizedContainerService.HintSize="464,87" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_39" sap:VirtualizedContainerService.HintSize="314,87" />
       <sap2010:ViewStateData Id="If_8" sap:VirtualizedContainerService.HintSize="464,234" />
-      <sap2010:ViewStateData Id="Sequence_14" sap:VirtualizedContainerService.HintSize="486,593">
+      <sap2010:ViewStateData Id="Sequence_14" sap:VirtualizedContainerService.HintSize="486,720">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -512,23 +571,15 @@
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="InvokeWorkflowFile_40" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="Switch`1_2" sap:VirtualizedContainerService.HintSize="506,842" />
-      <sap2010:ViewStateData Id="Sequence_6" sap:VirtualizedContainerService.HintSize="528,1182">
+      <sap2010:ViewStateData Id="Switch`1_2" sap:VirtualizedContainerService.HintSize="477,1387" />
+      <sap2010:ViewStateData Id="Sequence_6" sap:VirtualizedContainerService.HintSize="499,2070">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="ForEach`1_1" sap:VirtualizedContainerService.HintSize="544,1315">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-            <x:Boolean x:Key="IsPinned">False</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_10" sap:VirtualizedContainerService.HintSize="566,2279">
+      <sap2010:ViewStateData Id="ForEach`1_1" sap:VirtualizedContainerService.HintSize="515,2203">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -536,7 +587,15 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_4" sap:VirtualizedContainerService.HintSize="691,2426">
+      <sap2010:ViewStateData Id="Sequence_10" sap:VirtualizedContainerService.HintSize="537,3167">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="If_4" sap:VirtualizedContainerService.HintSize="662,3314">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -545,7 +604,7 @@
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="InvokeWorkflowFile_33" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="If_5" sap:VirtualizedContainerService.HintSize="691,234">
+      <sap2010:ViewStateData Id="If_5" sap:VirtualizedContainerService.HintSize="662,234">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -554,15 +613,15 @@
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="InvokeWorkflowFile_31" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="If_6" sap:VirtualizedContainerService.HintSize="691,234" />
-      <sap2010:ViewStateData Id="Sequence_5" sap:VirtualizedContainerService.HintSize="713,3842">
+      <sap2010:ViewStateData Id="If_6" sap:VirtualizedContainerService.HintSize="662,234" />
+      <sap2010:ViewStateData Id="Sequence_5" sap:VirtualizedContainerService.HintSize="684,4965">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="BrowserScope_1" sap:VirtualizedContainerService.HintSize="727,3950">
+      <sap2010:ViewStateData Id="BrowserScope_1" sap:VirtualizedContainerService.HintSize="698,5073">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -570,14 +629,14 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="749,4074">
+      <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="720,5197">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_3" sap:VirtualizedContainerService.HintSize="789,4154" />
+      <sap2010:ViewStateData Id="Sequence_3" sap:VirtualizedContainerService.HintSize="760,5277" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>

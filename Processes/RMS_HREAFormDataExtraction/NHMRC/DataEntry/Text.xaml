@@ -15,7 +15,7 @@
     <x:Property Name="in_Entry" Type="InArgument(x:String)" />
     <x:Property Name="in_Selector" Type="InArgument(x:String)" />
     <x:Property Name="in_Scope" Type="InArgument(x:String)" />
-    <x:Property Name="in_Loading" Type="InArgument(x:String)" />
+    <x:Property Name="in_Loading" Type="InArgument(ui:UiElement)" />
   </x:Members>
   <mva:VisualBasic.Settings>
     <x:Null />
@@ -74,6 +74,8 @@
   <Sequence DisplayName="Text Entry" sap2010:WorkflowViewState.IdRef="Sequence_1">
     <Sequence.Variables>
       <Variable x:TypeArguments="x:String" Name="text" />
+      <Variable x:TypeArguments="ui:UiElement" Name="element" />
+      <Variable x:TypeArguments="ui:UiElement" Name="loading" />
     </Sequence.Variables>
     <TryCatch DisplayName="Try Catch" sap2010:WorkflowViewState.IdRef="TryCatch_1">
       <TryCatch.Try>
@@ -81,10 +83,6 @@
           <ui:RetryScope.ActivityBody>
             <ActivityAction>
               <Sequence DisplayName="Action" sap2010:WorkflowViewState.IdRef="Sequence_2">
-                <Sequence.Variables>
-                  <Variable x:TypeArguments="ui:UiElement" Name="element" />
-                  <Variable x:TypeArguments="ui:UiElement" Name="loading" />
-                </Sequence.Variables>
                 <If Condition="[in_Scope Is Nothing]" DisplayName="If scope defined" sap2010:WorkflowViewState.IdRef="If_1">
                   <If.Then>
                     <ui:WaitUiElementAppear DisplayName="Find Full Element" FoundElement="[element]" sap2010:WorkflowViewState.IdRef="WaitUiElementAppear_1" WaitActive="False" WaitVisible="False">
@@ -113,15 +111,14 @@
                     </ui:ElementScope>
                   </If.Else>
                 </If>
-                <If Condition="[in_Loading IsNot Nothing]" DisplayName="If loading bar is set">
+                <If Condition="[in_Loading IsNot Nothing]" DisplayName="If loading bar is set" sap2010:WorkflowViewState.IdRef="If_4">
                   <If.Then>
                     <ui:WaitUiElementAppear DisplayName="Find Loading Element" FoundElement="[loading]" sap2010:WorkflowViewState.IdRef="WaitUiElementAppear_3" WaitActive="False" WaitVisible="False">
                       <ui:WaitUiElementAppear.Target>
-                        <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Selector="[in_Loading]" TimeoutMS="1000" WaitForReady="COMPLETE" />
+                        <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Selector="[in_Loading.Selector.Text]" TimeoutMS="1000" WaitForReady="COMPLETE" />
                       </ui:WaitUiElementAppear.Target>
                     </ui:WaitUiElementAppear>
                   </If.Then>
-                  <sap2010:WorkflowViewState.IdRef>If_4</sap2010:WorkflowViewState.IdRef>
                 </If>
                 <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Trace" Message="[&quot;Setting text &quot; + in_Selector + &quot; to &quot; + If(in_Entry.Length &lt; 20, in_Entry, in_Entry.Substring(0, 20) + &quot;...&quot;)]" />
                 <If Condition="[in_Entry &lt;&gt; &quot;&quot;]" sap2010:WorkflowViewState.IdRef="If_2">
@@ -140,7 +137,7 @@
                     </ui:TypeInto>
                   </If.Else>
                 </If>
-                <ui:WaitAttribute TimeoutMS="{x:Null}" Attribute="style" AttributeValue="[&quot;display: none;&quot;]" ContinueOnError="True" DisplayName="Wait Finished Loading Attribute" Element="[loading]" sap2010:WorkflowViewState.IdRef="WaitAttribute_3" />
+                <ui:WaitAttribute TimeoutMS="{x:Null}" Attribute="style" AttributeValue="[&quot;display: none;&quot;]" ContinueOnError="True" DisplayName="Wait Finished Loading Attribute" Element="[loading]" sap2010:WorkflowViewState.IdRef="WaitAttribute_1" />
                 <ui:GetValue ContinueOnError="{x:Null}" DisplayName="Get Text" sap2010:WorkflowViewState.IdRef="GetValue_1">
                   <ui:GetValue.Target>
                     <ui:Target ClippingRegion="{x:Null}" Selector="{x:Null}" TimeoutMS="{x:Null}" Element="[element]" WaitForReady="INTERACTIVE" />
@@ -177,7 +174,7 @@
         </Catch>
       </TryCatch.Catches>
     </TryCatch>
-    <sads:DebugSymbol.Symbol>d1lDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUk1TX0hSRUFGb3JtRGF0YUV4dHJhY3Rpb25cTkhNUkNcRGF0YUVudHJ5XFRleHQueGFtbDdKA7UBDgIBAU4FswEQAgECUAmgARkCAQqoAQ2vARICAQNQiAFQkgECAVJQdlB5AgFRUw+YARoCAQ+dAQ+dAXcCAQuoARuoAUICAQSqARGqAUgCAQmtARGtAY8BAgEGWBFzFgIBPnQRfRYCATV+EX6VAgIBL38RjgEWAgEcjwERjwGFAgIBFpABEZcBHwIBEJ0BYZ0BdAIBDK0BRq0BYgIBB1gfWDYCAT9aFV4uAgFLYRVxJwIBQXQfdDsCATZ2FXouAgE4fn9+kgICATB/H39BAgEdgQEVhQEjAgEniAEVjAEjAgEfjwGIAY8BjgECARuPAVmPAXcCARqPAUKPAUkCARmPAcUBjwHQAQIBF5UBPZUBQwIBEpIBa5IBdgIBFFpaWmUCAU9cWlxpAgFNXHRcegIBTG9ab2YCAUlvcW93AgFIZxtrNAIBQnZddmgCATx4WnhoAgE6eHN4eQIBOYEBSIEBTAIBLIEBpgGBAbIBAgEqgQFZgQFcAgEpgwFvgwF6AgEtiAF4iAF8AgEmiAGJAogBlQICASSIAWyIAW8CASOKAW+KAXoCASGIAVeIAVoCASBnX2dqAgFGaWBpbwIBRGl6aYABAgFD</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d3FDOlxVc2Vyc1xzcGFtaXNoXERvY3VtZW50c1xVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUk1TX0hSRUFGb3JtRGF0YUV4dHJhY3Rpb25cTkhNUkNcRGF0YUVudHJ5XFRleHQueGFtbDdKA7IBDgIBAVAFsAEQAgECUgmdARkCAQqlAQ2sARICAQNSiAFSkgECAVBSdlJ5AgFPVQ+VARoCAQ+aAQ+aAXcCAQulARulAUICAQSnARGnAUgCAQmqARGqAY8BAgEGVhFxFgIBPHIRehYCATV7EXuVAgIBL3wRiwEWAgEcjAERjAGFAgIBFo0BEZQBHwIBEJoBYZoBdAIBDKoBRqoBYgIBB1YfVjYCAT1YFVwuAgFJXxVvJwIBP3IfcjsCATZ0FXguAgE3e397kgICATB8H3xBAgEdfhWCASMCASeFARWJASMCAR+MAYgBjAGOAQIBG4wBWYwBdwIBGowBQowBSQIBGYwBxQGMAdABAgEXkgE9kgFDAgESjwFrjwF2AgEUWFpYZQIBTVpaWmkCAUtadFp6AgFKbVptZgIBR21xbXcCAUZlG2k0AgFAdF10aAIBOnZadnYCATl2gQF2hwECATh+SH5MAgEsfqYBfrIBAgEqfll+XAIBKYABb4ABegIBLYUBeIUBfAIBJoUBiQKFAZUCAgEkhQFshQFvAgEjhwFvhwF6AgEhhQFXhQFaAgEgZV9lagIBRGdgZ28CAUJnemeAAQIBQQ==</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -191,7 +188,7 @@
       <sap2010:ViewStateData Id="SetValue_1" sap:VirtualizedContainerService.HintSize="314,96" />
       <sap2010:ViewStateData Id="TypeInto_1" sap:VirtualizedContainerService.HintSize="314,96" />
       <sap2010:ViewStateData Id="If_2" sap:VirtualizedContainerService.HintSize="753,243" />
-      <sap2010:ViewStateData Id="WaitAttribute_3" sap:VirtualizedContainerService.HintSize="753,87" />
+      <sap2010:ViewStateData Id="WaitAttribute_1" sap:VirtualizedContainerService.HintSize="753,87" />
       <sap2010:ViewStateData Id="GetValue_1" sap:VirtualizedContainerService.HintSize="753,68" />
       <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="775,1351">
         <sap:WorkflowViewStateService.ViewState>
