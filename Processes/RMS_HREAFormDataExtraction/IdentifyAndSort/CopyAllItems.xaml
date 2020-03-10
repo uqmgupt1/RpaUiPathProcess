@@ -7,6 +7,7 @@
  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
  xmlns:scg="clr-namespace:System.Collections.Generic;assembly=mscorlib"
  xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=mscorlib"
+ xmlns:si="clr-namespace:System.IO;assembly=mscorlib"
  xmlns:sxl="clr-namespace:System.Xml.Linq;assembly=System.Xml.Linq"
  xmlns:ui="http://schemas.uipath.com/workflow/activities"
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
@@ -92,74 +93,228 @@
       <AssemblyReference>System.ServiceModel</AssemblyReference>
       <AssemblyReference>System.ValueTuple</AssemblyReference>
       <AssemblyReference>System.ComponentModel.Composition</AssemblyReference>
+      <AssemblyReference>Microsoft.VisualStudio.Services.Common</AssemblyReference>
       <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence sap2010:WorkflowViewState.IdRef="Sequence_48">
     <If Condition="[io_CurrentElement.HasElements Or io_CurrentElement.IsEmpty]" sap2010:WorkflowViewState.IdRef="If_23">
       <If.Then>
-        <ui:ForEach x:TypeArguments="sxl:XElement" CurrentIndex="{x:Null}" DisplayName="For Each" sap2010:WorkflowViewState.IdRef="ForEach`1_1" Values="[io_CurrentElement.Elements]">
-          <ui:ForEach.Body>
-            <ActivityAction x:TypeArguments="sxl:XElement">
-              <ActivityAction.Argument>
-                <DelegateInArgument x:TypeArguments="sxl:XElement" Name="item" />
-              </ActivityAction.Argument>
-              <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke CopyAllItems workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_1" UnSafe="False" WorkflowFileName="IdentifyAndSort\CopyAllItems.xaml">
-                <ui:InvokeWorkflowFile.Arguments>
-                  <InOutArgument x:TypeArguments="sxl:XElement" x:Key="io_CurrentElement">[item]</InOutArgument>
-                  <InArgument x:TypeArguments="x:String" x:Key="in_NewFolder">[in_NewFolder]</InArgument>
-                  <InArgument x:TypeArguments="x:String" x:Key="in_RootDirectory">[in_RootDirectory]</InArgument>
-                </ui:InvokeWorkflowFile.Arguments>
-              </ui:InvokeWorkflowFile>
-            </ActivityAction>
-          </ui:ForEach.Body>
-        </ui:ForEach>
+        <Sequence sap2010:WorkflowViewState.IdRef="Sequence_49">
+          <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_28" Level="Info" Message="[&quot;Moving all items from '&quot; + in_RootDirectory + &quot;' to '&quot; + in_NewFolder + &quot;'&quot;]" />
+          <ui:ForEach x:TypeArguments="sxl:XElement" CurrentIndex="{x:Null}" DisplayName="For Each" sap2010:WorkflowViewState.IdRef="ForEach`1_1" Values="[io_CurrentElement.Elements]">
+            <ui:ForEach.Body>
+              <ActivityAction x:TypeArguments="sxl:XElement">
+                <ActivityAction.Argument>
+                  <DelegateInArgument x:TypeArguments="sxl:XElement" Name="item" />
+                </ActivityAction.Argument>
+                <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke CopyAllItems workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_1" UnSafe="False" WorkflowFileName="IdentifyAndSort\CopyAllItems.xaml">
+                  <ui:InvokeWorkflowFile.Arguments>
+                    <InOutArgument x:TypeArguments="sxl:XElement" x:Key="io_CurrentElement">[item]</InOutArgument>
+                    <InArgument x:TypeArguments="x:String" x:Key="in_NewFolder">[in_NewFolder]</InArgument>
+                    <InArgument x:TypeArguments="x:String" x:Key="in_RootDirectory">[in_RootDirectory]</InArgument>
+                  </ui:InvokeWorkflowFile.Arguments>
+                </ui:InvokeWorkflowFile>
+              </ActivityAction>
+            </ui:ForEach.Body>
+          </ui:ForEach>
+        </Sequence>
       </If.Then>
       <If.Else>
-        <Sequence sap2010:WorkflowViewState.IdRef="Sequence_45">
-          <Sequence.Variables>
-            <Variable x:TypeArguments="x:String" Name="destination" />
-            <Variable x:TypeArguments="x:String" Name="source" />
-          </Sequence.Variables>
-          <Assign sap2010:WorkflowViewState.IdRef="Assign_37">
-            <Assign.To>
-              <OutArgument x:TypeArguments="x:String">[source]</OutArgument>
-            </Assign.To>
-            <Assign.Value>
-              <InArgument x:TypeArguments="x:String">[io_CurrentElement.Value]</InArgument>
-            </Assign.Value>
-          </Assign>
-          <Assign sap2010:WorkflowViewState.IdRef="Assign_38">
-            <Assign.To>
-              <OutArgument x:TypeArguments="x:String">[destination]</OutArgument>
-            </Assign.To>
-            <Assign.Value>
-              <InArgument x:TypeArguments="x:String">[Path.GetDirectoryName(source).Replace(in_RootDirectory, in_NewFolder) + "\" + Path.GetFileName(source)]</InArgument>
-            </Assign.Value>
-          </Assign>
-          <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_27" Level="Info" Message="[&quot;Run CopyAllItems.xaml, from '&quot; + source + &quot;' to '&quot; + destination + &quot;'&quot;]" />
-          <If Condition="[Not Directory.Exists(Path.GetDirectoryName(destination))]" sap2010:WorkflowViewState.IdRef="If_20">
-            <If.Then>
-              <ui:CreateDirectory ContinueOnError="{x:Null}" DisplayName="Create Directory" sap2010:WorkflowViewState.IdRef="CreateDirectory_3" Path="[Path.GetDirectoryName(destination)]" />
-            </If.Then>
-          </If>
-          <ui:CopyFile ContinueOnError="{x:Null}" Destination="[destination]" DisplayName="Copy File" sap2010:WorkflowViewState.IdRef="CopyFile_3" Overwrite="False" Path="[source]" />
-        </Sequence>
+        <TryCatch DisplayName="Try Catch">
+          <TryCatch.Try>
+            <Sequence sap2010:WorkflowViewState.IdRef="Sequence_45">
+              <Sequence.Variables>
+                <Variable x:TypeArguments="x:String" Name="destination" />
+                <Variable x:TypeArguments="x:String" Name="source" />
+                <Variable x:TypeArguments="x:String" Name="filename" />
+                <Variable x:TypeArguments="x:String" Name="folderpath" />
+              </Sequence.Variables>
+              <Assign DisplayName="Assign source file" sap2010:WorkflowViewState.IdRef="Assign_37">
+                <Assign.To>
+                  <OutArgument x:TypeArguments="x:String">[source]</OutArgument>
+                </Assign.To>
+                <Assign.Value>
+                  <InArgument x:TypeArguments="x:String">[io_CurrentElement.Value]</InArgument>
+                </Assign.Value>
+              </Assign>
+              <Assign DisplayName="Assign filename" sap2010:WorkflowViewState.IdRef="Assign_40">
+                <Assign.To>
+                  <OutArgument x:TypeArguments="x:String">[filename]</OutArgument>
+                </Assign.To>
+                <Assign.Value>
+                  <InArgument x:TypeArguments="x:String">[Path.GetFileName(source)]</InArgument>
+                </Assign.Value>
+              </Assign>
+              <ui:CommentOut DisplayName="Comment Out">
+                <ui:CommentOut.Body>
+                  <Sequence DisplayName="Ignored Activities">
+                    <DoWhile DisplayName="Do While" sap2010:WorkflowViewState.IdRef="DoWhile_2">
+                      <DoWhile.Variables>
+                        <Variable x:TypeArguments="si:IOException" Name="nameException" />
+                      </DoWhile.Variables>
+                      <DoWhile.Condition>[nameException IsNot Nothing]</DoWhile.Condition>
+                      <TryCatch DisplayName="Try Catch" sap2010:WorkflowViewState.IdRef="TryCatch_3">
+                        <TryCatch.Try>
+                          <Sequence sap2010:WorkflowViewState.IdRef="Sequence_53">
+                            <Assign DisplayName="Reset exception" sap2010:WorkflowViewState.IdRef="Assign_47">
+                              <Assign.To>
+                                <OutArgument x:TypeArguments="si:IOException">[nameException]</OutArgument>
+                              </Assign.To>
+                              <Assign.Value>
+                                <InArgument x:TypeArguments="si:IOException">[Nothing]</InArgument>
+                              </Assign.Value>
+                            </Assign>
+                          </Sequence>
+                        </TryCatch.Try>
+                        <TryCatch.Catches>
+                          <Catch x:TypeArguments="si:IOException" sap2010:WorkflowViewState.IdRef="Catch`1_3">
+                            <ActivityAction x:TypeArguments="si:IOException">
+                              <ActivityAction.Argument>
+                                <DelegateInArgument x:TypeArguments="si:IOException" Name="exception" />
+                              </ActivityAction.Argument>
+                              <Sequence sap2010:WorkflowViewState.IdRef="Sequence_54">
+                                <Assign DisplayName="Assign nameException" sap2010:WorkflowViewState.IdRef="Assign_48">
+                                  <Assign.To>
+                                    <OutArgument x:TypeArguments="si:IOException">[nameException]</OutArgument>
+                                  </Assign.To>
+                                  <Assign.Value>
+                                    <InArgument x:TypeArguments="si:IOException">[exception]</InArgument>
+                                  </Assign.Value>
+                                </Assign>
+                                <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_31" Level="Warn" Message="[exception.Message + vbNewLine + source]" />
+                              </Sequence>
+                            </ActivityAction>
+                          </Catch>
+                        </TryCatch.Catches>
+                        <TryCatch.Finally>
+                          <If Condition="[nameException IsNot Nothing]" DisplayName="If error thrown" sap2010:WorkflowViewState.IdRef="If_27">
+                            <If.Then>
+                              <Assign DisplayName="Assign shortened folderpath" sap2010:WorkflowViewState.IdRef="Assign_49">
+                                <Assign.To>
+                                  <OutArgument x:TypeArguments="x:String">[source]</OutArgument>
+                                </Assign.To>
+                                <Assign.Value>
+                                  <InArgument x:TypeArguments="x:String">[String.Join("\", source.Split("\"c).Take(source.Split("\"c).Length - 1))]</InArgument>
+                                </Assign.Value>
+                              </Assign>
+                            </If.Then>
+                          </If>
+                        </TryCatch.Finally>
+                      </TryCatch>
+                    </DoWhile>
+                    <sap2010:WorkflowViewState.IdRef>Sequence_55</sap2010:WorkflowViewState.IdRef>
+                  </Sequence>
+                </ui:CommentOut.Body>
+                <sap2010:WorkflowViewState.IdRef>CommentOut_1</sap2010:WorkflowViewState.IdRef>
+              </ui:CommentOut>
+              <Assign DisplayName="Assign folderpath" sap2010:WorkflowViewState.IdRef="Assign_44">
+                <Assign.To>
+                  <OutArgument x:TypeArguments="x:String">[folderpath]</OutArgument>
+                </Assign.To>
+                <Assign.Value>
+                  <InArgument x:TypeArguments="x:String">[Path.GetDirectoryName(source)]</InArgument>
+                </Assign.Value>
+              </Assign>
+              <Assign DisplayName="Assign destination file" sap2010:WorkflowViewState.IdRef="Assign_38">
+                <Assign.To>
+                  <OutArgument x:TypeArguments="x:String">[destination]</OutArgument>
+                </Assign.To>
+                <Assign.Value>
+                  <InArgument x:TypeArguments="x:String">[folderpath.Replace(in_RootDirectory, in_NewFolder) + "\" + filename]</InArgument>
+                </Assign.Value>
+              </Assign>
+              <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_27" Level="Trace" Message="[&quot;Run CopyAllItems.xaml, from '&quot; + source + &quot;' to '&quot; + destination + &quot;'&quot;]" />
+              <If Condition="[Not Directory.Exists(Path.GetDirectoryName(destination))]" sap2010:WorkflowViewState.IdRef="If_20">
+                <If.Then>
+                  <ui:CreateDirectory ContinueOnError="{x:Null}" DisplayName="Create Directory" sap2010:WorkflowViewState.IdRef="CreateDirectory_3" Path="[Path.GetDirectoryName(destination)]" />
+                </If.Then>
+              </If>
+              <ui:CopyFile ContinueOnError="{x:Null}" Destination="[destination]" DisplayName="Copy File" sap2010:WorkflowViewState.IdRef="CopyFile_3" Overwrite="False" Path="[source]" />
+            </Sequence>
+          </TryCatch.Try>
+          <TryCatch.Catches>
+            <Catch x:TypeArguments="si:IOException">
+              <ActivityAction x:TypeArguments="si:IOException">
+                <ActivityAction.Argument>
+                  <DelegateInArgument x:TypeArguments="si:IOException" Name="exception" />
+                </ActivityAction.Argument>
+                <ui:LogMessage DisplayName="Log Message" Level="Info" Message="[io_CurrentElement.Value + vbNewLine + exception.Message]" sap2010:WorkflowViewState.IdRef="LogMessage_32" />
+              </ActivityAction>
+              <sap2010:WorkflowViewState.IdRef>Catch`1_4</sap2010:WorkflowViewState.IdRef>
+            </Catch>
+          </TryCatch.Catches>
+          <sap2010:WorkflowViewState.IdRef>TryCatch_4</sap2010:WorkflowViewState.IdRef>
+        </TryCatch>
       </If.Else>
     </If>
-    <sads:DebugSymbol.Symbol>d2FDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUk1TX0hSRUFGb3JtRGF0YUV4dHJhY3Rpb25cSWRlbnRpZnlBbmRTb3J0XENvcHlBbGxJdGVtcy54YW1sGmIDlwEOAgEBYwWVAQoCAQJjE2NRAgEDZQl0FgIBGncJkwEUAgEEZZgBZbYBAgEjaw9xJwIBG3wLgwEUAgEWhAELiwEUAgESjAELjAHlAQIBDo0BC5EBEAIBCpIBC5IBuAECAQVvU29lAgEhbk9uXQIBH2vDAWvmAQIBHm1bbWECARyBATaBAU8CARl+N34/AgEXiQE2iQGeAQIBFYYBN4YBRAIBE4wBeYwB4gECAQ+NARmNAVUCAQuPAQ+PAb8BAgEMkgE/kgFOAgEIkgGrAZIBtQECAQaPAZYBjwG8AQIBDQ==</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d2FDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUk1TX0hSRUFGb3JtRGF0YUV4dHJhY3Rpb25cSWRlbnRpZnlBbmRTb3J0XENvcHlBbGxJdGVtcy54YW1sJ2QD/AEOAgEBZQX6AQoCAQJlE2VRAgEDZwl5FAIBKnwJ+AEUAgEEaAto6gECATVpC3gYAgErfg3qARgCAQfyARHyAb0BAgEFaHlo5wECATZpmgFpuAECATRvEXUpAgEshQEPjAEYAgEmjQEPlAEYAgEilQEP0gEfAgEh0wEP2gEYAgEd2wEP4gEYAgEV4wEP4wHqAQIBEeQBD+gBFAIBDekBD+kBvAECAQjyAU/yAYoBAgEGc1VzZwIBMnJRcl8CATBvxQFv6AECAS9xXXFjAgEtigE6igFTAgEphwE7hwFDAgEnkgE6kgFUAgEljwE7jwFFAgEj2AE62AFZAgEg1QE71QFHAgEe4AE64AF/AgEY3QE73QFIAgEW4wF+4wHnAQIBEuQBHeQBWQIBDuYBE+YBwwECAQ/pAUPpAVICAQvpAa8B6QG5AQIBCeYBmgHmAcABAgEQ</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
+      <sap2010:ViewStateData Id="LogMessage_28" sap:VirtualizedContainerService.HintSize="330,91" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_1" sap:VirtualizedContainerService.HintSize="314,87" />
       <sap2010:ViewStateData Id="ForEach`1_1" sap:VirtualizedContainerService.HintSize="330,221" />
+      <sap2010:ViewStateData Id="Sequence_49" sap:VirtualizedContainerService.HintSize="352,476">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="Assign_37" sap:VirtualizedContainerService.HintSize="464,60" />
+      <sap2010:ViewStateData Id="Assign_40" sap:VirtualizedContainerService.HintSize="464,60" />
+      <sap2010:ViewStateData Id="Assign_47" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="Sequence_53" sap:VirtualizedContainerService.HintSize="264,184">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Assign_48" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="LogMessage_31" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="Sequence_54" sap:VirtualizedContainerService.HintSize="336,314">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Catch`1_3" sap:VirtualizedContainerService.HintSize="404,21">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Assign_49" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="If_27" sap:VirtualizedContainerService.HintSize="464,208" />
+      <sap2010:ViewStateData Id="TryCatch_3" sap:VirtualizedContainerService.HintSize="418,411" />
+      <sap2010:ViewStateData Id="DoWhile_2" sap:VirtualizedContainerService.HintSize="464,572" />
+      <sap2010:ViewStateData Id="Sequence_55" sap:VirtualizedContainerService.HintSize="486,696">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="CommentOut_1" sap:VirtualizedContainerService.HintSize="464,51">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Assign_44" sap:VirtualizedContainerService.HintSize="464,60" />
       <sap2010:ViewStateData Id="Assign_38" sap:VirtualizedContainerService.HintSize="464,60" />
       <sap2010:ViewStateData Id="LogMessage_27" sap:VirtualizedContainerService.HintSize="464,91" />
       <sap2010:ViewStateData Id="CreateDirectory_3" sap:VirtualizedContainerService.HintSize="200,22" />
       <sap2010:ViewStateData Id="If_20" sap:VirtualizedContainerService.HintSize="464,208" />
       <sap2010:ViewStateData Id="CopyFile_3" sap:VirtualizedContainerService.HintSize="464,22" />
-      <sap2010:ViewStateData Id="Sequence_45" sap:VirtualizedContainerService.HintSize="486,725">
+      <sap2010:ViewStateData Id="Sequence_45" sap:VirtualizedContainerService.HintSize="486,1016">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -167,8 +322,8 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_23" sap:VirtualizedContainerService.HintSize="841,873" />
-      <sap2010:ViewStateData Id="Sequence_48" sap:VirtualizedContainerService.HintSize="863,997">
+      <sap2010:ViewStateData Id="LogMessage_32" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="Catch`1_4" sap:VirtualizedContainerService.HintSize="400,160">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -176,7 +331,17 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="CopyAllItems_1" sap:VirtualizedContainerService.HintSize="903,1077" />
+      <sap2010:ViewStateData Id="TryCatch_4" sap:VirtualizedContainerService.HintSize="414,322" />
+      <sap2010:ViewStateData Id="If_23" sap:VirtualizedContainerService.HintSize="791,624" />
+      <sap2010:ViewStateData Id="Sequence_48" sap:VirtualizedContainerService.HintSize="813,748">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="CopyAllItems_1" sap:VirtualizedContainerService.HintSize="853,828" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
