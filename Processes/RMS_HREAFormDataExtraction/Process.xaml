@@ -16,6 +16,7 @@
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <x:Members>
     <x:Property Name="in_Config" Type="InArgument(scg:Dictionary(x:String, x:String))" />
+    <x:Property Name="in_ProceedWithDataEntry" Type="InArgument(x:Boolean)" />
   </x:Members>
   <mva:VisualBasic.Settings>
     <x:Null />
@@ -76,43 +77,40 @@
       <AssemblyReference>System.Runtime.Serialization</AssemblyReference>
       <AssemblyReference>System.Data.DataSetExtensions</AssemblyReference>
       <AssemblyReference>System.Data.Entity</AssemblyReference>
+      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence sap2010:Annotation.AnnotationText="Description: In this file all other process specific files will be invoked. If an application exception occurs, the current transaction can be retried. If a BRE is thrown, the transaction will be skipped. Can be a flowchart or sequence. " DisplayName="ProcessTransaction" sap2010:WorkflowViewState.IdRef="Sequence_8">
     <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_8" Level="Info" Message="[&quot;Start Process.xaml&quot;]" />
     <Sequence DisplayName="Identify and Sort files" sap2010:WorkflowViewState.IdRef="Sequence_16">
-      <ui:CommentOut DisplayName="Comment Out" sap2010:WorkflowViewState.IdRef="CommentOut_17">
-        <ui:CommentOut.Body>
-          <Sequence DisplayName="Ignored Activities" sap2010:WorkflowViewState.IdRef="Sequence_46">
-            <ui:ForEach x:TypeArguments="x:String" CurrentIndex="{x:Null}" DisplayName="For Each FileServer Sorted" sap2010:WorkflowViewState.IdRef="ForEach`1_1" Values="[Directory.GetDirectories(in_Config(&quot;FileServer_Sorted&quot;))]">
-              <ui:ForEach.Body>
-                <ActivityAction x:TypeArguments="x:String">
-                  <ActivityAction.Argument>
-                    <DelegateInArgument x:TypeArguments="x:String" Name="folder" />
-                  </ActivityAction.Argument>
-                  <ui:Delete ContinueOnError="{x:Null}" DisplayName="Delete sorted" sap2010:WorkflowViewState.IdRef="Delete_1" Path="[folder]" />
-                </ActivityAction>
-              </ui:ForEach.Body>
-            </ui:ForEach>
-          </Sequence>
-        </ui:CommentOut.Body>
-      </ui:CommentOut>
-      <ui:CommentOut DisplayName="Comment Out" sap2010:WorkflowViewState.IdRef="CommentOut_18">
-        <ui:CommentOut.Body>
-          <Sequence DisplayName="Ignored Activities" sap2010:WorkflowViewState.IdRef="Sequence_47">
-            <ui:ForEach x:TypeArguments="x:String" CurrentIndex="{x:Null}" DisplayName="For Each FileServer Leftover" sap2010:WorkflowViewState.IdRef="ForEach`1_2" Values="[Directory.GetDirectories(in_Config(&quot;FileServer_Leftover&quot;))]">
-              <ui:ForEach.Body>
-                <ActivityAction x:TypeArguments="x:String">
-                  <ActivityAction.Argument>
-                    <DelegateInArgument x:TypeArguments="x:String" Name="folder" />
-                  </ActivityAction.Argument>
-                  <ui:Delete ContinueOnError="{x:Null}" DisplayName="Delete leftover" sap2010:WorkflowViewState.IdRef="Delete_2" Path="[folder]" />
-                </ActivityAction>
-              </ui:ForEach.Body>
-            </ui:ForEach>
-          </Sequence>
-        </ui:CommentOut.Body>
-      </ui:CommentOut>
+      <If Condition="[Not File.Exists(in_Config(&quot;FileServer_BotFiles&quot;) + &quot;\hrea_5_loftover_docs.xml&quot;)]" DisplayName="If no record of leftover files then the directory should be empty" sap2010:WorkflowViewState.IdRef="If_13">
+        <If.Then>
+          <ui:ForEach x:TypeArguments="x:String" CurrentIndex="{x:Null}" DisplayName="For Each FileServer Leftover" sap2010:WorkflowViewState.IdRef="ForEach`1_2" Values="[Directory.GetDirectories(in_Config(&quot;FileServer_Leftover&quot;))]">
+            <ui:ForEach.Body>
+              <ActivityAction x:TypeArguments="x:String">
+                <ActivityAction.Argument>
+                  <DelegateInArgument x:TypeArguments="x:String" Name="folder" />
+                </ActivityAction.Argument>
+                <ui:Delete ContinueOnError="{x:Null}" DisplayName="Delete leftover" sap2010:WorkflowViewState.IdRef="Delete_2" Path="[folder]" />
+              </ActivityAction>
+            </ui:ForEach.Body>
+          </ui:ForEach>
+        </If.Then>
+      </If>
+      <If Condition="[Not File.Exists(in_Config(&quot;FileServer_BotFiles&quot;) + &quot;\hrea_6_sorted_docs.xml&quot;)]" DisplayName="If no record of sorted files then the directory should be empty" sap2010:WorkflowViewState.IdRef="If_14">
+        <If.Then>
+          <ui:ForEach x:TypeArguments="x:String" CurrentIndex="{x:Null}" DisplayName="For Each FileServer Sorted" sap2010:WorkflowViewState.IdRef="ForEach`1_1" Values="[Directory.GetDirectories(in_Config(&quot;FileServer_Sorted&quot;))]">
+            <ui:ForEach.Body>
+              <ActivityAction x:TypeArguments="x:String">
+                <ActivityAction.Argument>
+                  <DelegateInArgument x:TypeArguments="x:String" Name="folder" />
+                </ActivityAction.Argument>
+                <ui:Delete ContinueOnError="{x:Null}" DisplayName="Delete sorted" sap2010:WorkflowViewState.IdRef="Delete_1" Path="[folder]" />
+              </ActivityAction>
+            </ui:ForEach.Body>
+          </ui:ForEach>
+        </If.Then>
+      </If>
       <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke Process_IdentifyAndSort workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_23" UnSafe="False" WorkflowFileName="Process_IdentifyAndSort.xaml">
         <ui:InvokeWorkflowFile.Arguments>
           <InArgument x:TypeArguments="x:String" x:Key="in_SourcePath">[in_Config("FileServer_Source")]</InArgument>
@@ -121,65 +119,84 @@
           <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)" x:Key="in_Config">[in_Config]</InArgument>
         </ui:InvokeWorkflowFile.Arguments>
       </ui:InvokeWorkflowFile>
-      <ui:MessageBox Caption="{x:Null}" ChosenButton="{x:Null}" Buttons="Ok" DisplayName="Message Box" sap2010:WorkflowViewState.IdRef="MessageBox_2" Text="[&quot;Finished sorting &quot; &amp; Directory.GetDirectories(in_Config(&quot;FileServer_Sorted&quot;)).Length]" TopMost="True" />
+      <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_30" Level="Info" Message="[&quot;Finished identifying and sorting &quot; &amp; Directory.GetDirectories(in_Config(&quot;FileServer_Sorted&quot;)).Length &amp; &quot; files.&quot;]" />
     </Sequence>
-    <Sequence DisplayName="5 get unsorted items" sap2010:WorkflowViewState.IdRef="Sequence_9">
-      <Sequence.Variables>
-        <Variable x:TypeArguments="sxl:XElement" Name="leftoverElements" />
-      </Sequence.Variables>
-      <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke GetFilesAndFolders workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_25" UnSafe="False" WorkflowFileName="IdentifyAndSort\GetFilesAndFolders.xaml">
-        <ui:InvokeWorkflowFile.Arguments>
-          <InArgument x:TypeArguments="x:String" x:Key="in_CurrentPath">[in_Config("FileServer_Leftover")]</InArgument>
-          <InOutArgument x:TypeArguments="sxl:XElement" x:Key="io_FilesElement">[leftoverElements]</InOutArgument>
-        </ui:InvokeWorkflowFile.Arguments>
-      </ui:InvokeWorkflowFile>
-      <ui:WriteTextFile DisplayName="Write Text File" FileName="[in_Config(&quot;FileServer_BotFiles&quot;) + &quot;\hrea_5_loftover_docs.xml&quot;]" sap2010:WorkflowViewState.IdRef="WriteTextFile_2" Text="[leftoverElements.ToString]" />
-    </Sequence>
+    <If Condition="[Not File.Exists(in_Config(&quot;FileServer_BotFiles&quot;) + &quot;\hrea_5_loftover_docs.xml&quot;)]" sap2010:WorkflowViewState.IdRef="If_11">
+      <If.Then>
+        <Sequence DisplayName="5 get unsorted items" sap2010:WorkflowViewState.IdRef="Sequence_9">
+          <Sequence.Variables>
+            <Variable x:TypeArguments="sxl:XElement" Name="leftoverElements" />
+          </Sequence.Variables>
+          <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke GetFilesAndFolders workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_25" UnSafe="False" WorkflowFileName="IdentifyAndSort\GetFilesAndFolders.xaml">
+            <ui:InvokeWorkflowFile.Arguments>
+              <InArgument x:TypeArguments="x:String" x:Key="in_CurrentPath">[in_Config("FileServer_Leftover")]</InArgument>
+              <InOutArgument x:TypeArguments="sxl:XElement" x:Key="io_FilesElement">[leftoverElements]</InOutArgument>
+            </ui:InvokeWorkflowFile.Arguments>
+          </ui:InvokeWorkflowFile>
+          <ui:WriteTextFile DisplayName="Write Text File" FileName="[in_Config(&quot;FileServer_BotFiles&quot;) + &quot;\hrea_5_loftover_docs.xml&quot;]" sap2010:WorkflowViewState.IdRef="WriteTextFile_2" Text="[leftoverElements.ToString]" />
+        </Sequence>
+      </If.Then>
+      <If.Else>
+        <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_31" Level="Info" Message="[&quot;Already sorted identified files.&quot;]" />
+      </If.Else>
+    </If>
     <Sequence DisplayName="6 get sorted items" sap2010:WorkflowViewState.IdRef="Sequence_10">
       <Sequence.Variables>
         <Variable x:TypeArguments="sxl:XElement" Name="sortedElements" />
         <Variable x:TypeArguments="sd1:DataTable" Name="fileMatching" />
       </Sequence.Variables>
-      <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke GetFilesAndFolders workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_24" UnSafe="False" WorkflowFileName="IdentifyAndSort\GetFilesAndFolders.xaml">
-        <ui:InvokeWorkflowFile.Arguments>
-          <InArgument x:TypeArguments="x:String" x:Key="in_CurrentPath">[in_Config("FileServer_Sorted")]</InArgument>
-          <InOutArgument x:TypeArguments="sxl:XElement" x:Key="io_FilesElement">[sortedElements]</InOutArgument>
-        </ui:InvokeWorkflowFile.Arguments>
-      </ui:InvokeWorkflowFile>
-      <ui:WriteTextFile DisplayName="Write Text File" FileName="[in_Config(&quot;FileServer_BotFiles&quot;) + &quot;\hrea_6_sorted_docs.xml&quot;]" sap2010:WorkflowViewState.IdRef="WriteTextFile_1" Text="[sortedElements.ToString]" />
-      <ui:ForEach x:TypeArguments="x:String" CurrentIndex="{x:Null}" DisplayName="For Each" sap2010:WorkflowViewState.IdRef="ForEach`1_5" Values="[Directory.GetDirectories(in_Config(&quot;FileServer_Sorted&quot;))]">
+      <If Condition="[Not File.Exists(in_Config(&quot;FileServer_BotFiles&quot;) + &quot;\hrea_6_sorted_docs.xml&quot;)]" sap2010:WorkflowViewState.IdRef="If_12">
+        <If.Then>
+          <Sequence sap2010:WorkflowViewState.IdRef="Sequence_49">
+            <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke GetFilesAndFolders workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_24" UnSafe="False" WorkflowFileName="IdentifyAndSort\GetFilesAndFolders.xaml">
+              <ui:InvokeWorkflowFile.Arguments>
+                <InArgument x:TypeArguments="x:String" x:Key="in_CurrentPath">[in_Config("FileServer_Sorted")]</InArgument>
+                <InOutArgument x:TypeArguments="sxl:XElement" x:Key="io_FilesElement">[sortedElements]</InOutArgument>
+              </ui:InvokeWorkflowFile.Arguments>
+            </ui:InvokeWorkflowFile>
+            <ui:WriteTextFile DisplayName="Write Text File" FileName="[in_Config(&quot;FileServer_BotFiles&quot;) + &quot;\hrea_6_sorted_docs.xml&quot;]" sap2010:WorkflowViewState.IdRef="WriteTextFile_1" Text="[sortedElements.ToString]" />
+          </Sequence>
+        </If.Then>
+        <If.Else>
+          <Sequence sap2010:WorkflowViewState.IdRef="Sequence_50">
+            <Assign DisplayName="Assign sorted files" sap2010:WorkflowViewState.IdRef="Assign_11">
+              <Assign.To>
+                <OutArgument x:TypeArguments="sxl:XElement">[sortedElements]</OutArgument>
+              </Assign.To>
+              <Assign.Value>
+                <InArgument x:TypeArguments="sxl:XElement">[XElement.Load(in_Config("FileServer_BotFiles") + "\hrea_6_sorted_docs.xml")]</InArgument>
+              </Assign.Value>
+            </Assign>
+            <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_32" Level="Info" Message="[&quot;Already sorted remaining files.&quot;]" />
+          </Sequence>
+        </If.Else>
+      </If>
+      <ui:ForEach x:TypeArguments="sxl:XElement" CurrentIndex="{x:Null}" DisplayName="For Each" sap2010:WorkflowViewState.IdRef="ForEach`1_12" Values="[sortedElements.Elements]">
         <ui:ForEach.Body>
-          <ActivityAction x:TypeArguments="x:String">
+          <ActivityAction x:TypeArguments="sxl:XElement">
             <ActivityAction.Argument>
-              <DelegateInArgument x:TypeArguments="x:String" Name="folder" />
+              <DelegateInArgument x:TypeArguments="sxl:XElement" Name="folder" />
             </ActivityAction.Argument>
             <Sequence DisplayName="Body" sap2010:WorkflowViewState.IdRef="Sequence_17">
-              <Sequence.Variables>
-                <Variable x:TypeArguments="sxl:XElement" Name="elements" />
-              </Sequence.Variables>
               <ui:BuildDataTable DataTable="[fileMatching]" DisplayName="Build Data Table" sap2010:WorkflowViewState.IdRef="BuildDataTable_1" TableInfo="&lt;NewDataSet&gt;&#xA;  &lt;xs:schema id=&quot;NewDataSet&quot; xmlns=&quot;&quot; xmlns:xs=&quot;http://www.w3.org/2001/XMLSchema&quot; xmlns:msdata=&quot;urn:schemas-microsoft-com:xml-msdata&quot;&gt;&#xA;    &lt;xs:element name=&quot;NewDataSet&quot; msdata:IsDataSet=&quot;true&quot; msdata:MainDataTable=&quot;TableName&quot; msdata:UseCurrentLocale=&quot;true&quot;&gt;&#xA;      &lt;xs:complexType&gt;&#xA;        &lt;xs:choice minOccurs=&quot;0&quot; maxOccurs=&quot;unbounded&quot;&gt;&#xA;          &lt;xs:element name=&quot;TableName&quot;&gt;&#xA;            &lt;xs:complexType&gt;&#xA;              &lt;xs:sequence&gt;&#xA;                &lt;xs:element name=&quot;Status&quot; type=&quot;xs:string&quot; default=&quot;Skip&quot; minOccurs=&quot;0&quot; /&gt;&#xA;                &lt;xs:element name=&quot;Item_x0020_Reference&quot; type=&quot;xs:string&quot; minOccurs=&quot;0&quot; /&gt;&#xA;                &lt;xs:element name=&quot;File_x0020_Name&quot; type=&quot;xs:string&quot; default=&quot;Skip&quot; minOccurs=&quot;0&quot; /&gt;&#xA;              &lt;/xs:sequence&gt;&#xA;            &lt;/xs:complexType&gt;&#xA;          &lt;/xs:element&gt;&#xA;        &lt;/xs:choice&gt;&#xA;      &lt;/xs:complexType&gt;&#xA;    &lt;/xs:element&gt;&#xA;  &lt;/xs:schema&gt;&#xA;&lt;/NewDataSet&gt;" />
-              <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke GetFilesAndFolders workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_26" UnSafe="False" WorkflowFileName="IdentifyAndSort\GetFilesAndFolders.xaml">
-                <ui:InvokeWorkflowFile.Arguments>
-                  <InArgument x:TypeArguments="x:String" x:Key="in_CurrentPath">[folder]</InArgument>
-                  <InOutArgument x:TypeArguments="sxl:XElement" x:Key="io_FilesElement">[elements]</InOutArgument>
-                </ui:InvokeWorkflowFile.Arguments>
-              </ui:InvokeWorkflowFile>
-              <ui:ForEach x:TypeArguments="sxl:XElement" CurrentIndex="{x:Null}" DisplayName="For Each" sap2010:WorkflowViewState.IdRef="ForEach`1_9" Values="[elements.DescendantsAndSelf]">
+              <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_35" Level="Trace" Message="[&quot;Reading from &quot; &amp; folder.Attribute(&quot;path&quot;).Value &amp; &quot; with &quot; &amp; folder.DescendantsAndSelf.Count &amp; &quot; elements for entry.&quot;]" />
+              <ui:ForEach x:TypeArguments="sxl:XElement" CurrentIndex="{x:Null}" DisplayName="For Each" sap2010:WorkflowViewState.IdRef="ForEach`1_9" Values="[folder.Descendants]">
                 <ui:ForEach.Body>
                   <ActivityAction x:TypeArguments="sxl:XElement">
                     <ActivityAction.Argument>
-                      <DelegateInArgument x:TypeArguments="sxl:XElement" Name="row" />
+                      <DelegateInArgument x:TypeArguments="sxl:XElement" Name="element" />
                     </ActivityAction.Argument>
-                    <If Condition="[Not row.HasElements]" sap2010:WorkflowViewState.IdRef="If_6">
+                    <If Condition="[Not element.HasElements]" sap2010:WorkflowViewState.IdRef="If_6">
                       <If.Then>
-                        <ui:AddDataRow DataRow="{x:Null}" ArrayRow="[{&quot;Skip&quot;, Path.GetFileName(row.Value), Path.GetFullPath(row.Value)}]" DataTable="[fileMatching]" DisplayName="Add Data Row" sap2010:WorkflowViewState.IdRef="AddDataRow_1" />
+                        <ui:AddDataRow DataRow="{x:Null}" ArrayRow="[{&quot;Skip&quot;, Path.GetFileName(element.Value), Path.GetFullPath(element.Value)}]" DataTable="[fileMatching]" DisplayName="Add Data Row" sap2010:WorkflowViewState.IdRef="AddDataRow_1" />
                       </If.Then>
                     </If>
                   </ActivityAction>
                 </ui:ForEach.Body>
               </ui:ForEach>
-              <ui:WriteCsvFile Encoding="{x:Null}" AddHeaders="True" DataTable="[fileMatching]" Delimitator="Comma" DisplayName="Write CSV" FilePath="[in_Config(&quot;FileServer_BotFiles&quot;) + &quot;\hrea_7_files&quot; + elements.Name.LocalName + &quot;.csv&quot;]" sap2010:WorkflowViewState.IdRef="WriteCsvFile_1" />
-              <ui:ForEach x:TypeArguments="sxl:XElement" CurrentIndex="{x:Null}" DisplayName="For Each" sap2010:WorkflowViewState.IdRef="ForEach`1_6" Values="[elements.Descendants]">
+              <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_36" Level="Trace" Message="[&quot;Building file list for &quot; + folder.Name.LocalName]" />
+              <ui:WriteCsvFile Encoding="{x:Null}" AddHeaders="True" DataTable="[fileMatching]" Delimitator="Comma" DisplayName="Write CSV" FilePath="[in_Config(&quot;FileServer_BotFiles&quot;) + &quot;\hrea_7_files&quot; + folder.Name.LocalName + &quot;.csv&quot;]" sap2010:WorkflowViewState.IdRef="WriteCsvFile_1" />
+              <ui:ForEach x:TypeArguments="sxl:XElement" CurrentIndex="{x:Null}" DisplayName="For Each" sap2010:WorkflowViewState.IdRef="ForEach`1_6" Values="[folder.Descendants]">
                 <ui:ForEach.Body>
                   <ActivityAction x:TypeArguments="sxl:XElement">
                     <ActivityAction.Argument>
@@ -211,33 +228,30 @@
                                     <ActivityAction.Argument>
                                       <DelegateInArgument x:TypeArguments="s:Exception" Name="exception1" />
                                     </ActivityAction.Argument>
-                                    <Sequence sap2010:WorkflowViewState.IdRef="Sequence_18">
-                                      <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_12" Level="Trace" Message="[exception1.Message]" />
-                                      <TryCatch DisplayName="Try Catch" sap2010:WorkflowViewState.IdRef="TryCatch_3">
-                                        <TryCatch.Try>
-                                          <ui:ReadPDFWithOCR DegreeOfParallelism="-1" DisplayName="Read PDF With OCR" FileName="[item.Value]" sap2010:WorkflowViewState.IdRef="ReadPDFWithOCR_2" ImageDpi="150" Range="All" Text="[content]">
-                                            <ui:ReadPDFWithOCR.OCREngine>
-                                              <ActivityFunc x:TypeArguments="sd:Image, scg:IEnumerable(scg:KeyValuePair(sd:Rectangle, x:String))">
-                                                <ActivityFunc.Argument>
-                                                  <DelegateInArgument x:TypeArguments="sd:Image" Name="Image" />
-                                                </ActivityFunc.Argument>
-                                                <ui:MicrosoftOCR FilterRegion="{x:Null}" Output="{x:Null}" Text="{x:Null}" ComputeSkewAngle="False" DisplayName="Microsoft OCR" ExtractWords="False" sap2010:WorkflowViewState.IdRef="MicrosoftOCR_2" Image="[Image]" Language="en" Profile="Legacy" Scale="1" />
-                                              </ActivityFunc>
-                                            </ui:ReadPDFWithOCR.OCREngine>
-                                          </ui:ReadPDFWithOCR>
-                                        </TryCatch.Try>
-                                        <TryCatch.Catches>
-                                          <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch`1_3">
-                                            <ActivityAction x:TypeArguments="s:Exception">
-                                              <ActivityAction.Argument>
-                                                <DelegateInArgument x:TypeArguments="s:Exception" Name="exception2" />
-                                              </ActivityAction.Argument>
-                                              <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_13" Level="Error" Message="[exception1.Message + vbNewLine + exception2.Message]" />
-                                            </ActivityAction>
-                                          </Catch>
-                                        </TryCatch.Catches>
-                                      </TryCatch>
-                                    </Sequence>
+                                    <TryCatch DisplayName="Try Catch" sap2010:WorkflowViewState.IdRef="TryCatch_3">
+                                      <TryCatch.Try>
+                                        <ui:ReadPDFWithOCR DegreeOfParallelism="-1" DisplayName="Read PDF With OCR" FileName="[item.Value]" sap2010:WorkflowViewState.IdRef="ReadPDFWithOCR_2" ImageDpi="150" Range="All" Text="[content]">
+                                          <ui:ReadPDFWithOCR.OCREngine>
+                                            <ActivityFunc x:TypeArguments="sd:Image, scg:IEnumerable(scg:KeyValuePair(sd:Rectangle, x:String))">
+                                              <ActivityFunc.Argument>
+                                                <DelegateInArgument x:TypeArguments="sd:Image" Name="Image" />
+                                              </ActivityFunc.Argument>
+                                              <ui:MicrosoftOCR FilterRegion="{x:Null}" Output="{x:Null}" Text="{x:Null}" ComputeSkewAngle="False" DisplayName="Microsoft OCR" ExtractWords="False" sap2010:WorkflowViewState.IdRef="MicrosoftOCR_2" Image="[Image]" Language="en" Profile="Legacy" Scale="1" />
+                                            </ActivityFunc>
+                                          </ui:ReadPDFWithOCR.OCREngine>
+                                        </ui:ReadPDFWithOCR>
+                                      </TryCatch.Try>
+                                      <TryCatch.Catches>
+                                        <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch`1_3">
+                                          <ActivityAction x:TypeArguments="s:Exception">
+                                            <ActivityAction.Argument>
+                                              <DelegateInArgument x:TypeArguments="s:Exception" Name="exception2" />
+                                            </ActivityAction.Argument>
+                                            <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_13" Level="Error" Message="[exception1.Message + vbNewLine + exception2.Message]" />
+                                          </ActivityAction>
+                                        </Catch>
+                                      </TryCatch.Catches>
+                                    </TryCatch>
                                   </ActivityAction>
                                 </Catch>
                               </TryCatch.Catches>
@@ -252,33 +266,30 @@
                                     <ActivityAction.Argument>
                                       <DelegateInArgument x:TypeArguments="s:Exception" Name="exception1" />
                                     </ActivityAction.Argument>
-                                    <Sequence sap2010:WorkflowViewState.IdRef="Sequence_21">
-                                      <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_16" Level="Trace" Message="[exception1.Message]" />
-                                      <TryCatch DisplayName="Try Catch" sap2010:WorkflowViewState.IdRef="TryCatch_5">
-                                        <TryCatch.Try>
-                                          <p:WordApplicationScope DisplayName="Word Application Scope" FilePath="[item.Value]" sap2010:WorkflowViewState.IdRef="WordApplicationScope_1">
-                                            <p:WordApplicationScope.Body>
-                                              <ActivityAction x:TypeArguments="ui:WordDocument">
-                                                <ActivityAction.Argument>
-                                                  <DelegateInArgument x:TypeArguments="ui:WordDocument" Name="WordDocumentScope" />
-                                                </ActivityAction.Argument>
-                                                <p:WordReadText DisplayName="Read Text" sap2010:WorkflowViewState.IdRef="WordReadText_1" Text="[content]" />
-                                              </ActivityAction>
-                                            </p:WordApplicationScope.Body>
-                                          </p:WordApplicationScope>
-                                        </TryCatch.Try>
-                                        <TryCatch.Catches>
-                                          <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch`1_5">
-                                            <ActivityAction x:TypeArguments="s:Exception">
+                                    <TryCatch DisplayName="Try Catch" sap2010:WorkflowViewState.IdRef="TryCatch_5">
+                                      <TryCatch.Try>
+                                        <p:WordApplicationScope DisplayName="Word Application Scope" FilePath="[item.Value]" sap2010:WorkflowViewState.IdRef="WordApplicationScope_1">
+                                          <p:WordApplicationScope.Body>
+                                            <ActivityAction x:TypeArguments="ui:WordDocument">
                                               <ActivityAction.Argument>
-                                                <DelegateInArgument x:TypeArguments="s:Exception" Name="exception2" />
+                                                <DelegateInArgument x:TypeArguments="ui:WordDocument" Name="WordDocumentScope" />
                                               </ActivityAction.Argument>
-                                              <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_17" Level="Error" Message="[exception1.Message + vbNewLine + exception2.Message]" />
+                                              <p:WordReadText DisplayName="Read Text" sap2010:WorkflowViewState.IdRef="WordReadText_1" Text="[content]" />
                                             </ActivityAction>
-                                          </Catch>
-                                        </TryCatch.Catches>
-                                      </TryCatch>
-                                    </Sequence>
+                                          </p:WordApplicationScope.Body>
+                                        </p:WordApplicationScope>
+                                      </TryCatch.Try>
+                                      <TryCatch.Catches>
+                                        <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch`1_5">
+                                          <ActivityAction x:TypeArguments="s:Exception">
+                                            <ActivityAction.Argument>
+                                              <DelegateInArgument x:TypeArguments="s:Exception" Name="exception2" />
+                                            </ActivityAction.Argument>
+                                            <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_17" Level="Error" Message="[exception1.Message + vbNewLine + exception2.Message]" />
+                                          </ActivityAction>
+                                        </Catch>
+                                      </TryCatch.Catches>
+                                    </TryCatch>
                                   </ActivityAction>
                                 </Catch>
                               </TryCatch.Catches>
@@ -293,33 +304,30 @@
                                     <ActivityAction.Argument>
                                       <DelegateInArgument x:TypeArguments="s:Exception" Name="exception1" />
                                     </ActivityAction.Argument>
-                                    <Sequence sap2010:WorkflowViewState.IdRef="Sequence_22">
-                                      <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_18" Level="Trace" Message="[exception1.Message]" />
-                                      <TryCatch DisplayName="Try Catch" sap2010:WorkflowViewState.IdRef="TryCatch_7">
-                                        <TryCatch.Try>
-                                          <p:WordApplicationScope DisplayName="Word Application Scope" FilePath="[item.Value]" sap2010:WorkflowViewState.IdRef="WordApplicationScope_2">
-                                            <p:WordApplicationScope.Body>
-                                              <ActivityAction x:TypeArguments="ui:WordDocument">
-                                                <ActivityAction.Argument>
-                                                  <DelegateInArgument x:TypeArguments="ui:WordDocument" Name="WordDocumentScope" />
-                                                </ActivityAction.Argument>
-                                                <p:WordReadText DisplayName="Read Text" sap2010:WorkflowViewState.IdRef="WordReadText_2" Text="[content]" />
-                                              </ActivityAction>
-                                            </p:WordApplicationScope.Body>
-                                          </p:WordApplicationScope>
-                                        </TryCatch.Try>
-                                        <TryCatch.Catches>
-                                          <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch`1_7">
-                                            <ActivityAction x:TypeArguments="s:Exception">
+                                    <TryCatch DisplayName="Try Catch" sap2010:WorkflowViewState.IdRef="TryCatch_7">
+                                      <TryCatch.Try>
+                                        <p:WordApplicationScope DisplayName="Word Application Scope" FilePath="[item.Value]" sap2010:WorkflowViewState.IdRef="WordApplicationScope_2">
+                                          <p:WordApplicationScope.Body>
+                                            <ActivityAction x:TypeArguments="ui:WordDocument">
                                               <ActivityAction.Argument>
-                                                <DelegateInArgument x:TypeArguments="s:Exception" Name="exception2" />
+                                                <DelegateInArgument x:TypeArguments="ui:WordDocument" Name="WordDocumentScope" />
                                               </ActivityAction.Argument>
-                                              <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_19" Level="Error" Message="[exception1.Message + vbNewLine + exception2.Message]" />
+                                              <p:WordReadText DisplayName="Read Text" sap2010:WorkflowViewState.IdRef="WordReadText_2" Text="[content]" />
                                             </ActivityAction>
-                                          </Catch>
-                                        </TryCatch.Catches>
-                                      </TryCatch>
-                                    </Sequence>
+                                          </p:WordApplicationScope.Body>
+                                        </p:WordApplicationScope>
+                                      </TryCatch.Try>
+                                      <TryCatch.Catches>
+                                        <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch`1_7">
+                                          <ActivityAction x:TypeArguments="s:Exception">
+                                            <ActivityAction.Argument>
+                                              <DelegateInArgument x:TypeArguments="s:Exception" Name="exception2" />
+                                            </ActivityAction.Argument>
+                                            <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_19" Level="Error" Message="[exception1.Message + vbNewLine + exception2.Message]" />
+                                          </ActivityAction>
+                                        </Catch>
+                                      </TryCatch.Catches>
+                                    </TryCatch>
                                   </ActivityAction>
                                 </Catch>
                               </TryCatch.Catches>
@@ -334,33 +342,30 @@
                                     <ActivityAction.Argument>
                                       <DelegateInArgument x:TypeArguments="s:Exception" Name="exception1" />
                                     </ActivityAction.Argument>
-                                    <Sequence sap2010:WorkflowViewState.IdRef="Sequence_23">
-                                      <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_20" Level="Trace" Message="[exception1.Message]" />
-                                      <TryCatch DisplayName="Try Catch" sap2010:WorkflowViewState.IdRef="TryCatch_9">
-                                        <TryCatch.Try>
-                                          <p:WordApplicationScope DisplayName="Word Application Scope" FilePath="[item.Value]" sap2010:WorkflowViewState.IdRef="WordApplicationScope_3">
-                                            <p:WordApplicationScope.Body>
-                                              <ActivityAction x:TypeArguments="ui:WordDocument">
-                                                <ActivityAction.Argument>
-                                                  <DelegateInArgument x:TypeArguments="ui:WordDocument" Name="WordDocumentScope" />
-                                                </ActivityAction.Argument>
-                                                <p:WordReadText DisplayName="Read Text" sap2010:WorkflowViewState.IdRef="WordReadText_3" Text="[content]" />
-                                              </ActivityAction>
-                                            </p:WordApplicationScope.Body>
-                                          </p:WordApplicationScope>
-                                        </TryCatch.Try>
-                                        <TryCatch.Catches>
-                                          <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch`1_9">
-                                            <ActivityAction x:TypeArguments="s:Exception">
+                                    <TryCatch DisplayName="Try Catch" sap2010:WorkflowViewState.IdRef="TryCatch_9">
+                                      <TryCatch.Try>
+                                        <p:WordApplicationScope DisplayName="Word Application Scope" FilePath="[item.Value]" sap2010:WorkflowViewState.IdRef="WordApplicationScope_3">
+                                          <p:WordApplicationScope.Body>
+                                            <ActivityAction x:TypeArguments="ui:WordDocument">
                                               <ActivityAction.Argument>
-                                                <DelegateInArgument x:TypeArguments="s:Exception" Name="exception2" />
+                                                <DelegateInArgument x:TypeArguments="ui:WordDocument" Name="WordDocumentScope" />
                                               </ActivityAction.Argument>
-                                              <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_21" Level="Error" Message="[exception1.Message + vbNewLine + exception2.Message]" />
+                                              <p:WordReadText DisplayName="Read Text" sap2010:WorkflowViewState.IdRef="WordReadText_3" Text="[content]" />
                                             </ActivityAction>
-                                          </Catch>
-                                        </TryCatch.Catches>
-                                      </TryCatch>
-                                    </Sequence>
+                                          </p:WordApplicationScope.Body>
+                                        </p:WordApplicationScope>
+                                      </TryCatch.Try>
+                                      <TryCatch.Catches>
+                                        <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch`1_9">
+                                          <ActivityAction x:TypeArguments="s:Exception">
+                                            <ActivityAction.Argument>
+                                              <DelegateInArgument x:TypeArguments="s:Exception" Name="exception2" />
+                                            </ActivityAction.Argument>
+                                            <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_21" Level="Error" Message="[exception1.Message + vbNewLine + exception2.Message]" />
+                                          </ActivityAction>
+                                        </Catch>
+                                      </TryCatch.Catches>
+                                    </TryCatch>
                                   </ActivityAction>
                                 </Catch>
                               </TryCatch.Catches>
@@ -381,7 +386,6 @@ Where(Function(s) Not String.IsNullOrWhiteSpace(s))]</InArgument>
                                 <Sequence.Variables>
                                   <Variable x:TypeArguments="scg:List(x:String)" Default="[New List(Of String)]" Name="filtered" />
                                 </Sequence.Variables>
-                                <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_23" Level="Info" Message="[lines]" />
                                 <Assign sap2010:WorkflowViewState.IdRef="Assign_2">
                                   <Assign.To>
                                     <OutArgument x:TypeArguments="scg:IEnumerable(x:String)">[lines]</OutArgument>
@@ -392,6 +396,7 @@ TakeWhile(Function(s) Not s.Contains("Note:")).
 Skip(1)]</InArgument>
                                   </Assign.Value>
                                 </Assign>
+                                <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_23" Level="Trace" Message="[&quot;Got &quot; &amp; lines.Count &amp; &quot; from &quot; + item.Value]" />
                                 <ui:ForEach x:TypeArguments="x:String" CurrentIndex="{x:Null}" DisplayName="For Each" sap2010:WorkflowViewState.IdRef="ForEach`1_7" Values="[lines]">
                                   <ui:ForEach.Body>
                                     <ActivityAction x:TypeArguments="x:String">
@@ -424,6 +429,7 @@ Skip(1)]</InArgument>
                                     </ActivityAction>
                                   </ui:ForEach.Body>
                                 </ui:ForEach>
+                                <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_33" Level="Info" Message="[&quot;Filtered lines to &quot; &amp; filtered.Count &amp; &quot; items.&quot;]" />
                                 <ui:ForEach x:TypeArguments="x:String" CurrentIndex="{x:Null}" DisplayName="For Each" sap2010:WorkflowViewState.IdRef="ForEach`1_10" Values="[filtered]">
                                   <ui:ForEach.Body>
                                     <ActivityAction x:TypeArguments="x:String">
@@ -454,7 +460,7 @@ Skip(1)]</InArgument>
                                     </ActivityAction>
                                   </ui:ForEach.Body>
                                 </ui:ForEach>
-                                <ui:WriteCsvFile Encoding="{x:Null}" AddHeaders="True" DataTable="[fileMatching]" Delimitator="Comma" DisplayName="Write CSV" FilePath="[in_Config(&quot;FileServer_BotFiles&quot;) + &quot;\hrea_7_files&quot; + elements.Name.LocalName + &quot;.csv&quot;]" sap2010:WorkflowViewState.IdRef="WriteCsvFile_2" />
+                                <ui:WriteCsvFile Encoding="{x:Null}" AddHeaders="True" DataTable="[fileMatching]" Delimitator="Comma" DisplayName="Write CSV" FilePath="[in_Config(&quot;FileServer_BotFiles&quot;) + &quot;\hrea_7_files&quot; + folder.Name.LocalName + &quot;.csv&quot;]" sap2010:WorkflowViewState.IdRef="WriteCsvFile_2" />
                               </Sequence>
                             </If.Then>
                           </If>
@@ -469,138 +475,130 @@ Skip(1)]</InArgument>
         </ui:ForEach.Body>
       </ui:ForEach>
     </Sequence>
-    <ui:MessageBox Caption="{x:Null}" ChosenButton="{x:Null}" Buttons="Ok" DisplayName="Message Box" sap2010:WorkflowViewState.IdRef="MessageBox_3" Text="[&quot;Prepped &quot; &amp; Directory.GetFiles(in_Config(&quot;FileServer_BotFiles&quot;), &quot;hrea_7_files*&quot;).Length &amp; &quot; applications for entry&quot;]" TopMost="True" />
-    <ui:ForEach x:TypeArguments="x:String" CurrentIndex="{x:Null}" DisplayName="For Each" sap2010:WorkflowViewState.IdRef="ForEach`1_11" Values="[Directory.GetFiles(in_Config(&quot;FileServer_BotFiles&quot;), &quot;hrea_7_files*&quot;)]">
-      <ui:ForEach.Body>
-        <ActivityAction x:TypeArguments="x:String">
-          <ActivityAction.Argument>
-            <DelegateInArgument x:TypeArguments="x:String" Name="csvFile" />
-          </ActivityAction.Argument>
-          <Sequence DisplayName="Body" sap2010:WorkflowViewState.IdRef="Sequence_30">
-            <Sequence.Variables>
-              <Variable x:TypeArguments="x:Int32" Name="index" />
-              <Variable x:TypeArguments="sxl:XElement" Name="applicationDocument" />
-              <Variable x:TypeArguments="sd1:DataTable" Name="projectFiles" />
-              <Variable x:TypeArguments="x:String" Name="applicationFileName" />
-              <Variable x:TypeArguments="x:String" Default="Yes" Name="keepRunning" />
-            </Sequence.Variables>
-            <ui:ReadCsvFile Encoding="{x:Null}" DataTable="[projectFiles]" Delimitator="Comma" DisplayName="Read CSV" FilePath="[csvFile]" sap2010:WorkflowViewState.IdRef="ReadCsvFile_1" />
-            <ui:LookupDataTable CellValue="{x:Null}" LookupColumnIndex="{x:Null}" LookupDataColumn="{x:Null}" TargetColumnIndex="{x:Null}" TargetColumnName="{x:Null}" TargetDataColumn="{x:Null}" DataTable="[projectFiles]" DisplayName="Lookup Data Table" sap2010:WorkflowViewState.IdRef="LookupDataTable_2" LookupColumnName="Item Reference" LookupValue="Application.xml" RowIndex="[index]" />
-            <If Condition="[index &lt; 0]" sap2010:WorkflowViewState.IdRef="If_8">
-              <If.Then>
-                <ui:Continue sap2010:WorkflowViewState.IdRef="Continue_1" />
-              </If.Then>
-            </If>
-            <Assign sap2010:WorkflowViewState.IdRef="Assign_10">
-              <Assign.To>
-                <OutArgument x:TypeArguments="x:String">[applicationFileName]</OutArgument>
-              </Assign.To>
-              <Assign.Value>
-                <InArgument x:TypeArguments="x:String">[projectFiles.Rows(index).Item("File Name").ToString]</InArgument>
-              </Assign.Value>
-            </Assign>
-            <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_27" Level="Info" Message="[applicationFileName]" />
-            <Assign sap2010:WorkflowViewState.IdRef="Assign_9">
-              <Assign.To>
-                <OutArgument x:TypeArguments="sxl:XElement">[applicationDocument]</OutArgument>
-              </Assign.To>
-              <Assign.Value>
-                <InArgument x:TypeArguments="sxl:XElement">[XElement.Load(applicationFileName)]</InArgument>
-              </Assign.Value>
-            </Assign>
-            <TryCatch DisplayName="Try Catch" sap2010:WorkflowViewState.IdRef="TryCatch_11">
-              <TryCatch.Try>
-                <Sequence sap2010:WorkflowViewState.IdRef="Sequence_38">
-                  <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke Process_GatherAndCheck workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_27" UnSafe="False" WorkflowFileName="Process_GatherAndCheck.xaml">
-                    <ui:InvokeWorkflowFile.Arguments>
-                      <InArgument x:TypeArguments="sd1:DataTable" x:Key="in_ProjectFiles">[projectFiles]</InArgument>
-                      <InOutArgument x:TypeArguments="sxl:XElement" x:Key="io_ApplicationFile">[applicationDocument]</InOutArgument>
-                    </ui:InvokeWorkflowFile.Arguments>
-                  </ui:InvokeWorkflowFile>
-                  <ui:WriteTextFile DisplayName="Write Text File" FileName="[in_Config(&quot;FileServer_BotFiles&quot;) + &quot;\hrea_8_app_&quot; + Path.GetFileName(Path.GetDirectoryName(applicationFileName)) + &quot;.xml&quot;]" sap2010:WorkflowViewState.IdRef="WriteTextFile_5" Text="[applicationDocument.ToString]" />
+    <ui:CommentOut DisplayName="Comment Out" sap2010:WorkflowViewState.IdRef="CommentOut_19">
+      <ui:CommentOut.Body>
+        <Sequence DisplayName="Ignored Activities" sap2010:WorkflowViewState.IdRef="Sequence_48">
+          <ui:MessageBox Caption="{x:Null}" ChosenButton="{x:Null}" Buttons="Ok" DisplayName="Message Box" sap2010:WorkflowViewState.IdRef="MessageBox_3" Text="[&quot;Prepped &quot; &amp; Directory.GetFiles(in_Config(&quot;FileServer_BotFiles&quot;), &quot;hrea_7_files*&quot;).Length &amp; &quot; applications for entry&quot;]" TopMost="True" />
+          <ui:ForEach x:TypeArguments="x:String" CurrentIndex="{x:Null}" DisplayName="For Each" sap2010:WorkflowViewState.IdRef="ForEach`1_11" Values="[Directory.GetFiles(in_Config(&quot;FileServer_BotFiles&quot;), &quot;hrea_7_files*&quot;)]">
+            <ui:ForEach.Body>
+              <ActivityAction x:TypeArguments="x:String">
+                <ActivityAction.Argument>
+                  <DelegateInArgument x:TypeArguments="x:String" Name="csvFile" />
+                </ActivityAction.Argument>
+                <Sequence DisplayName="Body" sap2010:WorkflowViewState.IdRef="Sequence_30">
+                  <Sequence.Variables>
+                    <Variable x:TypeArguments="x:Int32" Name="index" />
+                    <Variable x:TypeArguments="sxl:XElement" Name="applicationDocument" />
+                    <Variable x:TypeArguments="sd1:DataTable" Name="projectFiles" />
+                    <Variable x:TypeArguments="x:String" Name="applicationFileName" />
+                    <Variable x:TypeArguments="x:String" Default="Yes" Name="keepRunning" />
+                  </Sequence.Variables>
+                  <ui:ReadCsvFile Encoding="{x:Null}" DataTable="[projectFiles]" Delimitator="Comma" DisplayName="Read CSV" FilePath="[csvFile]" sap2010:WorkflowViewState.IdRef="ReadCsvFile_1" />
+                  <ui:LookupDataTable CellValue="{x:Null}" LookupColumnIndex="{x:Null}" LookupDataColumn="{x:Null}" TargetColumnIndex="{x:Null}" TargetColumnName="{x:Null}" TargetDataColumn="{x:Null}" DataTable="[projectFiles]" DisplayName="Lookup Data Table" sap2010:WorkflowViewState.IdRef="LookupDataTable_2" LookupColumnName="Item Reference" LookupValue="Application.xml" RowIndex="[index]" />
+                  <If Condition="[index &lt; 0]" sap2010:WorkflowViewState.IdRef="If_8">
+                    <If.Then>
+                      <ui:Continue sap2010:WorkflowViewState.IdRef="Continue_1" />
+                    </If.Then>
+                  </If>
+                  <Assign sap2010:WorkflowViewState.IdRef="Assign_10">
+                    <Assign.To>
+                      <OutArgument x:TypeArguments="x:String">[applicationFileName]</OutArgument>
+                    </Assign.To>
+                    <Assign.Value>
+                      <InArgument x:TypeArguments="x:String">[projectFiles.Rows(index).Item("File Name").ToString]</InArgument>
+                    </Assign.Value>
+                  </Assign>
+                  <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_27" Level="Info" Message="[applicationFileName]" />
+                  <Assign sap2010:WorkflowViewState.IdRef="Assign_9">
+                    <Assign.To>
+                      <OutArgument x:TypeArguments="sxl:XElement">[applicationDocument]</OutArgument>
+                    </Assign.To>
+                    <Assign.Value>
+                      <InArgument x:TypeArguments="sxl:XElement">[XElement.Load(applicationFileName)]</InArgument>
+                    </Assign.Value>
+                  </Assign>
+                  <TryCatch DisplayName="Try Catch" sap2010:WorkflowViewState.IdRef="TryCatch_11">
+                    <TryCatch.Try>
+                      <Sequence sap2010:WorkflowViewState.IdRef="Sequence_38">
+                        <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke Process_GatherAndCheck workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_27" UnSafe="False" WorkflowFileName="Process_GatherAndCheck.xaml">
+                          <ui:InvokeWorkflowFile.Arguments>
+                            <InArgument x:TypeArguments="sd1:DataTable" x:Key="in_ProjectFiles">[projectFiles]</InArgument>
+                            <InOutArgument x:TypeArguments="sxl:XElement" x:Key="io_ApplicationFile">[applicationDocument]</InOutArgument>
+                          </ui:InvokeWorkflowFile.Arguments>
+                        </ui:InvokeWorkflowFile>
+                        <ui:WriteTextFile DisplayName="Write Text File" FileName="[in_Config(&quot;FileServer_BotFiles&quot;) + &quot;\hrea_8_app_&quot; + Path.GetFileName(Path.GetDirectoryName(applicationFileName)) + &quot;.xml&quot;]" sap2010:WorkflowViewState.IdRef="WriteTextFile_5" Text="[applicationDocument.ToString]" />
+                      </Sequence>
+                    </TryCatch.Try>
+                    <TryCatch.Catches>
+                      <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch`1_11">
+                        <ActivityAction x:TypeArguments="s:Exception">
+                          <ActivityAction.Argument>
+                            <DelegateInArgument x:TypeArguments="s:Exception" Name="exception" />
+                          </ActivityAction.Argument>
+                          <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_28" Level="Error" Message="[exception]" />
+                        </ActivityAction>
+                      </Catch>
+                    </TryCatch.Catches>
+                  </TryCatch>
+                  <ui:MessageBox Caption="{x:Null}" Buttons="YesNo" ChosenButton="[keepRunning]" DisplayName="Message Box" sap2010:WorkflowViewState.IdRef="MessageBox_4" Text="[&quot;Enter data for '&quot; + Path.GetFileName(Path.GetDirectoryName(applicationFileName)) + &quot;'?&quot;]" TopMost="True" />
+                  <If Condition="[keepRunning &lt;&gt; &quot;Yes&quot;]" sap2010:WorkflowViewState.IdRef="If_10">
+                    <If.Then>
+                      <ui:Continue sap2010:WorkflowViewState.IdRef="Continue_2" />
+                    </If.Then>
+                  </If>
+                  <TryCatch DisplayName="Try Catch" sap2010:WorkflowViewState.IdRef="TryCatch_12">
+                    <TryCatch.Try>
+                      <Sequence sap2010:WorkflowViewState.IdRef="Sequence_39">
+                        <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke Process_EnterNewApplication workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_28" UnSafe="False" WorkflowFileName="Process_EnterNewApplication.xaml">
+                          <ui:InvokeWorkflowFile.Arguments>
+                            <InArgument x:TypeArguments="sxl:XElement" x:Key="in_XMLApplication">[applicationDocument]</InArgument>
+                          </ui:InvokeWorkflowFile.Arguments>
+                        </ui:InvokeWorkflowFile>
+                      </Sequence>
+                    </TryCatch.Try>
+                    <TryCatch.Catches>
+                      <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch`1_12">
+                        <ActivityAction x:TypeArguments="s:Exception">
+                          <ActivityAction.Argument>
+                            <DelegateInArgument x:TypeArguments="s:Exception" Name="exception" />
+                          </ActivityAction.Argument>
+                          <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_29" Level="Error" Message="[exception]" />
+                        </ActivityAction>
+                      </Catch>
+                    </TryCatch.Catches>
+                  </TryCatch>
+                  <ui:InjectJsScript ScriptOutput="{x:Null}" DisplayName="Inject Js Script 'chrome.exe'" sap2010:WorkflowViewState.IdRef="InjectJsScript_1" InputParameter="[&quot;RM &quot; + Path.GetFileName(Path.GetDirectoryName(applicationFileName))]" ScriptCode="function(element, input){document.title = input}">
+                    <ui:InjectJsScript.Target>
+                      <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="&lt;html app='chrome.exe' title='New application*' /&gt;" WaitForReady="INTERACTIVE" />
+                    </ui:InjectJsScript.Target>
+                  </ui:InjectJsScript>
+                  <ui:MessageBox Caption="{x:Null}" Buttons="YesNo" ChosenButton="[keepRunning]" DisplayName="Message Box" sap2010:WorkflowViewState.IdRef="MessageBox_1" Text="[&quot;Continue on next item?&quot;]" TopMost="True" />
+                  <If Condition="[keepRunning &lt;&gt; &quot;Yes&quot;]" sap2010:WorkflowViewState.IdRef="If_9">
+                    <If.Then>
+                      <ui:Break sap2010:WorkflowViewState.IdRef="Break_1" />
+                    </If.Then>
+                  </If>
                 </Sequence>
-              </TryCatch.Try>
-              <TryCatch.Catches>
-                <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch`1_11">
-                  <ActivityAction x:TypeArguments="s:Exception">
-                    <ActivityAction.Argument>
-                      <DelegateInArgument x:TypeArguments="s:Exception" Name="exception" />
-                    </ActivityAction.Argument>
-                    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_28" Level="Error" Message="[exception]" />
-                  </ActivityAction>
-                </Catch>
-              </TryCatch.Catches>
-            </TryCatch>
-            <ui:MessageBox Caption="{x:Null}" Buttons="YesNo" ChosenButton="[keepRunning]" DisplayName="Message Box" sap2010:WorkflowViewState.IdRef="MessageBox_4" Text="[&quot;Enter data for '&quot; + Path.GetFileName(Path.GetDirectoryName(applicationFileName)) + &quot;'?&quot;]" TopMost="True" />
-            <If Condition="[keepRunning &lt;&gt; &quot;Yes&quot;]" sap2010:WorkflowViewState.IdRef="If_10">
-              <If.Then>
-                <ui:Continue sap2010:WorkflowViewState.IdRef="Continue_2" />
-              </If.Then>
-            </If>
-            <TryCatch DisplayName="Try Catch" sap2010:WorkflowViewState.IdRef="TryCatch_12">
-              <TryCatch.Try>
-                <Sequence sap2010:WorkflowViewState.IdRef="Sequence_39">
-                  <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke Process_EnterNewApplication workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_28" UnSafe="False" WorkflowFileName="Process_EnterNewApplication.xaml">
-                    <ui:InvokeWorkflowFile.Arguments>
-                      <InArgument x:TypeArguments="sxl:XElement" x:Key="in_XMLApplication">[applicationDocument]</InArgument>
-                    </ui:InvokeWorkflowFile.Arguments>
-                  </ui:InvokeWorkflowFile>
-                </Sequence>
-              </TryCatch.Try>
-              <TryCatch.Catches>
-                <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch`1_12">
-                  <ActivityAction x:TypeArguments="s:Exception">
-                    <ActivityAction.Argument>
-                      <DelegateInArgument x:TypeArguments="s:Exception" Name="exception" />
-                    </ActivityAction.Argument>
-                    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_29" Level="Error" Message="[exception]" />
-                  </ActivityAction>
-                </Catch>
-              </TryCatch.Catches>
-            </TryCatch>
-            <ui:InjectJsScript ScriptOutput="{x:Null}" DisplayName="Inject Js Script 'chrome.exe'" sap2010:WorkflowViewState.IdRef="InjectJsScript_1" InputParameter="[&quot;RM &quot; + Path.GetFileName(Path.GetDirectoryName(applicationFileName))]" ScriptCode="function(element, input){document.title = input}">
-              <ui:InjectJsScript.Target>
-                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="&lt;html app='chrome.exe' title='New application*' /&gt;" WaitForReady="INTERACTIVE" />
-              </ui:InjectJsScript.Target>
-            </ui:InjectJsScript>
-            <ui:MessageBox Caption="{x:Null}" Buttons="YesNo" ChosenButton="[keepRunning]" DisplayName="Message Box" sap2010:WorkflowViewState.IdRef="MessageBox_1" Text="[&quot;Continue on next item?&quot;]" TopMost="True" />
-            <If Condition="[keepRunning &lt;&gt; &quot;Yes&quot;]" sap2010:WorkflowViewState.IdRef="If_9">
-              <If.Then>
-                <ui:Break sap2010:WorkflowViewState.IdRef="Break_1" />
-              </If.Then>
-            </If>
-          </Sequence>
-        </ActivityAction>
-      </ui:ForEach.Body>
-    </ui:ForEach>
-    <sads:DebugSymbol.Symbol>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</sads:DebugSymbol.Symbol>
+              </ActivityAction>
+            </ui:ForEach.Body>
+          </ui:ForEach>
+        </Sequence>
+      </ui:CommentOut.Body>
+    </ui:CommentOut>
+    <sads:DebugSymbol.Symbol>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</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
       <sap2010:ViewStateData Id="LogMessage_8" sap:VirtualizedContainerService.HintSize="875,91" />
-      <sap2010:ViewStateData Id="Delete_1" sap:VirtualizedContainerService.HintSize="200,22" />
-      <sap2010:ViewStateData Id="ForEach`1_1" sap:VirtualizedContainerService.HintSize="287,193" />
-      <sap2010:ViewStateData Id="Sequence_46" sap:VirtualizedContainerService.HintSize="309,317">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="CommentOut_17" sap:VirtualizedContainerService.HintSize="416,395" />
       <sap2010:ViewStateData Id="Delete_2" sap:VirtualizedContainerService.HintSize="200,22" />
-      <sap2010:ViewStateData Id="ForEach`1_2" sap:VirtualizedContainerService.HintSize="287,193" />
-      <sap2010:ViewStateData Id="Sequence_47" sap:VirtualizedContainerService.HintSize="309,317">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="CommentOut_18" sap:VirtualizedContainerService.HintSize="416,395" />
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_23" sap:VirtualizedContainerService.HintSize="416,87" />
-      <sap2010:ViewStateData Id="MessageBox_2" sap:VirtualizedContainerService.HintSize="416,59" />
-      <sap2010:ViewStateData Id="Sequence_16" sap:VirtualizedContainerService.HintSize="875,1180">
+      <sap2010:ViewStateData Id="ForEach`1_2" sap:VirtualizedContainerService.HintSize="287,194" />
+      <sap2010:ViewStateData Id="If_13" sap:VirtualizedContainerService.HintSize="464,342" />
+      <sap2010:ViewStateData Id="Delete_1" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="ForEach`1_1" sap:VirtualizedContainerService.HintSize="287,194" />
+      <sap2010:ViewStateData Id="If_14" sap:VirtualizedContainerService.HintSize="464,342" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_23" sap:VirtualizedContainerService.HintSize="464,87" />
+      <sap2010:ViewStateData Id="LogMessage_30" sap:VirtualizedContainerService.HintSize="464,91" />
+      <sap2010:ViewStateData Id="Sequence_16" sap:VirtualizedContainerService.HintSize="875,1106">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -610,7 +608,7 @@ Skip(1)]</InArgument>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="InvokeWorkflowFile_25" sap:VirtualizedContainerService.HintSize="314,87" />
       <sap2010:ViewStateData Id="WriteTextFile_2" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="Sequence_9" sap:VirtualizedContainerService.HintSize="875,338">
+      <sap2010:ViewStateData Id="Sequence_9" sap:VirtualizedContainerService.HintSize="336,338">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -618,10 +616,29 @@ Skip(1)]</InArgument>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_24" sap:VirtualizedContainerService.HintSize="853,87" />
-      <sap2010:ViewStateData Id="WriteTextFile_1" sap:VirtualizedContainerService.HintSize="853,87" />
+      <sap2010:ViewStateData Id="LogMessage_31" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="If_11" sap:VirtualizedContainerService.HintSize="875,486" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_24" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="WriteTextFile_1" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="Sequence_49" sap:VirtualizedContainerService.HintSize="336,338">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Assign_11" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="LogMessage_32" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="Sequence_50" sap:VirtualizedContainerService.HintSize="336,315">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="If_12" sap:VirtualizedContainerService.HintSize="853,486" />
       <sap2010:ViewStateData Id="BuildDataTable_1" sap:VirtualizedContainerService.HintSize="815,59" />
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_26" sap:VirtualizedContainerService.HintSize="815,87" />
+      <sap2010:ViewStateData Id="LogMessage_35" sap:VirtualizedContainerService.HintSize="815,91" />
       <sap2010:ViewStateData Id="AddDataRow_1" sap:VirtualizedContainerService.HintSize="200,22" />
       <sap2010:ViewStateData Id="If_6" sap:VirtualizedContainerService.HintSize="464,208" />
       <sap2010:ViewStateData Id="ForEach`1_9" sap:VirtualizedContainerService.HintSize="815,342">
@@ -632,15 +649,15 @@ Skip(1)]</InArgument>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="LogMessage_36" sap:VirtualizedContainerService.HintSize="815,91" />
       <sap2010:ViewStateData Id="WriteCsvFile_1" sap:VirtualizedContainerService.HintSize="815,152" />
       <sap2010:ViewStateData Id="LogMessage_14" sap:VirtualizedContainerService.HintSize="652,91" />
       <sap2010:ViewStateData Id="LogMessage_15" sap:VirtualizedContainerService.HintSize="314,91" />
       <sap2010:ViewStateData Id="ReadPDFText_2" sap:VirtualizedContainerService.HintSize="314,59" />
-      <sap2010:ViewStateData Id="LogMessage_12" sap:VirtualizedContainerService.HintSize="418,91" />
       <sap2010:ViewStateData Id="MicrosoftOCR_2" sap:VirtualizedContainerService.HintSize="200,22" />
       <sap2010:ViewStateData Id="ReadPDFWithOCR_2" sap:VirtualizedContainerService.HintSize="314,131" />
       <sap2010:ViewStateData Id="LogMessage_13" sap:VirtualizedContainerService.HintSize="314,91" />
-      <sap2010:ViewStateData Id="Catch`1_3" sap:VirtualizedContainerService.HintSize="404,21">
+      <sap2010:ViewStateData Id="Catch`1_3" sap:VirtualizedContainerService.HintSize="400,21">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">False</x:Boolean>
@@ -648,14 +665,7 @@ Skip(1)]</InArgument>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_3" sap:VirtualizedContainerService.HintSize="418,358" />
-      <sap2010:ViewStateData Id="Sequence_18" sap:VirtualizedContainerService.HintSize="440,613">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="TryCatch_3" sap:VirtualizedContainerService.HintSize="418,322" />
       <sap2010:ViewStateData Id="Catch`1_4" sap:VirtualizedContainerService.HintSize="404,21">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
@@ -664,9 +674,8 @@ Skip(1)]</InArgument>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_4" sap:VirtualizedContainerService.HintSize="460,908" />
+      <sap2010:ViewStateData Id="TryCatch_4" sap:VirtualizedContainerService.HintSize="434,617" />
       <sap2010:ViewStateData Id="DocumentReadText_1" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="LogMessage_16" sap:VirtualizedContainerService.HintSize="432,91" />
       <sap2010:ViewStateData Id="WordReadText_1" sap:VirtualizedContainerService.HintSize="314,59" />
       <sap2010:ViewStateData Id="WordApplicationScope_1" sap:VirtualizedContainerService.HintSize="414,168" />
       <sap2010:ViewStateData Id="LogMessage_17" sap:VirtualizedContainerService.HintSize="314,91" />
@@ -679,14 +688,7 @@ Skip(1)]</InArgument>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="TryCatch_5" sap:VirtualizedContainerService.HintSize="432,395" />
-      <sap2010:ViewStateData Id="Sequence_21" sap:VirtualizedContainerService.HintSize="454,610">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Catch`1_6" sap:VirtualizedContainerService.HintSize="460,21">
+      <sap2010:ViewStateData Id="Catch`1_6" sap:VirtualizedContainerService.HintSize="438,21">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">False</x:Boolean>
@@ -694,13 +696,12 @@ Skip(1)]</InArgument>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_6" sap:VirtualizedContainerService.HintSize="474,945" />
+      <sap2010:ViewStateData Id="TryCatch_6" sap:VirtualizedContainerService.HintSize="418,314" />
       <sap2010:ViewStateData Id="DocumentReadText_2" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="LogMessage_18" sap:VirtualizedContainerService.HintSize="414,91" />
       <sap2010:ViewStateData Id="WordReadText_2" sap:VirtualizedContainerService.HintSize="314,59" />
       <sap2010:ViewStateData Id="WordApplicationScope_2" sap:VirtualizedContainerService.HintSize="414,168" />
       <sap2010:ViewStateData Id="LogMessage_19" sap:VirtualizedContainerService.HintSize="314,91" />
-      <sap2010:ViewStateData Id="Catch`1_7" sap:VirtualizedContainerService.HintSize="400,21">
+      <sap2010:ViewStateData Id="Catch`1_7" sap:VirtualizedContainerService.HintSize="418,21">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">False</x:Boolean>
@@ -708,15 +709,8 @@ Skip(1)]</InArgument>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_7" sap:VirtualizedContainerService.HintSize="414,183" />
-      <sap2010:ViewStateData Id="Sequence_22" sap:VirtualizedContainerService.HintSize="454,749">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Catch`1_8" sap:VirtualizedContainerService.HintSize="442,21">
+      <sap2010:ViewStateData Id="TryCatch_7" sap:VirtualizedContainerService.HintSize="432,395" />
+      <sap2010:ViewStateData Id="Catch`1_8" sap:VirtualizedContainerService.HintSize="438,21">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">False</x:Boolean>
@@ -724,9 +718,8 @@ Skip(1)]</InArgument>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_8" sap:VirtualizedContainerService.HintSize="456,872" />
+      <sap2010:ViewStateData Id="TryCatch_8" sap:VirtualizedContainerService.HintSize="418,314" />
       <sap2010:ViewStateData Id="DocumentReadText_3" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="LogMessage_20" sap:VirtualizedContainerService.HintSize="432,91" />
       <sap2010:ViewStateData Id="WordReadText_3" sap:VirtualizedContainerService.HintSize="314,59" />
       <sap2010:ViewStateData Id="WordApplicationScope_3" sap:VirtualizedContainerService.HintSize="414,168" />
       <sap2010:ViewStateData Id="LogMessage_21" sap:VirtualizedContainerService.HintSize="314,91" />
@@ -739,14 +732,7 @@ Skip(1)]</InArgument>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="TryCatch_9" sap:VirtualizedContainerService.HintSize="432,395" />
-      <sap2010:ViewStateData Id="Sequence_23" sap:VirtualizedContainerService.HintSize="454,610">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Catch`1_10" sap:VirtualizedContainerService.HintSize="460,21">
+      <sap2010:ViewStateData Id="Catch`1_10" sap:VirtualizedContainerService.HintSize="438,21">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">False</x:Boolean>
@@ -754,11 +740,11 @@ Skip(1)]</InArgument>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_10" sap:VirtualizedContainerService.HintSize="474,945" />
+      <sap2010:ViewStateData Id="TryCatch_10" sap:VirtualizedContainerService.HintSize="452,757" />
       <sap2010:ViewStateData Id="Switch`1_1" sap:VirtualizedContainerService.HintSize="652,204" />
       <sap2010:ViewStateData Id="Assign_1" sap:VirtualizedContainerService.HintSize="652,64" />
-      <sap2010:ViewStateData Id="LogMessage_23" sap:VirtualizedContainerService.HintSize="505,91" />
       <sap2010:ViewStateData Id="Assign_2" sap:VirtualizedContainerService.HintSize="505,64" />
+      <sap2010:ViewStateData Id="LogMessage_23" sap:VirtualizedContainerService.HintSize="505,91" />
       <sap2010:ViewStateData Id="Assign_4" sap:VirtualizedContainerService.HintSize="464,60" />
       <sap2010:ViewStateData Id="Assign_3" sap:VirtualizedContainerService.HintSize="464,60" />
       <sap2010:ViewStateData Id="AddToCollection`1_1" sap:VirtualizedContainerService.HintSize="200,22" />
@@ -771,6 +757,7 @@ Skip(1)]</InArgument>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="ForEach`1_7" sap:VirtualizedContainerService.HintSize="505,666" />
+      <sap2010:ViewStateData Id="LogMessage_33" sap:VirtualizedContainerService.HintSize="505,91" />
       <sap2010:ViewStateData Id="LookupDataTable_1" sap:VirtualizedContainerService.HintSize="467,22" />
       <sap2010:ViewStateData Id="AddDataRow_2" sap:VirtualizedContainerService.HintSize="200,22" />
       <sap2010:ViewStateData Id="Assign_5" sap:VirtualizedContainerService.HintSize="242,60" />
@@ -784,22 +771,14 @@ Skip(1)]</InArgument>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="ForEach`1_10" sap:VirtualizedContainerService.HintSize="505,528" />
       <sap2010:ViewStateData Id="WriteCsvFile_2" sap:VirtualizedContainerService.HintSize="505,152" />
-      <sap2010:ViewStateData Id="Sequence_20" sap:VirtualizedContainerService.HintSize="527,1785">
+      <sap2010:ViewStateData Id="Sequence_20" sap:VirtualizedContainerService.HintSize="527,1916">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_4" sap:VirtualizedContainerService.HintSize="652,1933">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-            <x:Boolean x:Key="IsPinned">False</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_19" sap:VirtualizedContainerService.HintSize="674,2536">
+      <sap2010:ViewStateData Id="If_4" sap:VirtualizedContainerService.HintSize="652,2064">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -807,8 +786,7 @@ Skip(1)]</InArgument>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_3" sap:VirtualizedContainerService.HintSize="799,2684" />
-      <sap2010:ViewStateData Id="ForEach`1_6" sap:VirtualizedContainerService.HintSize="815,2818">
+      <sap2010:ViewStateData Id="Sequence_19" sap:VirtualizedContainerService.HintSize="674,2667">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -816,15 +794,8 @@ Skip(1)]</InArgument>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_17" sap:VirtualizedContainerService.HintSize="837,3742">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="ForEach`1_5" sap:VirtualizedContainerService.HintSize="853,3876" />
-      <sap2010:ViewStateData Id="Sequence_10" sap:VirtualizedContainerService.HintSize="875,4254">
+      <sap2010:ViewStateData Id="If_3" sap:VirtualizedContainerService.HintSize="799,2815" />
+      <sap2010:ViewStateData Id="ForEach`1_6" sap:VirtualizedContainerService.HintSize="815,2949">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -832,11 +803,27 @@ Skip(1)]</InArgument>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="MessageBox_3" sap:VirtualizedContainerService.HintSize="875,59" />
+      <sap2010:ViewStateData Id="Sequence_17" sap:VirtualizedContainerService.HintSize="837,4008">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="ForEach`1_12" sap:VirtualizedContainerService.HintSize="853,4142" />
+      <sap2010:ViewStateData Id="Sequence_10" sap:VirtualizedContainerService.HintSize="875,4792">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="MessageBox_3" sap:VirtualizedContainerService.HintSize="502,59" />
       <sap2010:ViewStateData Id="ReadCsvFile_1" sap:VirtualizedContainerService.HintSize="464,152" />
       <sap2010:ViewStateData Id="LookupDataTable_2" sap:VirtualizedContainerService.HintSize="464,22" />
       <sap2010:ViewStateData Id="Continue_1" sap:VirtualizedContainerService.HintSize="200,22" />
-      <sap2010:ViewStateData Id="If_8" sap:VirtualizedContainerService.HintSize="464,208" />
+      <sap2010:ViewStateData Id="If_8" sap:VirtualizedContainerService.HintSize="464,207" />
       <sap2010:ViewStateData Id="Assign_10" sap:VirtualizedContainerService.HintSize="464,60" />
       <sap2010:ViewStateData Id="LogMessage_27" sap:VirtualizedContainerService.HintSize="464,91" />
       <sap2010:ViewStateData Id="Assign_9" sap:VirtualizedContainerService.HintSize="464,60" />
@@ -861,7 +848,7 @@ Skip(1)]</InArgument>
       <sap2010:ViewStateData Id="TryCatch_11" sap:VirtualizedContainerService.HintSize="464,565" />
       <sap2010:ViewStateData Id="MessageBox_4" sap:VirtualizedContainerService.HintSize="464,59" />
       <sap2010:ViewStateData Id="Continue_2" sap:VirtualizedContainerService.HintSize="200,22" />
-      <sap2010:ViewStateData Id="If_10" sap:VirtualizedContainerService.HintSize="464,208" />
+      <sap2010:ViewStateData Id="If_10" sap:VirtualizedContainerService.HintSize="464,207" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_28" sap:VirtualizedContainerService.HintSize="314,87" />
       <sap2010:ViewStateData Id="Sequence_39" sap:VirtualizedContainerService.HintSize="336,211">
         <sap:WorkflowViewStateService.ViewState>
@@ -883,16 +870,31 @@ Skip(1)]</InArgument>
       <sap2010:ViewStateData Id="InjectJsScript_1" sap:VirtualizedContainerService.HintSize="464,96" />
       <sap2010:ViewStateData Id="MessageBox_1" sap:VirtualizedContainerService.HintSize="464,59" />
       <sap2010:ViewStateData Id="Break_1" sap:VirtualizedContainerService.HintSize="200,22" />
-      <sap2010:ViewStateData Id="If_9" sap:VirtualizedContainerService.HintSize="464,208" />
-      <sap2010:ViewStateData Id="Sequence_30" sap:VirtualizedContainerService.HintSize="486,2830">
+      <sap2010:ViewStateData Id="If_9" sap:VirtualizedContainerService.HintSize="464,207" />
+      <sap2010:ViewStateData Id="Sequence_30" sap:VirtualizedContainerService.HintSize="486,2827">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="ForEach`1_11" sap:VirtualizedContainerService.HintSize="875,2964" />
-      <sap2010:ViewStateData Id="Sequence_8" sap:VirtualizedContainerService.HintSize="897,9252">
+      <sap2010:ViewStateData Id="ForEach`1_11" sap:VirtualizedContainerService.HintSize="502,2960" />
+      <sap2010:ViewStateData Id="Sequence_48" sap:VirtualizedContainerService.HintSize="524,3183">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="CommentOut_19" sap:VirtualizedContainerService.HintSize="875,51">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Sequence_8" sap:VirtualizedContainerService.HintSize="897,6852">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -900,7 +902,7 @@ Skip(1)]</InArgument>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="ProcessTransaction_1" sap:VirtualizedContainerService.HintSize="937,9372" />
+      <sap2010:ViewStateData Id="ProcessTransaction_1" sap:VirtualizedContainerService.HintSize="937,6932" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
