@@ -7,13 +7,14 @@
  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
  xmlns:scg="clr-namespace:System.Collections.Generic;assembly=mscorlib"
  xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=mscorlib"
+ xmlns:ui="http://schemas.uipath.com/workflow/activities"
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <x:Members>
-    <x:Property Name="in_ShortDescription" Type="InOutArgument(x:String)" />
     <x:Property Name="in_OUCFaculty" Type="InArgument(x:String)" />
     <x:Property Name="in_OUCSchool" Type="InArgument(x:String)" />
     <x:Property Name="in_OUCSection" Type="InArgument(x:String)" />
     <x:Property Name="in_OUCSite" Type="InArgument(x:String)" />
+    <x:Property Name="in_UAProject" Type="InArgument(x:String)" />
     <x:Property Name="in_UAOpal" Type="InArgument(x:String)" />
     <x:Property Name="in_UASite" Type="InArgument(x:String)" />
     <x:Property Name="in_UAFund" Type="InArgument(x:String)" />
@@ -22,6 +23,7 @@
     <x:Property Name="out_ProformaDepartment" Type="OutArgument(x:String)" />
     <x:Property Name="out_ProformaSubdivision" Type="OutArgument(x:String)" />
     <x:Property Name="out_ProformaJustification" Type="OutArgument(x:String)" />
+    <x:Property Name="io_ShortDescription" Type="InOutArgument(x:String)" />
   </x:Members>
   <mva:VisualBasic.Settings>
     <x:Null />
@@ -74,25 +76,25 @@
       <AssemblyReference>System.ServiceModel</AssemblyReference>
       <AssemblyReference>System.ValueTuple</AssemblyReference>
       <AssemblyReference>System.ComponentModel.Composition</AssemblyReference>
-      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
       <AssemblyReference>Microsoft.VisualStudio.Services.Common</AssemblyReference>
+      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
-  <Sequence DisplayName="validate data" sap2010:WorkflowViewState.IdRef="Sequence_3">
+  <Sequence sap2010:Annotation.AnnotationText="Description: A brief overview of what happens within the workflow.&#xA;&#xA;Inputs: &#xA;in_ShortDescription (String).&#xA;in_OUCFaculty (String): Operational Unit Code Faculty.&#xA;in_OUCSchool (String): Operational Unit Code School.&#xA;in_OUCSection (String): Operational Unit Code Section.&#xA;in_OUCSite (String): Operational Unit Code Site.&#xA;in_UAOpal (String): Underwriting Account Opal.&#xA;in_UASite (String): Underwriting Account Site.&#xA;in_UAFund (String): Underwriting Account Fund.&#xA;in_UAFunction (String): Underwriting Account Function.&#xA;&#xA;Outputs:&#xA;out_ProformaIntegration (String): Project Data Integration.&#xA;out_ProformaDepartment (String): Project Data Department.&#xA;out_ProformaSubdivision (String): Project Data Subdivision.&#xA;out_ProformaJustification (String): Project Data Justification.&#xA;&#xA;Pre Condition:&#xA;All inputs are either set with valid data or blank.&#xA;&#xA;Post Condition:&#xA;Short description is truncated to 30 characters.&#xA;Integration = OUC School + &quot;00&quot;&#xA;Department = OUC Faculty + OUC School + OUC Section&#xA;Subdivision = Department&#xA;OUC Site &lt;&gt; &quot;&quot;&#xA;Justification = UA Opal + &quot;-&quot; + UA Site + &quot;-&quot; + UA Fund + &quot;-&quot; + UA Function" DisplayName="validate data" sap2010:WorkflowViewState.IdRef="Sequence_3">
     <Sequence.Variables>
       <Variable x:TypeArguments="scg:List(x:String)" Default="[New List(Of String)]" Name="oucErrors" />
       <Variable x:TypeArguments="scg:List(x:String)" Default="[New List(Of String)]" Name="uaErrors" />
       <Variable x:TypeArguments="x:String" Name="oucMessage" />
       <Variable x:TypeArguments="x:String" Name="uaMessage" />
     </Sequence.Variables>
-    <If Condition="[in_ShortDescription.Length &gt; 30]" DisplayName="If long description" sap2010:WorkflowViewState.IdRef="If_4">
+    <If Condition="[io_ShortDescription.Length &gt; 30]" DisplayName="If long description" sap2010:WorkflowViewState.IdRef="If_4">
       <If.Then>
         <Assign DisplayName="Assign truncated" sap2010:WorkflowViewState.IdRef="Assign_11">
           <Assign.To>
-            <OutArgument x:TypeArguments="x:String">[in_ShortDescription]</OutArgument>
+            <OutArgument x:TypeArguments="x:String">[io_ShortDescription]</OutArgument>
           </Assign.To>
           <Assign.Value>
-            <InArgument x:TypeArguments="x:String">[in_ShortDescription.Substring(0, 30)]</InArgument>
+            <InArgument x:TypeArguments="x:String">[io_ShortDescription.Substring(0, 30).Trim]</InArgument>
           </Assign.Value>
         </Assign>
       </If.Then>
@@ -225,6 +227,18 @@
         <AddToCollection x:TypeArguments="x:String" Collection="[uaErrors]" DisplayName="Add function to UA" sap2010:WorkflowViewState.IdRef="AddToCollection`1_21" Item="Function" />
       </If.Else>
     </If>
+    <If Condition="[in_UAProject &lt;&gt; &quot;&quot;]" DisplayName="If valid project" sap2010:WorkflowViewState.IdRef="If_19">
+      <If.Then>
+        <Assign DisplayName="Assign justification project" sap2010:WorkflowViewState.IdRef="Assign_32">
+          <Assign.To>
+            <OutArgument x:TypeArguments="x:String">[out_ProformaJustification]</OutArgument>
+          </Assign.To>
+          <Assign.Value>
+            <InArgument x:TypeArguments="x:String">[out_ProformaJustification + "-" + in_UAProject]</InArgument>
+          </Assign.Value>
+        </Assign>
+      </If.Then>
+    </If>
     <Assign DisplayName="Assign op unit codes" sap2010:WorkflowViewState.IdRef="Assign_19">
       <Assign.To>
         <OutArgument x:TypeArguments="x:String">[oucMessage]</OutArgument>
@@ -256,7 +270,8 @@
         <TerminateWorkflow DisplayName="Terminate Invalid UA" sap2010:WorkflowViewState.IdRef="TerminateWorkflow_6" Reason="[uaMessage]" />
       </If.Then>
     </If>
-    <sads:DebugSymbol.Symbol>d1lDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUlBBVGFzazEtQ2hhcnRTdHJpbmdQcm9mb3JtYURldGFpbFxWYWxpZGF0ZURhdGEueGFtbF5RA4QCDgIBAVM+U1UCAQNUPlRVAgECWAVjCgMBjgFkBXIKAwGBAXMFiwEKAgFujAEFmgEKAgFhmwEFogEOAgFcowEFpwEKAgFVqAEFtgEKAgFJtwEFxQEKAgE8xgEF1AEKAgEv1QEF4wEKAgEi5AEF6wEOAgEd7AEF8wEOAgEY9AEF+AEKAgEQ+QEF/QEKAgEK/gEFggIKAgEEWBNYOQMBjwFaCWESAwGRAWQTZDoDAYIBZgltEgMBiAFwCXC2AQMBhAFzE3M5AgFvdQmGARQCAXWJAQmJAbQBAgFxjAETjAE6AgFijgEJlQESAgFomAEJmAG3AQIBZKABMKABSAIBX50BMZ0BSgIBXaMBE6MBNwIBVqUBCaUBsAECAVioAROoATYCAUqqAQmxARICAVC0AQm0Aa4BAgFMtwETtwE2AgE9uQEJwAESAgFDwwEJwwGvAQIBP8YBE8YBNgIBMMgBCc8BEgIBNtIBCdIBrwECATLVARPVAToCASPXAQneARICASnhAQnhAbcBAgEl6QEw6QFcAgEg5gEx5gE9AgEe8QEw8QFdAgEb7gEx7gE8AgEZ9AET9AFHAgER9gEJ9gGzAQIBFPkBE/kBLQIBC/sBCfsBjgECAQ3+ARP+ASwCAQWAAgmAAowBAgEHXzRfWgMBlAFcNVxKAwGSAWs0a1wDAYsBaDVoTQMBiQFwQHBNAwGGAXCqAXCzAQMBhQF2C30UAgF8fguFARQCAXaJAUCJAU0CAXOJAakBiQGxAQIBcpMBNJMBXAIBa5ABNZABTQIBaZgBQJgBTQIBZpgBqwGYAbQBAgFlpQFApQFNAgFapQGnAaUBrQECAVmvATSvAT8CAVOsATWsAVACAVG0AUC0AUwCAU60AaUBtAGrAQIBTb4BNL4BYQIBRrsBNbsBUAIBRMMBQMMBTAIBQcMBpgHDAawBAgFAzQE0zQFhAgE5ygE1ygFQAgE30gFA0gFMAgE00gGmAdIBrAECATPcATTcAWUCASzZATXZAVACASrhAUDhAUwCASfhAaoB4QG0AQIBJvYBgAH2AbABAgEV+wF9+wGLAQIBDoACfIACiQECAQh7NntLAgF/eDd4UAIBfYMBNoMBXQIBeYABN4ABTwIBdw==</sads:DebugSymbol.Symbol>
+    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[String.Format(&quot;End ValidateData.xaml{0}Short Description: {1}{0}Integration: {2}{0}Department: {3}{0}Subdivision: {4}{0}Site Code: {5}{0}Justification: {6}&quot;,&#xA;vbNewLine, io_ShortDescription, out_ProformaIntegration, out_ProformaDepartment, out_ProformaSubdivision, in_OUCSite, out_ProformaJustification)]" />
+    <sads:DebugSymbol.Symbol>d1NDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQ2hhcnRTdHJpbmdQcm9mb3JtYURldGFpbFxWYWxpZGF0ZURhdGEueGFtbGVTA5MCDgIBAVU+VVUCAQNWPlZVAgECWgVlCgMBmQFmBXQKAwGMAXUFjQEKAgF5jgEFnAEKAgFsnQEFpAEOAgFnpQEFqQEKAgFgqgEFuAEKAgFUuQEFxwEKAgFHyAEF1gEKAgE61wEF5QEKAgEt5gEF8QEKAgEk8gEF+QEOAgEf+gEFgQIOAgEaggIFhgIKAgEShwIFiwIKAgEMjAIFkAIKAgEGkQIFkQK1AwIBBFoTWjkDAZoBXAljEgMBnAFmE2Y6AwGNAWgJbxIDAZMBcglytgEDAY8BdRN1OQIBencJiAEUAwGAAYsBCYsBtAECAXyOAROOAToCAW2QAQmXARICAXOaAQmaAbcBAgFvogEwogFIAgFqnwExnwFKAgFopQETpQE3AgFhpwEJpwGwAQIBY6oBE6oBNgIBVawBCbMBEgIBW7YBCbYBrgECAVe5ARO5ATYCAUi7AQnCARICAU7FAQnFAa8BAgFKyAETyAE2AgE7ygEJ0QESAgFB1AEJ1AGvAQIBPdcBE9cBOgIBLtkBCeABEgIBNOMBCeMBtwECATDmARPmATkCASXoAQnvARICASf3ATD3AVwCASL0ATH0AT0CASD/ATD/AV0CAR38ATH8ATwCARuCAhOCAkcCAROEAgmEArMBAgEWhwIThwItAgENiQIJiQKOAQIBD4wCE4wCLAIBB44CCY4CjAECAQmRAnKRArIDAgEFYTRhXwMBnwFeNV5KAwGdAW00bVwDAZYBajVqTQMBlAFyQHJNAwGRAXKqAXKzAQMBkAF4C38UAwGHAYABC4cBFAMBgQGLAUCLAU0CAX6LAakBiwGxAQIBfZUBNJUBXAIBdpIBNZIBTQIBdJoBQJoBTQIBcZoBqwGaAbQBAgFwpwFApwFNAgFlpwGnAacBrQECAWSxATSxAT8CAV6uATWuAVACAVy2AUC2AUwCAVm2AaUBtgGrAQIBWMABNMABYQIBUb0BNb0BUAIBT8UBQMUBTAIBTMUBpgHFAawBAgFLzwE0zwFhAgFEzAE1zAFQAgFC1AFA1AFMAgE/1AGmAdQBrAECAT7eATTeAWUCATfbATXbAVACATXjAUDjAUwCATLjAaoB4wG0AQIBMe0BNO0BZAIBKuoBNeoBUAIBKIQCgAGEArABAgEXiQJ9iQKLAQIBEI4CfI4CiQECAQp9Nn1LAwGKAXo3elADAYgBhQE2hQFdAwGEAYIBN4IBTwMBggE=</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -294,6 +309,8 @@
       <sap2010:ViewStateData Id="Assign_31" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="AddToCollection`1_21" sap:VirtualizedContainerService.HintSize="200,22" />
       <sap2010:ViewStateData Id="If_16" sap:VirtualizedContainerService.HintSize="489,208" />
+      <sap2010:ViewStateData Id="Assign_32" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="If_19" sap:VirtualizedContainerService.HintSize="489,208" />
       <sap2010:ViewStateData Id="Assign_19" sap:VirtualizedContainerService.HintSize="489,60" />
       <sap2010:ViewStateData Id="Assign_20" sap:VirtualizedContainerService.HintSize="489,60" />
       <sap2010:ViewStateData Id="TerminateWorkflow_4" sap:VirtualizedContainerService.HintSize="200,22" />
@@ -302,15 +319,17 @@
       <sap2010:ViewStateData Id="If_17" sap:VirtualizedContainerService.HintSize="489,208" />
       <sap2010:ViewStateData Id="TerminateWorkflow_6" sap:VirtualizedContainerService.HintSize="200,22" />
       <sap2010:ViewStateData Id="If_18" sap:VirtualizedContainerService.HintSize="489,208" />
-      <sap2010:ViewStateData Id="Sequence_3" sap:VirtualizedContainerService.HintSize="511,3584">
+      <sap2010:ViewStateData Id="LogMessage_1" sap:VirtualizedContainerService.HintSize="489,91" />
+      <sap2010:ViewStateData Id="Sequence_3" sap:VirtualizedContainerService.HintSize="511,4410">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
             <x:Boolean x:Key="IsPinned">False</x:Boolean>
+            <x:Boolean x:Key="IsAnnotationDocked">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="ValidateData_1" sap:VirtualizedContainerService.HintSize="551,3664" />
+      <sap2010:ViewStateData Id="ValidateData_1" sap:VirtualizedContainerService.HintSize="551,4490" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
