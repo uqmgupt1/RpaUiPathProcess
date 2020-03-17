@@ -1,7 +1,8 @@
-<Activity mc:Ignorable="sap sap2010 sads" x:Class="GetTransactionData"
+﻿<Activity mc:Ignorable="sap sap2010 sads" x:Class="GetTransactionData"
  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
  xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities"
+ xmlns:s="clr-namespace:System;assembly=mscorlib"
  xmlns:sads="http://schemas.microsoft.com/netfx/2010/xaml/activities/debugger"
  xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
@@ -13,9 +14,10 @@
   <x:Members>
     <x:Property Name="in_TransactionNumber" Type="InArgument(x:Int32)" />
     <x:Property Name="in_Config" Type="InArgument(scg:Dictionary(x:String, x:String))" />
-    <x:Property Name="out_TransactionItem" Type="OutArgument(ui:QueueItem)" />
     <x:Property Name="out_TransactionMessage" Type="OutArgument(snm:MailMessage)" />
-    <x:Property Name="io_DispatchItems" Type="InOutArgument(scg:List(ui:QueueItem))" />
+    <x:Property Name="out_TransactionSubject" Type="OutArgument(x:String)" />
+    <x:Property Name="out_TransactionReceived" Type="OutArgument(s:DateTime)" />
+    <x:Property Name="out_TransactionFilename" Type="OutArgument(x:String)" />
   </x:Members>
   <mva:VisualBasic.Settings>
     <x:Null />
@@ -73,119 +75,92 @@
       <AssemblyReference>System.ValueTuple</AssemblyReference>
       <AssemblyReference>System.Collections.Immutable</AssemblyReference>
       <AssemblyReference>UiPath.Studio.Plugin.Workflow</AssemblyReference>
+      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence sap2010:Annotation.AnnotationText="Description: Get data from spreadsheets, databases, email, web API or UiPath server queues. If no new data, set out_TransactionItem to Nothing. &#xA;&#xA;For a linear process (not repetitive), set out_TransactionItem only for in_TransactionNumber 1 - first and only transaction. &#xA;&#xA;If the process is repeatable, set io_TransactionData once for in_TransactionNumber 1, then assign a new out_TransactionItem by using the in_TransactionNumber to index io_TransactionData. Be aware that, at the end of the io_TransactionData collection, it is your responsibility to set out_TransactionItem to Nothing, thus ending the process." DisplayName="GetTransactionData" sap2010:WorkflowViewState.IdRef="Sequence_1">
     <Sequence.Variables>
-      <Variable x:TypeArguments="scg:List(snm:MailMessage)" Name="messages" />
+      <Variable x:TypeArguments="scg:List(snm:MailMessage)" Name="folderMessages" />
+      <Variable x:TypeArguments="x:String" Name="username" />
+      <Variable x:TypeArguments="x:String" Name="password" />
+      <Variable x:TypeArguments="x:String" Name="mailbox" />
     </Sequence.Variables>
-    <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke GetExchangeMail workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_1" UnSafe="False" WorkflowFileName="Mail\GetExchangeMail.xaml">
+    <Assign DisplayName="Assign mailbox name" sap2010:WorkflowViewState.IdRef="Assign_8">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">[mailbox]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">[StrConv(in_Config("OperatingEnvironment"), VbStrConv.ProperCase)]</InArgument>
+      </Assign.Value>
+    </Assign>
+    <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke GetExchangeMail workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_2" UnSafe="False" WorkflowFileName="Mail\GetExchangeMail.xaml">
       <ui:InvokeWorkflowFile.Arguments>
         <InArgument x:TypeArguments="x:String" x:Key="in_CredentialsAsset">[in_Config("Credentials_Exchange")]</InArgument>
         <InArgument x:TypeArguments="x:String" x:Key="in_ServerName">[in_Config("Exchange_ServerName")]</InArgument>
-        <OutArgument x:TypeArguments="scg:List(snm:MailMessage)" x:Key="out_Messages">[messages]</OutArgument>
+        <OutArgument x:TypeArguments="scg:List(snm:MailMessage)" x:Key="out_Messages">[folderMessages]</OutArgument>
         <InArgument x:TypeArguments="x:Int32" x:Key="in_Number">1</InArgument>
-        <InArgument x:TypeArguments="x:String" x:Key="in_MailboxPath">[in_Config("Exchange Mailbox")]</InArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="in_MailboxPath">[mailbox]</InArgument>
       </ui:InvokeWorkflowFile.Arguments>
     </ui:InvokeWorkflowFile>
-    <If Condition="[messages.Count &gt; 0]" DisplayName="If a new email is received create a transaction to update" sap2010:WorkflowViewState.IdRef="If_1">
+    <If Condition="[folderMessages.Count &gt; 0]" DisplayName="If a new email is received create a transaction to update" sap2010:WorkflowViewState.IdRef="If_1">
       <If.Then>
-        <Sequence sap2010:Annotation.AnnotationText="Write data to the added fields that identify the Transaction" DisplayName="Write Transaction info in Logging Fields" sap2010:WorkflowViewState.IdRef="Sequence_2">
-          <Sequence.Variables>
-            <Variable x:TypeArguments="x:String" Name="reference" />
-            <Variable x:TypeArguments="scg:Dictionary(x:String, x:Object)" Name="specificContent" />
-          </Sequence.Variables>
+        <Sequence sap2010:WorkflowViewState.IdRef="Sequence_2">
           <Assign DisplayName="Assign transaction message" sap2010:WorkflowViewState.IdRef="Assign_5">
             <Assign.To>
               <OutArgument x:TypeArguments="snm:MailMessage">[out_TransactionMessage]</OutArgument>
             </Assign.To>
             <Assign.Value>
-              <InArgument x:TypeArguments="snm:MailMessage">[messages.First]</InArgument>
+              <InArgument x:TypeArguments="snm:MailMessage">[folderMessages.First]</InArgument>
             </Assign.Value>
           </Assign>
-          <Assign DisplayName="Assign transaction reference" sap2010:WorkflowViewState.IdRef="Assign_6">
+          <Assign DisplayName="Assign subject" sap2010:WorkflowViewState.IdRef="Assign_6">
             <Assign.To>
-              <OutArgument x:TypeArguments="x:String">[reference]</OutArgument>
+              <OutArgument x:TypeArguments="x:String">[out_TransactionSubject]</OutArgument>
             </Assign.To>
             <Assign.Value>
-              <InArgument x:TypeArguments="x:String">CON0007662_B10249</InArgument>
+              <InArgument x:TypeArguments="x:String">[out_TransactionMessage.Subject]</InArgument>
             </Assign.Value>
           </Assign>
-          <If Condition="[io_DispatchItems.Any(function(qi) qi.Reference = reference)]" DisplayName="If message is in dispatch queue" sap2010:WorkflowViewState.IdRef="If_2">
-            <If.Then>
-              <Sequence sap2010:WorkflowViewState.IdRef="Sequence_3">
-                <Sequence.Variables>
-                  <Variable x:TypeArguments="ui:QueueItem" Name="transaction" />
-                </Sequence.Variables>
-                <Assign DisplayName="Assign transaction" sap2010:WorkflowViewState.IdRef="Assign_7">
-                  <Assign.To>
-                    <OutArgument x:TypeArguments="ui:QueueItem">[transaction]</OutArgument>
-                  </Assign.To>
-                  <Assign.Value>
-                    <InArgument x:TypeArguments="ui:QueueItem">[io_DispatchItems.First(function(qi) qi.Reference = reference)]</InArgument>
-                  </Assign.Value>
-                </Assign>
-                <Assign DisplayName="Assign specific content of dispatched item" sap2010:WorkflowViewState.IdRef="Assign_8">
-                  <Assign.To>
-                    <OutArgument x:TypeArguments="scg:Dictionary(x:String, x:Object)">[specificContent]</OutArgument>
-                  </Assign.To>
-                  <Assign.Value>
-                    <InArgument x:TypeArguments="scg:Dictionary(x:String, x:Object)">[transaction.SpecificContent]</InArgument>
-                  </Assign.Value>
-                </Assign>
-                <ui:SetTransactionStatus ContinueOnError="{x:Null}" Reason="{x:Null}" ServiceBaseAddress="{x:Null}" TimeoutMS="{x:Null}" DisplayName="Set Transaction Status" ErrorType="Business" sap2010:WorkflowViewState.IdRef="SetTransactionStatus_1" Status="Successful" TransactionItem="[transaction]">
-                  <ui:SetTransactionStatus.Output>
-                    <scg:Dictionary x:TypeArguments="x:String, InArgument" />
-                  </ui:SetTransactionStatus.Output>
-                </ui:SetTransactionStatus>
-                <RemoveFromCollection x:TypeArguments="ui:QueueItem" Collection="[io_DispatchItems]" DisplayName="Remove From Dispatched items" sap2010:WorkflowViewState.IdRef="RemoveFromCollection`1_1" Item="[transaction]" />
-              </Sequence>
-            </If.Then>
-            <If.Else>
-              <Throw DisplayName="Throw unmatched mail error" Exception="[New BusinessRuleException(String.Format(in_Config(&quot;RuleException UnmatchedMail&quot;), reference))]" sap2010:WorkflowViewState.IdRef="Throw_1" />
-            </If.Else>
-          </If>
-          <ui:AddQueueItem ServiceBaseAddress="{x:Null}" TimeoutMS="{x:Null}" DisplayName="Add Queue Item" sap2010:WorkflowViewState.IdRef="AddQueueItem_1" ItemInformationCollection="[specificContent]" Priority="Normal" QueueType="[in_Config(&quot;UpdateQueue&quot;)]" Reference="[reference]">
-            <ui:AddQueueItem.ItemInformation>
-              <scg:Dictionary x:TypeArguments="x:String, InArgument" />
-            </ui:AddQueueItem.ItemInformation>
-          </ui:AddQueueItem>
-          <ui:GetQueueItem ContinueOnError="{x:Null}" TimeoutMS="{x:Null}" DisplayName="Get Transaction Item" sap2010:WorkflowViewState.IdRef="GetQueueItem_2" QueueType="[in_Config(&quot;UpdateQueue&quot;)]" TransactionItem="[out_TransactionItem]" />
+          <Assign DisplayName="Assign received" sap2010:WorkflowViewState.IdRef="Assign_7">
+            <Assign.To>
+              <OutArgument x:TypeArguments="s:DateTime">[out_TransactionReceived]</OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="s:DateTime">[Convert.ToDateTime(out_TransactionMessage.Headers.Item("Date").ToString)]</InArgument>
+            </Assign.Value>
+          </Assign>
+          <Assign DisplayName="Assign email filename" sap2010:WorkflowViewState.IdRef="Assign_9">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:String">[out_TransactionFilename]</OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:String">[String.Format("Temp\response_{0}_{1}.eml", out_TransactionSubject.Split(":"c).Last, out_TransactionReceived.ToString("yyyy-MM-dd"))]</InArgument>
+            </Assign.Value>
+          </Assign>
+          <ui:SaveMail DisplayName="Save Response Mail Message" FilePath="[out_TransactionFilename]" sap2010:WorkflowViewState.IdRef="SaveMail_1" MailMessage="[out_TransactionMessage]" />
         </Sequence>
       </If.Then>
     </If>
-    <sads:DebugSymbol.Symbol>d3JDOlxVc2Vyc1xzcGFtaXNoXERvY3VtZW50c1xVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQmlsbGluZ01pbGVzdG9uZVxGcmFtZXdvcmtcR2V0VHJhbnNhY3Rpb25EYXRhLnhhbWwoTgOeAQ4CAQFSBVodAgEuWwWcAQoCAQJVRlVoAgE3VldWYQIBNVhHWGYCATNXQVdCAgEyVExUbwIBMFK8AVLXAQIBL1sTWywCAQNdCZoBFAIBBWILaRQCASpqC3EUAgEmcguTARACARKUAQuYAR0CAQuZAQuZAfsBAgEGZz1nTQIBLWQ+ZFYCAStvNm9HAgEpbDdsQgIBJ3IZclgCARN0D44BGgIBFpEBD5EB4QECARSUAZgClAGlAgIBEJQB5wGUAY0CAgEOlAG3AZQBygECAQyZAaoBmQHQAQIBCZkB4QGZAfgBAgEHeBF/GgIBIoABEYcBGgIBHogBEYwBKwIBG40BEY0B4wECAReRAUmRAbQBAgEVfUB9fwIBJXpBek4CASOFAVaFAXMCASGCAVeCAWgCAR+IAaECiAGwAgIBHI0BUY0BZQIBGo0B0QGNAeABAgEY</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d3JDOlxVc2Vyc1xzcGFtaXNoXERvY3VtZW50c1xVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQmlsbGluZ01pbGVzdG9uZVxGcmFtZXdvcmtcR2V0VHJhbnNhY3Rpb25EYXRhLnhhbWwdUQORAQ4CAQFYBV8OAgEnYAVoHQIBHGkFjwEKAgECXTBdcgIBKloxWjoCAShjRmNoAgElZFdkZwIBI2ZHZlACASFlQWVCAgEgYkxibwIBHmC8AWDXAQIBHWkTaTICAQNrCY0BFAIBBWwLcxQCARh0C3sUAgETfAuDARQCAQ+EAQuLARQCAQuMAQuMAbwBAgEGcT1xUwIBG24+blYCARl5NnlWAgEWdjd2TwIBFIEBOIEBggECARJ+OX5SAgEQiQE2iQG7AQIBDoYBN4YBUAIBDIwBnwGMAbkBAgEJjAFKjAFlAgEH</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_1" sap:VirtualizedContainerService.HintSize="636,87" />
-      <sap2010:ViewStateData Id="Assign_5" sap:VirtualizedContainerService.HintSize="489,60" />
-      <sap2010:ViewStateData Id="Assign_6" sap:VirtualizedContainerService.HintSize="489,60" />
-      <sap2010:ViewStateData Id="Assign_7" sap:VirtualizedContainerService.HintSize="242,60" />
-      <sap2010:ViewStateData Id="Assign_8" sap:VirtualizedContainerService.HintSize="242,60" />
-      <sap2010:ViewStateData Id="SetTransactionStatus_1" sap:VirtualizedContainerService.HintSize="242,22" />
-      <sap2010:ViewStateData Id="RemoveFromCollection`1_1" sap:VirtualizedContainerService.HintSize="242,22" />
-      <sap2010:ViewStateData Id="Sequence_3" sap:VirtualizedContainerService.HintSize="264,408">
+      <sap2010:ViewStateData Id="Assign_8" sap:VirtualizedContainerService.HintSize="464,60" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_2" sap:VirtualizedContainerService.HintSize="464,87" />
+      <sap2010:ViewStateData Id="Assign_5" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="Assign_6" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="Assign_7" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="Assign_9" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="SaveMail_1" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="336,611">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Throw_1" sap:VirtualizedContainerService.HintSize="200,22" />
-      <sap2010:ViewStateData Id="If_2" sap:VirtualizedContainerService.HintSize="489,556" />
-      <sap2010:ViewStateData Id="AddQueueItem_1" sap:VirtualizedContainerService.HintSize="489,22" />
-      <sap2010:ViewStateData Id="GetQueueItem_2" sap:VirtualizedContainerService.HintSize="489,22" />
-      <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="511,1031">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-            <x:Boolean x:Key="IsAnnotationDocked">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="636,1179" />
-      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="658,1577">
+      <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="464,759" />
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="486,1287">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -193,7 +168,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="GetTransactionData_1" sap:VirtualizedContainerService.HintSize="698,1657" />
+      <sap2010:ViewStateData Id="GetTransactionData_1" sap:VirtualizedContainerService.HintSize="526,1367" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>

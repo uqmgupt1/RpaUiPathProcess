@@ -1,0 +1,1398 @@
+﻿<Activity mc:Ignorable="sap sap2010 sads" x:Class="SendJobReport"
+ xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
+ xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+ xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities"
+ xmlns:s="clr-namespace:System;assembly=mscorlib"
+ xmlns:sads="http://schemas.microsoft.com/netfx/2010/xaml/activities/debugger"
+ xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
+ xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
+ xmlns:scg="clr-namespace:System.Collections.Generic;assembly=mscorlib"
+ xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=mscorlib"
+ xmlns:ui="http://schemas.uipath.com/workflow/activities"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <x:Members>
+    <x:Property Name="in_TransactionData" Type="InArgument(scg:List(ui:QueueItem))" />
+    <x:Property Name="in_Config" Type="InArgument(scg:Dictionary(x:String, x:String))" />
+    <x:Property Name="in_ProcessName" Type="InArgument(x:String)" />
+    <x:Property Name="in_HtmlReport" Type="InArgument(x:String)" />
+    <x:Property Name="in_HtmlLogo" Type="InArgument(x:String)" />
+    <x:Property Name="in_EmailRecipients" Type="InArgument(x:String)" />
+    <x:Property Name="in_TransactionItem" Type="InArgument(x:String)" />
+    <x:Property Name="in_SendEmailOn" Type="InArgument(x:String)" />
+  </x:Members>
+  <mva:VisualBasic.Settings>
+    <x:Null />
+  </mva:VisualBasic.Settings>
+  <sap2010:WorkflowViewState.IdRef>SendJobReport_1</sap2010:WorkflowViewState.IdRef>
+  <TextExpression.NamespacesForImplementation>
+    <sco:Collection x:TypeArguments="x:String">
+      <x:String>System.Activities</x:String>
+      <x:String>System.Activities.Statements</x:String>
+      <x:String>System.Activities.Validation</x:String>
+      <x:String>System.Activities.XamlIntegration</x:String>
+      <x:String>Microsoft.VisualBasic</x:String>
+      <x:String>Microsoft.VisualBasic.Activities</x:String>
+      <x:String>System</x:String>
+      <x:String>System.Collections</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Data</x:String>
+      <x:String>System.Diagnostics</x:String>
+      <x:String>System.Drawing</x:String>
+      <x:String>System.IO</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>System.Net.Mail</x:String>
+      <x:String>System.Xml</x:String>
+      <x:String>System.Xml.Linq</x:String>
+      <x:String>System.Windows.Markup</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+      <x:String>Microsoft.VisualBasic.CompilerServices</x:String>
+      <x:String>System.Xml.Serialization</x:String>
+      <x:String>System.Security.Principal</x:String>
+    </sco:Collection>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <sco:Collection x:TypeArguments="AssemblyReference">
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>Microsoft.VisualBasic</AssemblyReference>
+      <AssemblyReference>mscorlib</AssemblyReference>
+      <AssemblyReference>System.Data</AssemblyReference>
+      <AssemblyReference>System.Data.DataSetExtensions</AssemblyReference>
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Drawing</AssemblyReference>
+      <AssemblyReference>System.Core</AssemblyReference>
+      <AssemblyReference>System.Xml</AssemblyReference>
+      <AssemblyReference>System.Xml.Linq</AssemblyReference>
+      <AssemblyReference>PresentationFramework</AssemblyReference>
+      <AssemblyReference>WindowsBase</AssemblyReference>
+      <AssemblyReference>PresentationCore</AssemblyReference>
+      <AssemblyReference>System.Xaml</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.UiAutomation.Activities</AssemblyReference>
+      <AssemblyReference>System.ServiceModel</AssemblyReference>
+      <AssemblyReference>Microsoft.VisualStudio.Services.Common</AssemblyReference>
+      <AssemblyReference>System.ValueTuple</AssemblyReference>
+      <AssemblyReference>System.ComponentModel.Composition</AssemblyReference>
+      <AssemblyReference>System.Data.Entity</AssemblyReference>
+      <AssemblyReference>System.Collections.Immutable</AssemblyReference>
+      <AssemblyReference>UiPath.Studio.Plugin.Workflow</AssemblyReference>
+      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
+    </sco:Collection>
+  </TextExpression.ReferencesForImplementation>
+  <Sequence sap2010:Annotation.AnnotationText="Description: Generates a list of all items processed, will send of an email or can can save a transaction log to a folder. If the folder is dropped straight into the project directory then there should be minimal changes required.&#xA;&#xA;NOTE: When setting a transaction status, the item in orchestrator is updated but not the one used by the robot. To use this reporting the transaction must be updated upon setting the transaction status. Example provided below.&#xA;&#xA;Required Inputs:&#xA;in_TransactionData (List&lt;QueueItem&gt;): List of transaction items processed during the job, to set up this declare a New List(Of QueueItem) in your main workflow and add each transaction to the list after setting the status.&#xA;&#xA;Optional Arguments:&#xA;All optional arguments are assigned to the specific variable if it's assigned, or they will take the value specified in the configuration file if its specified is a key, or there will be a default value to handle the argument being ommitted, all values are strings.&#xA;in_Argument (String)&#xA;in_Config(&quot;Argument&quot;)&#xA;&quot;Argument&quot;&#xA;&#xA;in_Config (Dictionary&lt;String, Object&gt;): Configuration file where all settings can be declared.&#xA;&#xA;in_ProcessName (String): The name of the process\robot, will use the robot machine\username if not provided.&#xA;in_HtmlTemplate (String): Path to email template.&#xA;in_HtmlLogo (String): Path to robot logo.&#xA;in_EmailCredentials (String): Credential asset in orchestrator to use in exchange.&#xA;in_EmailRecipients (String): String asset in orchestrator with a list of semicolon separated email addresses. (eg. &quot;test@email.com;email@test.com&quot;)&#xA;in_LogWorkbook (String): Path to a transaction log workbook.&#xA;in_LogSheet (String): Name of the transaction log worksheet, will use in_ProcessName if not provided.&#xA;&#xA;Outputs: NA&#xA;&#xA;Pre Condition:&#xA;TransactionLog must be initialised.&#xA;RobotSupport (TBC) asset must exist in orchestrator.&#xA;&#xA;Post Condition:&#xA;Some notice sent to to the team." DisplayName="SendJobReport" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="scg:Dictionary(x:String, x:String)" Default="[New Dictionary(Of String, String)]" Name="TemplateSections" />
+      <Variable x:TypeArguments="x:String" Name="HtmlReportMessage" />
+      <Variable x:TypeArguments="s:Exception" Name="reportingErrors" />
+    </Sequence.Variables>
+    <ui:CommentOut DisplayName="Comment Out" sap2010:WorkflowViewState.IdRef="CommentOut_2">
+      <ui:CommentOut.Body>
+        <Sequence DisplayName="Example for setting transaction status" sap2010:WorkflowViewState.IdRef="Sequence_4">
+          <Sequence.Variables>
+            <Variable x:TypeArguments="ui:QueueItem" Name="transaction" />
+            <Variable x:TypeArguments="scg:IEnumerable(ui:QueueItem)" Name="items" />
+          </Sequence.Variables>
+          <ui:SetTransactionStatus ContinueOnError="{x:Null}" Reason="{x:Null}" ServiceBaseAddress="{x:Null}" TimeoutMS="{x:Null}" DisplayName="Set Transaction Status" ErrorType="Business" sap2010:WorkflowViewState.IdRef="SetTransactionStatus_1" Status="Successful" TransactionItem="[transaction]">
+            <ui:SetTransactionStatus.Output>
+              <scg:Dictionary x:TypeArguments="x:String, InArgument" />
+            </ui:SetTransactionStatus.Output>
+          </ui:SetTransactionStatus>
+          <ui:GetQueueItems Duration="{x:Null}" From="{x:Null}" Priority="{x:Null}" QueueName="{x:Null}" Skip="{x:Null}" TimeoutMS="{x:Null}" To="{x:Null}" Top="{x:Null}" DisplayName="Get Queue Items" FilterStrategy="StartsWith" sap2010:WorkflowViewState.IdRef="GetQueueItems_1" QueueItemStates="All" Reference="[transaction.Reference]" Result="[items]" />
+          <Assign DisplayName="Assign transaction" sap2010:WorkflowViewState.IdRef="Assign_5">
+            <Assign.To>
+              <OutArgument x:TypeArguments="ui:QueueItem">[transaction]</OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="ui:QueueItem">[items.FirstOrDefault]</InArgument>
+            </Assign.Value>
+          </Assign>
+        </Sequence>
+      </ui:CommentOut.Body>
+    </ui:CommentOut>
+    <Sequence DisplayName="Set argument default variables" sap2010:WorkflowViewState.IdRef="Sequence_28">
+      <Sequence.Variables>
+        <Variable x:TypeArguments="x:String" Name="environment" />
+      </Sequence.Variables>
+      <If Condition="[in_Config Is Nothing]" DisplayName="If config not declared" sap2010:WorkflowViewState.IdRef="If_19">
+        <If.Then>
+          <Assign DisplayName="Init Config" sap2010:WorkflowViewState.IdRef="Assign_60">
+            <Assign.To>
+              <OutArgument x:TypeArguments="scg:Dictionary(x:String, x:String)">[in_Config]</OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)">[New Dictionary(Of String, String)]</InArgument>
+            </Assign.Value>
+          </Assign>
+        </If.Then>
+      </If>
+      <If Condition="[in_ProcessName IsNot Nothing]" DisplayName="If ProcessName declared" sap2010:WorkflowViewState.IdRef="If_18">
+        <If.Else>
+          <If Condition="[in_Config.ContainsKey(&quot;ProcessName&quot;)]" DisplayName="If ProcessName configured" sap2010:WorkflowViewState.IdRef="If_17">
+            <If.Then>
+              <Assign DisplayName="Assign ProcessName" sap2010:WorkflowViewState.IdRef="Assign_59">
+                <Assign.To>
+                  <OutArgument x:TypeArguments="x:String">[in_ProcessName]</OutArgument>
+                </Assign.To>
+                <Assign.Value>
+                  <InArgument x:TypeArguments="x:String">[in_Config("ProcessName")]</InArgument>
+                </Assign.Value>
+              </Assign>
+            </If.Then>
+            <If.Else>
+              <Assign DisplayName="Assign Default" sap2010:WorkflowViewState.IdRef="Assign_49">
+                <Assign.To>
+                  <OutArgument x:TypeArguments="x:String">[in_ProcessName]</OutArgument>
+                </Assign.To>
+                <Assign.Value>
+                  <InArgument x:TypeArguments="x:String">[System.Security.Principal.WindowsIdentity.GetCurrent().Name.Replace(System.Environment.UserDomainName+"\","")]</InArgument>
+                </Assign.Value>
+              </Assign>
+            </If.Else>
+          </If>
+        </If.Else>
+      </If>
+      <If Condition="[in_Config.ContainsKey(&quot;OperatingEnvironment&quot;)]" DisplayName="If ProcessName configured" sap2010:WorkflowViewState.IdRef="If_53">
+        <If.Then>
+          <Assign DisplayName="Assign ProcessName" sap2010:WorkflowViewState.IdRef="Assign_127">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:String">[environment]</OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:String">[in_Config("OperatingEnvironment")]</InArgument>
+            </Assign.Value>
+          </Assign>
+        </If.Then>
+        <If.Else>
+          <TryCatch DisplayName="Try Catch" sap2010:WorkflowViewState.IdRef="TryCatch_8">
+            <TryCatch.Try>
+              <ui:GetRobotAsset TimeoutMS="{x:Null}" AssetName="OperatingEnvironment" DisplayName="Get Asset OperatingEnvironment" sap2010:WorkflowViewState.IdRef="GetRobotAsset_7">
+                <ui:GetRobotAsset.Value>
+                  <OutArgument x:TypeArguments="x:String">[environment]</OutArgument>
+                </ui:GetRobotAsset.Value>
+              </ui:GetRobotAsset>
+            </TryCatch.Try>
+            <TryCatch.Catches>
+              <Catch x:TypeArguments="ui:OrchestratorHttpException" sap2010:WorkflowViewState.IdRef="Catch`1_8">
+                <ActivityAction x:TypeArguments="ui:OrchestratorHttpException">
+                  <ActivityAction.Argument>
+                    <DelegateInArgument x:TypeArguments="ui:OrchestratorHttpException" Name="exception" />
+                  </ActivityAction.Argument>
+                  <Sequence sap2010:WorkflowViewState.IdRef="Sequence_62">
+                    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_31" Level="Warn" Message="[&quot;Problem getting OperatingEnvironment: &quot; + exception.Message]" />
+                    <Assign DisplayName="Assign ProcessName" sap2010:WorkflowViewState.IdRef="Assign_128">
+                      <Assign.To>
+                        <OutArgument x:TypeArguments="x:String">[environment]</OutArgument>
+                      </Assign.To>
+                      <Assign.Value>
+                        <InArgument x:TypeArguments="x:String">[System.Environment.MachineName]</InArgument>
+                      </Assign.Value>
+                    </Assign>
+                  </Sequence>
+                </ActivityAction>
+              </Catch>
+            </TryCatch.Catches>
+          </TryCatch>
+        </If.Else>
+      </If>
+      <If Condition="[environment &lt;&gt; &quot;PROD&quot;]" DisplayName="If non prod" sap2010:WorkflowViewState.IdRef="If_54">
+        <If.Then>
+          <Assign DisplayName="Assign append environment" sap2010:WorkflowViewState.IdRef="Assign_129">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:String">[in_ProcessName]</OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:String" xml:space="preserve">[in_ProcessName + " " +
+If(environment = "DEV" Or environment = "TEST" Or environment = "STAGING",
+StrConv(environment, vbProperCase), environment)]</InArgument>
+            </Assign.Value>
+          </Assign>
+        </If.Then>
+      </If>
+      <If Condition="[in_TransactionItem IsNot Nothing]" DisplayName="If TransactionItem declared" sap2010:WorkflowViewState.IdRef="If_36">
+        <If.Else>
+          <If Condition="[in_Config.ContainsKey(&quot;TransactionItem&quot;)]" DisplayName="If TransactionItem configured" sap2010:WorkflowViewState.IdRef="If_35">
+            <If.Then>
+              <Assign DisplayName="Assign TransactionItem" sap2010:WorkflowViewState.IdRef="Assign_81">
+                <Assign.To>
+                  <OutArgument x:TypeArguments="x:String">[in_TransactionItem]</OutArgument>
+                </Assign.To>
+                <Assign.Value>
+                  <InArgument x:TypeArguments="x:String">[in_Config("TransactionItem")]</InArgument>
+                </Assign.Value>
+              </Assign>
+            </If.Then>
+            <If.Else>
+              <Assign DisplayName="Assign Default" sap2010:WorkflowViewState.IdRef="Assign_82">
+                <Assign.To>
+                  <OutArgument x:TypeArguments="x:String">[in_TransactionItem]</OutArgument>
+                </Assign.To>
+                <Assign.Value>
+                  <InArgument x:TypeArguments="x:String">transaction</InArgument>
+                </Assign.Value>
+              </Assign>
+            </If.Else>
+          </If>
+        </If.Else>
+      </If>
+      <If Condition="[in_HtmlReport IsNot Nothing]" DisplayName="If HtmlReport declared" sap2010:WorkflowViewState.IdRef="If_21">
+        <If.Else>
+          <If Condition="[in_Config.ContainsKey(&quot;HtmlReport&quot;)]" DisplayName="If HtmlReport configured" sap2010:WorkflowViewState.IdRef="If_20">
+            <If.Then>
+              <Assign DisplayName="Assign HtmlReport" sap2010:WorkflowViewState.IdRef="Assign_61">
+                <Assign.To>
+                  <OutArgument x:TypeArguments="x:String">[in_HtmlReport]</OutArgument>
+                </Assign.To>
+                <Assign.Value>
+                  <InArgument x:TypeArguments="x:String">[in_Config("HtmlReport")]</InArgument>
+                </Assign.Value>
+              </Assign>
+            </If.Then>
+            <If.Else>
+              <Assign DisplayName="Assign Default" sap2010:WorkflowViewState.IdRef="Assign_62">
+                <Assign.To>
+                  <OutArgument x:TypeArguments="x:String">[in_HtmlReport]</OutArgument>
+                </Assign.To>
+                <Assign.Value>
+                  <InArgument x:TypeArguments="x:String">Data\report.html</InArgument>
+                </Assign.Value>
+              </Assign>
+            </If.Else>
+          </If>
+        </If.Else>
+      </If>
+      <If Condition="[in_HtmlLogo Is Nothing And in_Config.ContainsKey(&quot;HtmlLogo&quot;)]" DisplayName="If HtmlLogo not declared and HtmlLogo configured" sap2010:WorkflowViewState.IdRef="If_22">
+        <If.Then>
+          <Assign DisplayName="Assign HtmlLogo" sap2010:WorkflowViewState.IdRef="Assign_63">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:String">[in_HtmlLogo]</OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:String">[in_Config("HtmlLogo")]</InArgument>
+            </Assign.Value>
+          </Assign>
+        </If.Then>
+      </If>
+      <If Condition="[in_Config.ContainsKey(&quot;Report_SendEmailOn&quot;)]" DisplayName="If SendEmailOn configured and not declared" sap2010:WorkflowViewState.IdRef="If_24">
+        <If.Then>
+          <Assign DisplayName="Assign SendEmailOn" sap2010:WorkflowViewState.IdRef="Assign_65">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:String">[in_SendEmailOn]</OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:String">[in_Config("Report_SendEmailOn").ToString]</InArgument>
+            </Assign.Value>
+          </Assign>
+        </If.Then>
+        <If.Else>
+          <TryCatch DisplayName="Try Catch" sap2010:WorkflowViewState.IdRef="TryCatch_5">
+            <TryCatch.Try>
+              <ui:GetRobotAsset TimeoutMS="{x:Null}" AssetName="FA_Proforma_SendEmailOn" DisplayName="Get Asset SendEmailOn" sap2010:WorkflowViewState.IdRef="GetRobotAsset_4">
+                <ui:GetRobotAsset.Value>
+                  <OutArgument x:TypeArguments="x:String">[in_SendEmailOn]</OutArgument>
+                </ui:GetRobotAsset.Value>
+              </ui:GetRobotAsset>
+            </TryCatch.Try>
+            <TryCatch.Catches>
+              <Catch x:TypeArguments="ui:OrchestratorHttpException" sap2010:WorkflowViewState.IdRef="Catch`1_5">
+                <ActivityAction x:TypeArguments="ui:OrchestratorHttpException">
+                  <ActivityAction.Argument>
+                    <DelegateInArgument x:TypeArguments="ui:OrchestratorHttpException" Name="exception" />
+                  </ActivityAction.Argument>
+                  <Sequence sap2010:WorkflowViewState.IdRef="Sequence_68">
+                    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_26" Level="Warn" Message="[&quot;Problem getting &quot; &amp; in_SendEmailOn &amp; &quot;: &quot; + exception.Message]" />
+                    <Assign DisplayName="Assign default SendEmailOn" sap2010:WorkflowViewState.IdRef="Assign_130">
+                      <Assign.To>
+                        <OutArgument x:TypeArguments="x:String">[in_SendEmailOn]</OutArgument>
+                      </Assign.To>
+                      <Assign.Value>
+                        <InArgument x:TypeArguments="x:String">ERROR</InArgument>
+                      </Assign.Value>
+                    </Assign>
+                  </Sequence>
+                </ActivityAction>
+              </Catch>
+            </TryCatch.Catches>
+          </TryCatch>
+        </If.Else>
+      </If>
+      <If Condition="[in_EmailRecipients Is Nothing AndAlso in_Config.ContainsKey(&quot;Report_Recipients&quot;)]" DisplayName="If EmailRecipients configured and not declared" sap2010:WorkflowViewState.IdRef="If_26">
+        <If.Then>
+          <Assign DisplayName="Assign EmailRecipients" sap2010:WorkflowViewState.IdRef="Assign_67">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:String">[in_EmailRecipients]</OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:String">[in_Config("Report_Recipients")]</InArgument>
+            </Assign.Value>
+          </Assign>
+        </If.Then>
+      </If>
+    </Sequence>
+    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;Start SendJobReport.xaml, for &quot; &amp; in_TransactionData.Count &amp; &quot; transactions&quot;]" />
+    <Sequence DisplayName="Contruct HTML message" sap2010:WorkflowViewState.IdRef="Sequence_53">
+      <Sequence DisplayName="Unpack template" sap2010:WorkflowViewState.IdRef="Sequence_13">
+        <Sequence.Variables>
+          <Variable x:TypeArguments="s:String[]" Name="html" />
+          <Variable x:TypeArguments="x:String" Name="key" />
+        </Sequence.Variables>
+        <Assign DisplayName="Assign file lines" sap2010:WorkflowViewState.IdRef="Assign_9">
+          <Assign.To>
+            <OutArgument x:TypeArguments="s:String[]">[html]</OutArgument>
+          </Assign.To>
+          <Assign.Value>
+            <InArgument x:TypeArguments="s:String[]">[File.ReadAllLines(in_HtmlReport)]</InArgument>
+          </Assign.Value>
+        </Assign>
+        <ui:ForEach x:TypeArguments="x:String" CurrentIndex="{x:Null}" DisplayName="For Each Template Section" sap2010:WorkflowViewState.IdRef="ForEach`1_6" Values="[html]">
+          <ui:ForEach.Body>
+            <ActivityAction x:TypeArguments="x:String">
+              <ActivityAction.Argument>
+                <DelegateInArgument x:TypeArguments="x:String" Name="item" />
+              </ActivityAction.Argument>
+              <If Condition="[item.StartsWith(&quot;--&quot;)]" DisplayName="If start of section" sap2010:WorkflowViewState.IdRef="If_9">
+                <If.Then>
+                  <Sequence sap2010:WorkflowViewState.IdRef="Sequence_12">
+                    <Assign DisplayName="Assign formatted item key" sap2010:WorkflowViewState.IdRef="Assign_10">
+                      <Assign.To>
+                        <OutArgument x:TypeArguments="x:String">[key]</OutArgument>
+                      </Assign.To>
+                      <Assign.Value>
+                        <InArgument x:TypeArguments="x:String">[item.TrimStart("-"c)]</InArgument>
+                      </Assign.Value>
+                    </Assign>
+                    <Assign DisplayName="Assign new part" sap2010:WorkflowViewState.IdRef="Assign_11">
+                      <Assign.To>
+                        <OutArgument x:TypeArguments="x:String">[TemplateSections(key)]</OutArgument>
+                      </Assign.To>
+                      <Assign.Value>
+                        <InArgument x:TypeArguments="x:String">
+                          <Literal x:TypeArguments="x:String" Value="" />
+                        </InArgument>
+                      </Assign.Value>
+                    </Assign>
+                  </Sequence>
+                </If.Then>
+                <If.Else>
+                  <Assign DisplayName="Append more parts" sap2010:WorkflowViewState.IdRef="Assign_12">
+                    <Assign.To>
+                      <OutArgument x:TypeArguments="x:String">[TemplateSections(key)]</OutArgument>
+                    </Assign.To>
+                    <Assign.Value>
+                      <InArgument x:TypeArguments="x:String">[TemplateSections(key).TrimStart + vbNewLine + item]</InArgument>
+                    </Assign.Value>
+                  </Assign>
+                </If.Else>
+              </If>
+            </ActivityAction>
+          </ui:ForEach.Body>
+        </ui:ForEach>
+        <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_12" Level="Trace" Message="[&quot;Got template parts &quot; + String.Join(&quot;, &quot;, TemplateSections.Keys)]" />
+        <Assign DisplayName="Assign TransactionItem" sap2010:WorkflowViewState.IdRef="Assign_92">
+          <Assign.To>
+            <OutArgument x:TypeArguments="x:String">[HtmlReportMessage]</OutArgument>
+          </Assign.To>
+          <Assign.Value>
+            <InArgument x:TypeArguments="x:String">[TemplateSections("HtmlReport")]</InArgument>
+          </Assign.Value>
+        </Assign>
+      </Sequence>
+      <If Condition="[in_TransactionData.Count &gt; 0 Or False]" DisplayName="If any items processed" sap2010:WorkflowViewState.IdRef="If_10">
+        <If.Then>
+          <Sequence DisplayName="SuccessMessage" sap2010:WorkflowViewState.IdRef="Sequence_40">
+            <Sequence.Variables>
+              <Variable x:TypeArguments="scg:List(ui:QueueItem)" Name="SuccessfulItems" />
+              <Variable x:TypeArguments="x:Int32" Name="totalCount" />
+              <Variable x:TypeArguments="scg:List(x:String)" Default="[New List(Of String)]" Name="tableRows" />
+            </Sequence.Variables>
+            <Assign DisplayName="Assign SuccessCount" sap2010:WorkflowViewState.IdRef="Assign_84">
+              <Assign.To>
+                <OutArgument x:TypeArguments="scg:List(ui:QueueItem)">[SuccessfulItems]</OutArgument>
+              </Assign.To>
+              <Assign.Value>
+                <InArgument x:TypeArguments="scg:List(ui:QueueItem)">[in_TransactionData.Where(Function(qi) qi.Status = QueueItemStatus.Successful).ToList]</InArgument>
+              </Assign.Value>
+            </Assign>
+            <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_4" Level="Trace" Message="[&quot;Got &quot; &amp; SuccessfulItems.Count &amp; &quot; successful items&quot;]" />
+            <Assign DisplayName="Assign TotalCount" sap2010:WorkflowViewState.IdRef="Assign_94">
+              <Assign.To>
+                <OutArgument x:TypeArguments="x:Int32">[totalCount]</OutArgument>
+              </Assign.To>
+              <Assign.Value>
+                <InArgument x:TypeArguments="x:Int32">[in_TransactionData.Count]</InArgument>
+              </Assign.Value>
+            </Assign>
+            <ui:ForEach x:TypeArguments="ui:QueueItem" CurrentIndex="{x:Null}" DisplayName="For Each Success" sap2010:WorkflowViewState.IdRef="ForEach`1_14" Values="[SuccessfulItems]">
+              <ui:ForEach.Body>
+                <ActivityAction x:TypeArguments="ui:QueueItem">
+                  <ActivityAction.Argument>
+                    <DelegateInArgument x:TypeArguments="ui:QueueItem" Name="success" />
+                  </ActivityAction.Argument>
+                  <AddToCollection x:TypeArguments="x:String" Collection="[tableRows]" DisplayName="Add To Successful Refs" sap2010:WorkflowViewState.IdRef="AddToCollection`1_12" Item="[String.Format(TemplateSections(&quot;TableRefs&quot;),&#xA;success.Output(&quot;RM Number&quot;).ToString,&#xA;success.Output(&quot;Proforma Updated&quot;).ToString,&#xA;success.Output(&quot;Proforma Skipped&quot;).ToString)]" />
+                </ActivityAction>
+              </ui:ForEach.Body>
+            </ui:ForEach>
+            <Assign DisplayName="Assign SuccessMessage" sap2010:WorkflowViewState.IdRef="Assign_87">
+              <Assign.To>
+                <OutArgument x:TypeArguments="x:String">[HtmlReportMessage]</OutArgument>
+              </Assign.To>
+              <Assign.Value>
+                <InArgument x:TypeArguments="x:String" xml:space="preserve">[HtmlReportMessage.
+Replace("{MessageStatus}", TemplateSections("SuccessMessage")).
+Replace("{Success}", If(SuccessfulItems.Count = totalCount, TemplateSections("AllItems"), TemplateSections("SomeItems"))).
+Replace("{SuccessCount}", SuccessfulItems.Count.ToString).
+Replace("{TotalCount}", totalCount.ToString).
+Replace("{ALL}", If(SuccessfulItems.Count &lt;&gt; 1, "all ", "")).
+Replace("{S}", If(SuccessfulItems.Count &lt;&gt; 1, "s", "")).
+Replace("{SuccessfulRefs}", If(SuccessfulItems.Count &gt; 0, TemplateSections("SuccessfulItems"), "")).
+Replace("{TableRows}", String.Join("", tableRows))]</InArgument>
+              </Assign.Value>
+            </Assign>
+          </Sequence>
+        </If.Then>
+        <If.Else>
+          <Assign DisplayName="Assign NoItems" sap2010:WorkflowViewState.IdRef="Assign_16">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:String">[HtmlReportMessage]</OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:String" xml:space="preserve">[HtmlReportMessage.
+Replace("{MessageStatus}", TemplateSections("NoItems")).
+Replace("{TransactionItem}", in_TransactionItem).
+Replace("{SuccessfulRefs}", "").
+Replace("{S}", "s")]</InArgument>
+            </Assign.Value>
+          </Assign>
+        </If.Else>
+      </If>
+      <If Condition="[in_TransactionData.Any(Function(qi) qi.Status = QueueItemStatus.Failed)]" DisplayName="If any items failed" sap2010:WorkflowViewState.IdRef="If_12">
+        <If.Then>
+          <Sequence DisplayName="FailureMessage" sap2010:WorkflowViewState.IdRef="Sequence_44">
+            <Sequence.Variables>
+              <Variable x:TypeArguments="scg:List(ui:QueueItem)" Name="failedItems" />
+              <Variable x:TypeArguments="x:Boolean" Default="False" Name="both" />
+            </Sequence.Variables>
+            <Assign DisplayName="Assign FailedCount" sap2010:WorkflowViewState.IdRef="Assign_95">
+              <Assign.To>
+                <OutArgument x:TypeArguments="scg:List(ui:QueueItem)">[failedItems]</OutArgument>
+              </Assign.To>
+              <Assign.Value>
+                <InArgument x:TypeArguments="scg:List(ui:QueueItem)">[in_TransactionData.Where(Function(qi) qi.Status = QueueItemStatus.Failed).ToList]</InArgument>
+              </Assign.Value>
+            </Assign>
+            <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_15" Level="Trace" Message="[&quot;Got &quot; &amp; failedItems.Count &amp; &quot; failed items&quot;]" />
+            <Assign DisplayName="Assign FailureMessage" sap2010:WorkflowViewState.IdRef="Assign_27">
+              <Assign.To>
+                <OutArgument x:TypeArguments="x:String">[HtmlReportMessage]</OutArgument>
+              </Assign.To>
+              <Assign.Value>
+                <InArgument x:TypeArguments="x:String" xml:space="preserve">[HtmlReportMessage.
+Replace("{FailureMessage}", TemplateSections("FailureMessage")).
+Replace("{FailedCount}", failedItems.Count.ToString).
+Replace("{F}", If(failedItems.Count &lt;&gt; 1, "s", ""))]</InArgument>
+              </Assign.Value>
+            </Assign>
+            <If Condition="[failedItems.Any(Function(qi) qi.ProcessingException.Type = ProcessingExceptionType.BusinessException)]" DisplayName="If RuleException" sap2010:WorkflowViewState.IdRef="If_14">
+              <If.Then>
+                <Sequence DisplayName="RuleException" sap2010:WorkflowViewState.IdRef="Sequence_45">
+                  <Sequence.Variables>
+                    <Variable x:TypeArguments="scg:List(ui:QueueItem)" Name="ruleExceptionItems" />
+                    <Variable x:TypeArguments="scg:List(x:String)" Default="[New List(Of String)]" Name="tableRows" />
+                  </Sequence.Variables>
+                  <Assign DisplayName="Assign both rules set" sap2010:WorkflowViewState.IdRef="Assign_107">
+                    <Assign.To>
+                      <OutArgument x:TypeArguments="x:Boolean">[both]</OutArgument>
+                    </Assign.To>
+                    <Assign.Value>
+                      <InArgument x:TypeArguments="x:Boolean">True</InArgument>
+                    </Assign.Value>
+                  </Assign>
+                  <Assign DisplayName="Assign RuleExceptionItems" sap2010:WorkflowViewState.IdRef="Assign_98">
+                    <Assign.To>
+                      <OutArgument x:TypeArguments="scg:List(ui:QueueItem)">[ruleExceptionItems]</OutArgument>
+                    </Assign.To>
+                    <Assign.Value>
+                      <InArgument x:TypeArguments="scg:List(ui:QueueItem)">[failedItems.Where(Function(qi) qi.ProcessingException.Type = ProcessingExceptionType.BusinessException).ToList]</InArgument>
+                    </Assign.Value>
+                  </Assign>
+                  <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_16" Level="Trace" Message="[&quot;Got &quot; &amp; ruleExceptionItems.Count &amp; &quot; rule exceptions&quot;]" />
+                  <ui:ForEach x:TypeArguments="ui:QueueItem" CurrentIndex="{x:Null}" DisplayName="For Each RuleException" sap2010:WorkflowViewState.IdRef="ForEach`1_10" Values="[ruleExceptionItems]">
+                    <ui:ForEach.Body>
+                      <ActivityAction x:TypeArguments="ui:QueueItem">
+                        <ActivityAction.Argument>
+                          <DelegateInArgument x:TypeArguments="ui:QueueItem" Name="item" />
+                        </ActivityAction.Argument>
+                        <Sequence DisplayName="ProcessingException" sap2010:WorkflowViewState.IdRef="Sequence_46">
+                          <Sequence.Variables>
+                            <Variable x:TypeArguments="s:String[]" Name="formatted" />
+                          </Sequence.Variables>
+                          <If Condition="[item.ProcessingException.Reason.Contains(vbNewLine) And item.ProcessingException.Reason.Contains(vbTab)]" DisplayName="If formatted" sap2010:WorkflowViewState.IdRef="If_39">
+                            <If.Then>
+                              <Assign DisplayName="Assign formatted" sap2010:WorkflowViewState.IdRef="Assign_100">
+                                <Assign.To>
+                                  <OutArgument x:TypeArguments="s:String[]">[formatted]</OutArgument>
+                                </Assign.To>
+                                <Assign.Value>
+                                  <InArgument x:TypeArguments="s:String[]">[item.ProcessingException.Reason.Split((vbNewLine + vbTab).ToCharArray)]</InArgument>
+                                </Assign.Value>
+                              </Assign>
+                            </If.Then>
+                            <If.Else>
+                              <Assign DisplayName="Assign no format" sap2010:WorkflowViewState.IdRef="Assign_101">
+                                <Assign.To>
+                                  <OutArgument x:TypeArguments="s:String[]">[formatted]</OutArgument>
+                                </Assign.To>
+                                <Assign.Value>
+                                  <InArgument x:TypeArguments="s:String[]">[{"", item.ProcessingException.Reason, item.ProcessingException.Details}]</InArgument>
+                                </Assign.Value>
+                              </Assign>
+                            </If.Else>
+                          </If>
+                          <AddToCollection x:TypeArguments="x:String" Collection="[tableRows]" DisplayName="Add To RuleException" sap2010:WorkflowViewState.IdRef="AddToCollection`1_10" Item="[String.Format(TemplateSections(&quot;TableRows&quot;), item.Reference, formatted(0), formatted(1), String.Join(vbNewLine, formatted.Skip(2)))]" />
+                        </Sequence>
+                      </ActivityAction>
+                    </ui:ForEach.Body>
+                  </ui:ForEach>
+                  <Assign DisplayName="Assign RuleException" sap2010:WorkflowViewState.IdRef="Assign_96">
+                    <Assign.To>
+                      <OutArgument x:TypeArguments="x:String">[HtmlReportMessage]</OutArgument>
+                    </Assign.To>
+                    <Assign.Value>
+                      <InArgument x:TypeArguments="x:String" xml:space="preserve">[HtmlReportMessage.
+Replace("{RuleException}", TemplateSections("RuleException")).
+Replace("{TableRows}", String.Join("", tableRows)).
+Replace("{B}", If(ruleExceptionItems.Count &lt;&gt; 1, "s", ""))]</InArgument>
+                    </Assign.Value>
+                  </Assign>
+                </Sequence>
+              </If.Then>
+              <If.Else>
+                <Assign DisplayName="Assign no RuleException" sap2010:WorkflowViewState.IdRef="Assign_97">
+                  <Assign.To>
+                    <OutArgument x:TypeArguments="x:String">[HtmlReportMessage]</OutArgument>
+                  </Assign.To>
+                  <Assign.Value>
+                    <InArgument x:TypeArguments="x:String" xml:space="preserve">[HtmlReportMessage.
+Replace("{RuleException}", "")]</InArgument>
+                  </Assign.Value>
+                </Assign>
+              </If.Else>
+            </If>
+            <If Condition="[failedItems.Any(Function(qi) qi.ProcessingException.Type = ProcessingExceptionType.ApplicationException)]" DisplayName="If SystemError" sap2010:WorkflowViewState.IdRef="If_41">
+              <If.Then>
+                <Sequence DisplayName="SystemError" sap2010:WorkflowViewState.IdRef="Sequence_48">
+                  <Sequence.Variables>
+                    <Variable x:TypeArguments="scg:List(ui:QueueItem)" Name="systemErrorItems" />
+                    <Variable x:TypeArguments="scg:List(x:String)" Default="[New List(Of String)]" Name="tableRows" />
+                  </Sequence.Variables>
+                  <Assign DisplayName="Assign SystemErrorItems" sap2010:WorkflowViewState.IdRef="Assign_102">
+                    <Assign.To>
+                      <OutArgument x:TypeArguments="scg:List(ui:QueueItem)">[systemErrorItems]</OutArgument>
+                    </Assign.To>
+                    <Assign.Value>
+                      <InArgument x:TypeArguments="scg:List(ui:QueueItem)">[failedItems.Where(Function(qi) qi.ProcessingException.Type = ProcessingExceptionType.ApplicationException).ToList]</InArgument>
+                    </Assign.Value>
+                  </Assign>
+                  <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_17" Level="Trace" Message="[&quot;Got &quot; &amp; systemErrorItems.Count &amp; &quot; system errors&quot;]" />
+                  <ui:ForEach x:TypeArguments="ui:QueueItem" CurrentIndex="{x:Null}" DisplayName="For Each SystemError" sap2010:WorkflowViewState.IdRef="ForEach`1_11" Values="[systemErrorItems]">
+                    <ui:ForEach.Body>
+                      <ActivityAction x:TypeArguments="ui:QueueItem">
+                        <ActivityAction.Argument>
+                          <DelegateInArgument x:TypeArguments="ui:QueueItem" Name="item" />
+                        </ActivityAction.Argument>
+                        <Sequence DisplayName="ProcessingException" sap2010:WorkflowViewState.IdRef="Sequence_47">
+                          <Sequence.Variables>
+                            <Variable x:TypeArguments="s:String[]" Name="formatted" />
+                          </Sequence.Variables>
+                          <If Condition="[item.ProcessingException.Reason.Contains(vbNewLine) And item.ProcessingException.Reason.Contains(vbTab)]" DisplayName="If formatted" sap2010:WorkflowViewState.IdRef="If_40">
+                            <If.Then>
+                              <Assign DisplayName="Assign formatted" sap2010:WorkflowViewState.IdRef="Assign_103">
+                                <Assign.To>
+                                  <OutArgument x:TypeArguments="s:String[]">[formatted]</OutArgument>
+                                </Assign.To>
+                                <Assign.Value>
+                                  <InArgument x:TypeArguments="s:String[]">[item.ProcessingException.Reason.Split((vbNewLine + vbTab).ToCharArray)]</InArgument>
+                                </Assign.Value>
+                              </Assign>
+                            </If.Then>
+                            <If.Else>
+                              <Assign DisplayName="Assign no format" sap2010:WorkflowViewState.IdRef="Assign_104">
+                                <Assign.To>
+                                  <OutArgument x:TypeArguments="s:String[]">[formatted]</OutArgument>
+                                </Assign.To>
+                                <Assign.Value>
+                                  <InArgument x:TypeArguments="s:String[]">[{"", item.ProcessingException.Reason, item.ProcessingException.Details}]</InArgument>
+                                </Assign.Value>
+                              </Assign>
+                            </If.Else>
+                          </If>
+                          <AddToCollection x:TypeArguments="x:String" Collection="[tableRows]" DisplayName="Add To SystemError" sap2010:WorkflowViewState.IdRef="AddToCollection`1_11" Item="[String.Format(TemplateSections(&quot;TableRows&quot;), item.Reference, formatted(0), formatted(1), String.Join(vbNewLine, formatted.Skip(2)))]" />
+                        </Sequence>
+                      </ActivityAction>
+                    </ui:ForEach.Body>
+                  </ui:ForEach>
+                  <Assign DisplayName="Assign SystemError" sap2010:WorkflowViewState.IdRef="Assign_105">
+                    <Assign.To>
+                      <OutArgument x:TypeArguments="x:String">[HtmlReportMessage]</OutArgument>
+                    </Assign.To>
+                    <Assign.Value>
+                      <InArgument x:TypeArguments="x:String" xml:space="preserve">[HtmlReportMessage.
+Replace("{SystemError}", TemplateSections("SystemError")).
+Replace("{TableRows}", String.Join("", tableRows)).
+Replace("{E}", If(systemErrorItems.Count &lt;&gt; 1, "s", "")).
+Replace("{ALSO}", If(both, "also ", ""))]</InArgument>
+                    </Assign.Value>
+                  </Assign>
+                </Sequence>
+              </If.Then>
+              <If.Else>
+                <Assign DisplayName="Assign no SystemError" sap2010:WorkflowViewState.IdRef="Assign_106">
+                  <Assign.To>
+                    <OutArgument x:TypeArguments="x:String">[HtmlReportMessage]</OutArgument>
+                  </Assign.To>
+                  <Assign.Value>
+                    <InArgument x:TypeArguments="x:String" xml:space="preserve">[HtmlReportMessage.
+Replace("{SystemError}", "")]</InArgument>
+                  </Assign.Value>
+                </Assign>
+              </If.Else>
+            </If>
+          </Sequence>
+        </If.Then>
+        <If.Else>
+          <Assign DisplayName="Assign none Failed" sap2010:WorkflowViewState.IdRef="Assign_28">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:String">[HtmlReportMessage]</OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:String" xml:space="preserve">[HtmlReportMessage.
+Replace("{FailureMessage}", "")]</InArgument>
+            </Assign.Value>
+          </Assign>
+        </If.Else>
+      </If>
+      <Sequence DisplayName="Build html message" sap2010:WorkflowViewState.IdRef="Sequence_22">
+        <Sequence.Variables>
+          <Variable x:TypeArguments="x:String" Name="timestamp" />
+          <Variable x:TypeArguments="x:String" Name="logo">
+            <Variable.Default>
+              <Literal x:TypeArguments="x:String" Value="" />
+            </Variable.Default>
+          </Variable>
+        </Sequence.Variables>
+        <Assign DisplayName="Assign timestamp" sap2010:WorkflowViewState.IdRef="Assign_44">
+          <Assign.To>
+            <OutArgument x:TypeArguments="x:String">[timestamp]</OutArgument>
+          </Assign.To>
+          <Assign.Value>
+            <InArgument x:TypeArguments="x:String">[Now.ToString("hh:mm:ss tt")]</InArgument>
+          </Assign.Value>
+        </Assign>
+        <If Condition="[in_HtmlLogo IsNot Nothing]" DisplayName="If HtmlLogo defined" sap2010:WorkflowViewState.IdRef="If_32">
+          <If.Then>
+            <Sequence DisplayName="Add HtmlLogo image" sap2010:WorkflowViewState.IdRef="Sequence_35">
+              <TryCatch DisplayName="Try Catch" sap2010:WorkflowViewState.IdRef="TryCatch_9">
+                <TryCatch.Try>
+                  <Sequence sap2010:WorkflowViewState.IdRef="Sequence_72">
+                    <If Condition="[File.Exists(Path.GetFullPath(in_HtmlLogo))]" DisplayName="If HtmlLogo exists" sap2010:WorkflowViewState.IdRef="If_33">
+                      <If.Then>
+                        <Sequence sap2010:WorkflowViewState.IdRef="Sequence_36">
+                          <Sequence.Variables>
+                            <Variable x:TypeArguments="s:Byte[]" Name="bytes" />
+                          </Sequence.Variables>
+                          <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_13" Level="Trace" Message="[&quot;Adding logo from &quot; + Path.GetFileName(in_HtmlLogo)]" />
+                          <Assign DisplayName="Assign bytes" sap2010:WorkflowViewState.IdRef="Assign_77">
+                            <Assign.To>
+                              <OutArgument x:TypeArguments="s:Byte[]">[bytes]</OutArgument>
+                            </Assign.To>
+                            <Assign.Value>
+                              <InArgument x:TypeArguments="s:Byte[]">[File.ReadAllBytes(in_HtmlLogo)]</InArgument>
+                            </Assign.Value>
+                          </Assign>
+                          <Assign DisplayName="Assign base64" sap2010:WorkflowViewState.IdRef="Assign_78">
+                            <Assign.To>
+                              <OutArgument x:TypeArguments="x:String">[in_HtmlLogo]</OutArgument>
+                            </Assign.To>
+                            <Assign.Value>
+                              <InArgument x:TypeArguments="x:String">[Convert.ToBase64String(bytes, Base64FormattingOptions.InsertLineBreaks)]</InArgument>
+                            </Assign.Value>
+                          </Assign>
+                        </Sequence>
+                      </If.Then>
+                      <If.Else>
+                        <Sequence sap2010:WorkflowViewState.IdRef="Sequence_37">
+                          <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_14" Level="Trace" Message="[&quot;Adding &quot; &amp; in_HtmlLogo.Length &amp; &quot; base64 characters as logo&quot;]" />
+                          <Assign DisplayName="Assign default" sap2010:WorkflowViewState.IdRef="Assign_79">
+                            <Assign.To>
+                              <OutArgument x:TypeArguments="x:String">[in_HtmlLogo]</OutArgument>
+                            </Assign.To>
+                            <Assign.Value>
+                              <InArgument x:TypeArguments="x:String">[in_HtmlLogo]</InArgument>
+                            </Assign.Value>
+                          </Assign>
+                        </Sequence>
+                      </If.Else>
+                    </If>
+                    <Assign DisplayName="Assign HtmlLogo" sap2010:WorkflowViewState.IdRef="Assign_46">
+                      <Assign.To>
+                        <OutArgument x:TypeArguments="x:String">[in_HtmlLogo]</OutArgument>
+                      </Assign.To>
+                      <Assign.Value>
+                        <InArgument x:TypeArguments="x:String" xml:space="preserve">[TemplateSections("HtmlLogo").
+Replace("{IMAGE}", in_HtmlLogo)]</InArgument>
+                      </Assign.Value>
+                    </Assign>
+                  </Sequence>
+                </TryCatch.Try>
+                <TryCatch.Catches>
+                  <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch`1_9">
+                    <ActivityAction x:TypeArguments="s:Exception">
+                      <ActivityAction.Argument>
+                        <DelegateInArgument x:TypeArguments="s:Exception" Name="exception" />
+                      </ActivityAction.Argument>
+                      <Sequence sap2010:WorkflowViewState.IdRef="Sequence_70">
+                        <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_32" Level="Warn" Message="[&quot;Error getting logo: &quot; + exception.Message]" />
+                        <Assign DisplayName="Assign default" sap2010:WorkflowViewState.IdRef="Assign_133">
+                          <Assign.To>
+                            <OutArgument x:TypeArguments="x:String">[in_HtmlLogo]</OutArgument>
+                          </Assign.To>
+                          <Assign.Value>
+                            <InArgument x:TypeArguments="x:String">
+                              <Literal x:TypeArguments="x:String" Value="" />
+                            </InArgument>
+                          </Assign.Value>
+                        </Assign>
+                      </Sequence>
+                    </ActivityAction>
+                  </Catch>
+                </TryCatch.Catches>
+              </TryCatch>
+            </Sequence>
+          </If.Then>
+        </If>
+        <Assign DisplayName="Assign message body" sap2010:WorkflowViewState.IdRef="Assign_48">
+          <Assign.To>
+            <OutArgument x:TypeArguments="x:String">[HtmlReportMessage]</OutArgument>
+          </Assign.To>
+          <Assign.Value>
+            <InArgument x:TypeArguments="x:String" xml:space="preserve">[HtmlReportMessage.
+Replace("{Timestamp}", timestamp).
+Replace("{ProcessName}", in_ProcessName).
+Replace("{HtmlLogo}", in_HtmlLogo).
+Replace("{TransactionItem}", in_TransactionItem)]</InArgument>
+          </Assign.Value>
+        </Assign>
+      </Sequence>
+    </Sequence>
+    <Sequence DisplayName="Send email report" sap2010:WorkflowViewState.IdRef="Sequence_49">
+      <Sequence.Variables>
+        <Variable x:TypeArguments="x:String" Name="subject" />
+        <Variable x:TypeArguments="scg:List(x:String)" Default="[New List(Of String)]" Name="attachments" />
+      </Sequence.Variables>
+      <If Condition="[Directory.Exists(&quot;Exceptions_Screenshots&quot;)]" DisplayName="If exceptions folder exists" sap2010:WorkflowViewState.IdRef="If_6">
+        <If.Then>
+          <Sequence DisplayName="Get attachment screenshots" sap2010:WorkflowViewState.IdRef="Sequence_7">
+            <Sequence.Variables>
+              <Variable x:TypeArguments="s:String[]" Name="files" />
+            </Sequence.Variables>
+            <Assign DisplayName="Assign exception files" sap2010:WorkflowViewState.IdRef="Assign_6">
+              <Assign.To>
+                <OutArgument x:TypeArguments="s:String[]">[files]</OutArgument>
+              </Assign.To>
+              <Assign.Value>
+                <InArgument x:TypeArguments="s:String[]">[Directory.GetFiles("Exceptions_Screenshots")]</InArgument>
+              </Assign.Value>
+            </Assign>
+            <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_7" Level="Trace" Message="[&quot;Found &quot; &amp; files.Length &amp; &quot; in Exceptions_Screenshots folder&quot;]" />
+            <ui:ForEach x:TypeArguments="x:String" CurrentIndex="{x:Null}" DisplayName="For Each Exception Screenshot" sap2010:WorkflowViewState.IdRef="ForEach`1_3" Values="[files]">
+              <ui:ForEach.Body>
+                <ActivityAction x:TypeArguments="x:String">
+                  <ActivityAction.Argument>
+                    <DelegateInArgument x:TypeArguments="x:String" Name="item" />
+                  </ActivityAction.Argument>
+                  <Sequence sap2010:WorkflowViewState.IdRef="Sequence_9">
+                    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_9" Level="Trace" Message="[&quot;Attaching &quot; + Path.GetFileName(item)]" />
+                    <AddToCollection x:TypeArguments="x:String" Collection="[attachments]" DisplayName="Add Screenshot To Attachments" sap2010:WorkflowViewState.IdRef="AddToCollection`1_6" Item="[Path.GetFullPath(item)]" />
+                    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_10" Level="Trace" Message="[&quot;Attachments size is &quot; &amp; attachments.Sum(Function(a) New FileInfo(a).Length)]" />
+                    <If Condition="[attachments.Sum(Function(a) New FileInfo(a).Length) &gt; 25000000]" DisplayName="If file length over limit" sap2010:WorkflowViewState.IdRef="If_7">
+                      <If.Then>
+                        <Sequence DisplayName="Reduce size below limit and exit" sap2010:WorkflowViewState.IdRef="Sequence_6">
+                          <RemoveFromCollection x:TypeArguments="x:String" Collection="[attachments]" DisplayName="Remove Last Attachment" sap2010:WorkflowViewState.IdRef="RemoveFromCollection`1_1" Item="[attachments.Last]" />
+                          <ui:Break sap2010:WorkflowViewState.IdRef="Break_1" />
+                        </Sequence>
+                      </If.Then>
+                    </If>
+                  </Sequence>
+                </ActivityAction>
+              </ui:ForEach.Body>
+            </ui:ForEach>
+            <If Condition="[attachments.Count &lt;&gt; files.Count]" DisplayName="If any screenshots not added" sap2010:WorkflowViewState.IdRef="If_43">
+              <If.Then>
+                <Assign DisplayName="Assign IssuesReporting" sap2010:WorkflowViewState.IdRef="Assign_109">
+                  <Assign.To>
+                    <OutArgument x:TypeArguments="s:Exception">[reportingErrors]</OutArgument>
+                  </Assign.To>
+                  <Assign.Value>
+                    <InArgument x:TypeArguments="s:Exception">[New InsufficientMemoryException("Couldn't attach " &amp; (files.Count - attachments.Count) &amp; " screenshots within the maximum email size")]</InArgument>
+                  </Assign.Value>
+                </Assign>
+              </If.Then>
+            </If>
+          </Sequence>
+        </If.Then>
+        <If.Else>
+          <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_8" Level="Trace" Message="[&quot;Couldn't find Exceptions_Screenshots folder&quot;]" />
+        </If.Else>
+      </If>
+      <If Condition="[in_TransactionData.Any(Function(qi) qi.Status = QueueItemStatus.Failed)]" DisplayName="If none failed" sap2010:WorkflowViewState.IdRef="If_5">
+        <If.Then>
+          <Sequence sap2010:WorkflowViewState.IdRef="Sequence_54">
+            <Assign DisplayName="Assign failed items" sap2010:WorkflowViewState.IdRef="Assign_4">
+              <Assign.To>
+                <OutArgument x:TypeArguments="x:String">[subject]</OutArgument>
+              </Assign.To>
+              <Assign.Value>
+                <InArgument x:TypeArguments="x:String">[in_ProcessName + " found errors processing"]</InArgument>
+              </Assign.Value>
+            </Assign>
+          </Sequence>
+        </If.Then>
+        <If.Else>
+          <Assign DisplayName="Assign none failed" sap2010:WorkflowViewState.IdRef="Assign_108">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:String">[subject]</OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:String">[in_ProcessName + " finished processing"]</InArgument>
+            </Assign.Value>
+          </Assign>
+        </If.Else>
+      </If>
+      <If Condition="[in_SendEmailOn.ToUpper = &quot;NEVER&quot;]" DisplayName="If not sending to business" sap2010:WorkflowViewState.IdRef="If_56">
+        <If.Then>
+          <Assign DisplayName="Reset recipients" sap2010:WorkflowViewState.IdRef="Assign_131">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:String">[in_EmailRecipients]</OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:String">;</InArgument>
+            </Assign.Value>
+          </Assign>
+        </If.Then>
+      </If>
+      <If Condition="[in_TransactionData.Where(Function(qi) qi.Status = QueueItemStatus.Failed).&#xA;Any(Function(qi) qi.ProcessingException.Type = ProcessingExceptionType.ApplicationException)]" DisplayName="If any system exceptions" sap2010:WorkflowViewState.IdRef="If_47">
+        <If.Then>
+          <Assign DisplayName="Assign system errors" sap2010:WorkflowViewState.IdRef="Assign_116">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:String">[in_EmailRecipients]</OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:String">[(in_EmailRecipients + ";rpa.ads@its.uq.edu.au").Trim(";"c)]</InArgument>
+            </Assign.Value>
+          </Assign>
+        </If.Then>
+      </If>
+      <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_30" Level="Trace" Message="[in_SendEmailOn.ToUpper + &quot; send to &quot; + in_EmailRecipients + &quot; from &quot; + in_ProcessName]" />
+      <Switch x:TypeArguments="x:String" DisplayName="Switch sending email check" Expression="[in_SendEmailOn.ToUpper]" sap2010:WorkflowViewState.IdRef="Switch`1_1">
+        <If x:Key="SUCCESS" Condition="[in_TransactionData.Count = 0]" DisplayName="If no transactions" sap2010:WorkflowViewState.IdRef="If_57">
+          <If.Then>
+            <Throw DisplayName="Throw no transactions" Exception="[New System.Exception(&quot;No transactions have been processed.&quot;)]" sap2010:WorkflowViewState.IdRef="Throw_3" />
+          </If.Then>
+        </If>
+        <If x:Key="ERROR" Condition="[Not in_TransactionData.Any(Function(qi) qi.Status = QueueItemStatus.Failed)]" DisplayName="If no business rules" sap2010:WorkflowViewState.IdRef="If_61">
+          <If.Then>
+            <Throw DisplayName="Throw no business rules" Exception="[New System.Exception(&quot;No business rules thrown.&quot;)]" sap2010:WorkflowViewState.IdRef="Throw_5" />
+          </If.Then>
+        </If>
+        <If x:Key="NEVER" Condition="[Not in_TransactionData.Any(Function(qi) qi.Status = QueueItemStatus.Failed AndAlso qi.ProcessingException.Type = ProcessingExceptionType.ApplicationException)]" DisplayName="If no system errors" sap2010:WorkflowViewState.IdRef="If_60">
+          <If.Then>
+            <Throw DisplayName="Throw no system errors" Exception="[New System.Exception(&quot;No system errors thrown.&quot;)]" sap2010:WorkflowViewState.IdRef="Throw_4" />
+          </If.Then>
+        </If>
+      </Switch>
+      <TryCatch DisplayName="Try Catch" sap2010:WorkflowViewState.IdRef="TryCatch_10">
+        <TryCatch.Try>
+          <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke SendSmtpMessage workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_1" UnSafe="False" WorkflowFileName="Mail\SendSmtpMessage.xaml">
+            <ui:InvokeWorkflowFile.Arguments>
+              <InArgument x:TypeArguments="x:String" x:Key="in_EmailRecipients">[in_EmailRecipients]</InArgument>
+              <InArgument x:TypeArguments="x:String" x:Key="in_Subject">[subject]</InArgument>
+              <InArgument x:TypeArguments="x:String" x:Key="in_MessageBody">[HtmlReportMessage]</InArgument>
+              <InArgument x:TypeArguments="x:Boolean" x:Key="in_IsBodyHtml">True</InArgument>
+              <InArgument x:TypeArguments="scg:IEnumerable(x:String)" x:Key="in_Attachments">[attachments]</InArgument>
+              <InArgument x:TypeArguments="x:String" x:Key="in_SenderName">[in_ProcessName]</InArgument>
+            </ui:InvokeWorkflowFile.Arguments>
+          </ui:InvokeWorkflowFile>
+        </TryCatch.Try>
+        <TryCatch.Catches>
+          <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch`1_10">
+            <ActivityAction x:TypeArguments="s:Exception">
+              <ActivityAction.Argument>
+                <DelegateInArgument x:TypeArguments="s:Exception" Name="exception" />
+              </ActivityAction.Argument>
+              <Assign DisplayName="Assign sending error" sap2010:WorkflowViewState.IdRef="Assign_134">
+                <Assign.To>
+                  <OutArgument x:TypeArguments="s:Exception">[reportingErrors]</OutArgument>
+                </Assign.To>
+                <Assign.Value>
+                  <InArgument x:TypeArguments="s:Exception">[exception]</InArgument>
+                </Assign.Value>
+              </Assign>
+            </ActivityAction>
+          </Catch>
+        </TryCatch.Catches>
+      </TryCatch>
+      <ui:ForEach x:TypeArguments="x:String" CurrentIndex="{x:Null}" DisplayName="For Each Attachment" sap2010:WorkflowViewState.IdRef="ForEach`1_12" Values="[attachments]">
+        <ui:ForEach.Body>
+          <ActivityAction x:TypeArguments="x:String">
+            <ActivityAction.Argument>
+              <DelegateInArgument x:TypeArguments="x:String" Name="item" />
+            </ActivityAction.Argument>
+            <ui:Delete ContinueOnError="{x:Null}" DisplayName="Delete exception screenshots" sap2010:WorkflowViewState.IdRef="Delete_3" Path="[item]" />
+          </ActivityAction>
+        </ui:ForEach.Body>
+      </ui:ForEach>
+    </Sequence>
+    <If Condition="[reportingErrors Is Nothing]" DisplayName="If no errors" sap2010:WorkflowViewState.IdRef="If_63">
+      <If.Then>
+        <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[&quot;End SendJobReport.xaml, send to &quot; + in_EmailRecipients]" />
+      </If.Then>
+      <If.Else>
+        <Throw DisplayName="Throw reporting errors" Exception="[reportingErrors]" sap2010:WorkflowViewState.IdRef="Throw_6" />
+      </If.Else>
+    </If>
+    <sads:DebugSymbol.Symbol>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</sads:DebugSymbol.Symbol>
+  </Sequence>
+  <sap2010:WorkflowViewState.ViewStateManager>
+    <sap2010:ViewStateManager>
+      <sap2010:ViewStateData Id="SetTransactionStatus_1" sap:VirtualizedContainerService.HintSize="242,22" />
+      <sap2010:ViewStateData Id="GetQueueItems_1" sap:VirtualizedContainerService.HintSize="242,22" />
+      <sap2010:ViewStateData Id="Assign_5" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="Sequence_4" sap:VirtualizedContainerService.HintSize="264,308">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="CommentOut_2" sap:VirtualizedContainerService.HintSize="539,386" />
+      <sap2010:ViewStateData Id="Assign_60" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="If_19" sap:VirtualizedContainerService.HintSize="685,208" />
+      <sap2010:ViewStateData Id="Assign_59" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="Assign_49" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="If_17" sap:VirtualizedContainerService.HintSize="509,208" />
+      <sap2010:ViewStateData Id="If_18" sap:VirtualizedContainerService.HintSize="685,356" />
+      <sap2010:ViewStateData Id="Assign_127" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="GetRobotAsset_7" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="LogMessage_31" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="Assign_128" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="Sequence_62" sap:VirtualizedContainerService.HintSize="336,315">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Catch`1_8" sap:VirtualizedContainerService.HintSize="404,21">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="TryCatch_8" sap:VirtualizedContainerService.HintSize="418,287">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="If_53" sap:VirtualizedContainerService.HintSize="685,435">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Assign_129" sap:VirtualizedContainerService.HintSize="242,64" />
+      <sap2010:ViewStateData Id="If_54" sap:VirtualizedContainerService.HintSize="685,212" />
+      <sap2010:ViewStateData Id="Assign_81" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="Assign_82" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="If_35" sap:VirtualizedContainerService.HintSize="509,208" />
+      <sap2010:ViewStateData Id="If_36" sap:VirtualizedContainerService.HintSize="685,356" />
+      <sap2010:ViewStateData Id="Assign_61" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="Assign_62" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="If_20" sap:VirtualizedContainerService.HintSize="509,208" />
+      <sap2010:ViewStateData Id="If_21" sap:VirtualizedContainerService.HintSize="685,356" />
+      <sap2010:ViewStateData Id="Assign_63" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="If_22" sap:VirtualizedContainerService.HintSize="685,208" />
+      <sap2010:ViewStateData Id="Assign_65" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="GetRobotAsset_4" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="LogMessage_26" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="Assign_130" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="Sequence_68" sap:VirtualizedContainerService.HintSize="336,315">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Catch`1_5" sap:VirtualizedContainerService.HintSize="404,21">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="TryCatch_5" sap:VirtualizedContainerService.HintSize="418,287">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="If_24" sap:VirtualizedContainerService.HintSize="685,435" />
+      <sap2010:ViewStateData Id="Assign_67" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="If_26" sap:VirtualizedContainerService.HintSize="685,208" />
+      <sap2010:ViewStateData Id="Sequence_28" sap:VirtualizedContainerService.HintSize="707,3218">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="LogMessage_1" sap:VirtualizedContainerService.HintSize="539,91" />
+      <sap2010:ViewStateData Id="Assign_9" sap:VirtualizedContainerService.HintSize="547,60" />
+      <sap2010:ViewStateData Id="Assign_10" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="Assign_11" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="Sequence_12" sap:VirtualizedContainerService.HintSize="264,284">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Assign_12" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="If_9" sap:VirtualizedContainerService.HintSize="531,432" />
+      <sap2010:ViewStateData Id="ForEach`1_6" sap:VirtualizedContainerService.HintSize="547,566">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="LogMessage_12" sap:VirtualizedContainerService.HintSize="547,91" />
+      <sap2010:ViewStateData Id="Assign_92" sap:VirtualizedContainerService.HintSize="547,60" />
+      <sap2010:ViewStateData Id="Sequence_13" sap:VirtualizedContainerService.HintSize="583,51">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Assign_84" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="LogMessage_4" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="Assign_94" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="AddToCollection`1_12" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="ForEach`1_14" sap:VirtualizedContainerService.HintSize="314,194" />
+      <sap2010:ViewStateData Id="Assign_87" sap:VirtualizedContainerService.HintSize="314,64" />
+      <sap2010:ViewStateData Id="Sequence_40" sap:VirtualizedContainerService.HintSize="336,753">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Assign_16" sap:VirtualizedContainerService.HintSize="242,64" />
+      <sap2010:ViewStateData Id="If_10" sap:VirtualizedContainerService.HintSize="583,51">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Assign_95" sap:VirtualizedContainerService.HintSize="836,60" />
+      <sap2010:ViewStateData Id="LogMessage_15" sap:VirtualizedContainerService.HintSize="836,91" />
+      <sap2010:ViewStateData Id="Assign_27" sap:VirtualizedContainerService.HintSize="836,64" />
+      <sap2010:ViewStateData Id="Assign_107" sap:VirtualizedContainerService.HintSize="547,60" />
+      <sap2010:ViewStateData Id="Assign_98" sap:VirtualizedContainerService.HintSize="547,60" />
+      <sap2010:ViewStateData Id="LogMessage_16" sap:VirtualizedContainerService.HintSize="547,91" />
+      <sap2010:ViewStateData Id="Assign_100" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="Assign_101" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="If_39" sap:VirtualizedContainerService.HintSize="509,208" />
+      <sap2010:ViewStateData Id="AddToCollection`1_10" sap:VirtualizedContainerService.HintSize="509,22" />
+      <sap2010:ViewStateData Id="Sequence_46" sap:VirtualizedContainerService.HintSize="531,394">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="ForEach`1_10" sap:VirtualizedContainerService.HintSize="547,528" />
+      <sap2010:ViewStateData Id="Assign_96" sap:VirtualizedContainerService.HintSize="547,64" />
+      <sap2010:ViewStateData Id="Sequence_45" sap:VirtualizedContainerService.HintSize="569,1087">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Assign_97" sap:VirtualizedContainerService.HintSize="242,64" />
+      <sap2010:ViewStateData Id="If_14" sap:VirtualizedContainerService.HintSize="836,1235">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Assign_102" sap:VirtualizedContainerService.HintSize="547,60" />
+      <sap2010:ViewStateData Id="LogMessage_17" sap:VirtualizedContainerService.HintSize="547,91" />
+      <sap2010:ViewStateData Id="Assign_103" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="Assign_104" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="If_40" sap:VirtualizedContainerService.HintSize="509,208" />
+      <sap2010:ViewStateData Id="AddToCollection`1_11" sap:VirtualizedContainerService.HintSize="509,22" />
+      <sap2010:ViewStateData Id="Sequence_47" sap:VirtualizedContainerService.HintSize="531,394">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="ForEach`1_11" sap:VirtualizedContainerService.HintSize="547,528" />
+      <sap2010:ViewStateData Id="Assign_105" sap:VirtualizedContainerService.HintSize="547,64" />
+      <sap2010:ViewStateData Id="Sequence_48" sap:VirtualizedContainerService.HintSize="569,987">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Assign_106" sap:VirtualizedContainerService.HintSize="242,64" />
+      <sap2010:ViewStateData Id="If_41" sap:VirtualizedContainerService.HintSize="836,1135">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Sequence_44" sap:VirtualizedContainerService.HintSize="858,2869">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Assign_28" sap:VirtualizedContainerService.HintSize="242,64" />
+      <sap2010:ViewStateData Id="If_12" sap:VirtualizedContainerService.HintSize="583,51">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Assign_44" sap:VirtualizedContainerService.HintSize="561,60" />
+      <sap2010:ViewStateData Id="LogMessage_13" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="Assign_77" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="Assign_78" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="Sequence_36" sap:VirtualizedContainerService.HintSize="336,415">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="LogMessage_14" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="Assign_79" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="Sequence_37" sap:VirtualizedContainerService.HintSize="336,315">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="If_33" sap:VirtualizedContainerService.HintSize="697,563" />
+      <sap2010:ViewStateData Id="Assign_46" sap:VirtualizedContainerService.HintSize="697,64" />
+      <sap2010:ViewStateData Id="Sequence_72" sap:VirtualizedContainerService.HintSize="719,791">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="LogMessage_32" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="Assign_133" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="Sequence_70" sap:VirtualizedContainerService.HintSize="336,315">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Catch`1_9" sap:VirtualizedContainerService.HintSize="400,384">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="TryCatch_9" sap:VirtualizedContainerService.HintSize="414,546" />
+      <sap2010:ViewStateData Id="Sequence_35" sap:VirtualizedContainerService.HintSize="436,670">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="If_32" sap:VirtualizedContainerService.HintSize="561,818" />
+      <sap2010:ViewStateData Id="Assign_48" sap:VirtualizedContainerService.HintSize="561,64" />
+      <sap2010:ViewStateData Id="Sequence_22" sap:VirtualizedContainerService.HintSize="583,1146">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Sequence_53" sap:VirtualizedContainerService.HintSize="539,51">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Assign_6" sap:VirtualizedContainerService.HintSize="502,60" />
+      <sap2010:ViewStateData Id="LogMessage_7" sap:VirtualizedContainerService.HintSize="502,91" />
+      <sap2010:ViewStateData Id="LogMessage_9" sap:VirtualizedContainerService.HintSize="464,91" />
+      <sap2010:ViewStateData Id="AddToCollection`1_6" sap:VirtualizedContainerService.HintSize="464,22" />
+      <sap2010:ViewStateData Id="LogMessage_10" sap:VirtualizedContainerService.HintSize="464,91" />
+      <sap2010:ViewStateData Id="RemoveFromCollection`1_1" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="Break_1" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="Sequence_6" sap:VirtualizedContainerService.HintSize="222,208">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="If_7" sap:VirtualizedContainerService.HintSize="464,356" />
+      <sap2010:ViewStateData Id="Sequence_9" sap:VirtualizedContainerService.HintSize="486,804">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="ForEach`1_3" sap:VirtualizedContainerService.HintSize="502,938">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Assign_109" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="If_43" sap:VirtualizedContainerService.HintSize="502,208" />
+      <sap2010:ViewStateData Id="Sequence_7" sap:VirtualizedContainerService.HintSize="524,1541">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="LogMessage_8" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="If_6" sap:VirtualizedContainerService.HintSize="863,1689">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Assign_4" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="Sequence_54" sap:VirtualizedContainerService.HintSize="264,184">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Assign_108" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="If_5" sap:VirtualizedContainerService.HintSize="863,332">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Assign_131" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="If_56" sap:VirtualizedContainerService.HintSize="863,208">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Assign_116" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="If_47" sap:VirtualizedContainerService.HintSize="863,212" />
+      <sap2010:ViewStateData Id="LogMessage_30" sap:VirtualizedContainerService.HintSize="863,91" />
+      <sap2010:ViewStateData Id="Throw_3" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="If_57" sap:VirtualizedContainerService.HintSize="464,208" />
+      <sap2010:ViewStateData Id="Throw_5" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="If_61" sap:VirtualizedContainerService.HintSize="464,208" />
+      <sap2010:ViewStateData Id="Throw_4" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="If_60" sap:VirtualizedContainerService.HintSize="464,208" />
+      <sap2010:ViewStateData Id="Switch`1_1" sap:VirtualizedContainerService.HintSize="863,182" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_1" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="Assign_134" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="Catch`1_10" sap:VirtualizedContainerService.HintSize="404,21">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="TryCatch_10" sap:VirtualizedContainerService.HintSize="863,314" />
+      <sap2010:ViewStateData Id="Delete_3" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="ForEach`1_12" sap:VirtualizedContainerService.HintSize="863,194" />
+      <sap2010:ViewStateData Id="Sequence_49" sap:VirtualizedContainerService.HintSize="539,51">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="LogMessage_2" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="Throw_6" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="If_63" sap:VirtualizedContainerService.HintSize="539,239" />
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="561,1835">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsAnnotationDocked">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="SendJobReport_1" sap:VirtualizedContainerService.HintSize="601,1915" />
+    </sap2010:ViewStateManager>
+  </sap2010:WorkflowViewState.ViewStateManager>
+</Activity>

@@ -70,6 +70,7 @@
       <AssemblyReference>System.ComponentModel.Composition</AssemblyReference>
       <AssemblyReference>System.Collections.Immutable</AssemblyReference>
       <AssemblyReference>Microsoft.VisualStudio.Services.Common</AssemblyReference>
+      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence DisplayName="Test Getting Exchange Mail" sap2010:WorkflowViewState.IdRef="Sequence_1">
@@ -94,7 +95,7 @@
             <OutArgument x:TypeArguments="scg:List(x:String)">[testArguments]</OutArgument>
           </Assign.To>
           <Assign.Value>
-            <InArgument x:TypeArguments="scg:List(x:String)">[{"FA_Proforma_SSO_rpa00002", "https://outlook.office365.com/EWS/Exchange.asmx", "contractandgrants@uq.edu.au\Inbox\Minion - GRL Proforma\Testing"}.ToList]</InArgument>
+            <InArgument x:TypeArguments="scg:List(x:String)">[{"SSO_rpagrm01", "https://outlook.office365.com/EWS/Exchange.asmx", "Inbox"}.ToList]</InArgument>
           </Assign.Value>
         </Assign>
       </If.Else>
@@ -105,19 +106,25 @@
           <ActivityAction.Argument>
             <DelegateInArgument x:TypeArguments="x:String" Name="item" />
           </ActivityAction.Argument>
-          <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke GetExchangeMail workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_4" UnSafe="False" WorkflowFileName="Exchange\GetExchangeMail.xaml">
-            <ui:InvokeWorkflowFile.Arguments>
-              <InArgument x:TypeArguments="x:String" x:Key="in_CredentialsAsset">[testArguments.Item(0)]</InArgument>
-              <InArgument x:TypeArguments="x:String" x:Key="in_ServerName">[testArguments.Item(1)]</InArgument>
-              <OutArgument x:TypeArguments="scg:List(snm:MailMessage)" x:Key="out_Messages" />
-              <InArgument x:TypeArguments="x:Int32" x:Key="in_Number">1</InArgument>
-              <InArgument x:TypeArguments="x:String" x:Key="in_MailboxPath">[item]</InArgument>
-            </ui:InvokeWorkflowFile.Arguments>
-          </ui:InvokeWorkflowFile>
+          <Sequence sap2010:WorkflowViewState.IdRef="Sequence_2">
+            <Sequence.Variables>
+              <Variable x:TypeArguments="scg:List(snm:MailMessage)" Name="messages" />
+            </Sequence.Variables>
+            <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke GetExchangeMail workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_4" UnSafe="False" WorkflowFileName="Mail\GetExchangeMail.xaml">
+              <ui:InvokeWorkflowFile.Arguments>
+                <InArgument x:TypeArguments="x:String" x:Key="in_CredentialsAsset">[testArguments.Item(0)]</InArgument>
+                <InArgument x:TypeArguments="x:String" x:Key="in_ServerName">[testArguments.Item(1)]</InArgument>
+                <OutArgument x:TypeArguments="scg:List(snm:MailMessage)" x:Key="out_Messages">[messages]</OutArgument>
+                <InArgument x:TypeArguments="x:Int32" x:Key="in_Number">3</InArgument>
+                <InArgument x:TypeArguments="x:String" x:Key="in_MailboxPath">[item]</InArgument>
+              </ui:InvokeWorkflowFile.Arguments>
+            </ui:InvokeWorkflowFile>
+            <ui:WriteTextFile DisplayName="Write Text File" FileName="Data\rejected.html" sap2010:WorkflowViewState.IdRef="WriteTextFile_1" Text="[messages.First.Body]" />
+          </Sequence>
         </ActivityAction>
       </ui:ForEach.Body>
     </ui:ForEach>
-    <sads:DebugSymbol.Symbol>d3NDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQ2hhcnRTdHJpbmdQcm9mb3JtYURldGFpbFxUZXN0X0ZyYW1ld29ya1xFeGNoYW5nZVxUZXN0X0dldEV4Y2hhbmdlTWFpbC54YW1sEUsDeQ4CAQFQBWUKAgENZgV3EgIBAlATUDICAQ5SCVkSAgETXAljEgIBD2aQAWaHAgIBDGwLdCMCAQNXPld2AgEWVD9UTgIBFGE+YdkBAgESXj9eTgIBEG9Mb2MCAQpyTXJTAgEIcUdxSAIBB25SbmkCAQVswgFs4QECAQQ=</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d35DOlxVc2Vyc1xzcGFtaXNoXERvY3VtZW50c1xVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQmlsbGluZ01pbGVzdG9uZVxUZXN0X0ZyYW1ld29ya1xNYWlsXFRlc3RfR2V0RXhjaGFuZ2VNYWlsLnhhbWwWTAOAAQ4CAQFRBWYKAgETZwV+EgIBAlETUTICARRTCVoSAgEZXQlkEgIBFWeQAWeHAgIBEm0LexYCAQNYPlh2AgEcVT9VTgIBGmI+YpMBAgEYXz9fTgIBFnENeSUCAQd6DXqsAQIBBHROdGUCARB1X3VpAgEOd093VQIBDHZJdkoCAQtzVHNrAgEJccQBcd8BAgEIepIBeqkBAgEGekZ6WgIBBQ==</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -125,15 +132,23 @@
       <sap2010:ViewStateData Id="Assign_6" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="If_4" sap:VirtualizedContainerService.HintSize="509,208" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_4" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="ForEach`1_1" sap:VirtualizedContainerService.HintSize="509,221" />
-      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="531,593">
+      <sap2010:ViewStateData Id="WriteTextFile_1" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="336,338">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Test_AppOutlook_1" sap:VirtualizedContainerService.HintSize="571,673" />
+      <sap2010:ViewStateData Id="ForEach`1_1" sap:VirtualizedContainerService.HintSize="509,472" />
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="531,844">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Test_AppOutlook_1" sap:VirtualizedContainerService.HintSize="571,924" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>

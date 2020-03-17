@@ -1,4 +1,4 @@
-<Activity mc:Ignorable="sap sap2010 sads" x:Class="Dispatch"
+﻿<Activity mc:Ignorable="sap sap2010 sads" x:Class="Dispatch"
  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
  xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities"
@@ -113,7 +113,7 @@
     </TryCatch>
     <TryCatch DisplayName="Try Catch stock workbook" sap2010:WorkflowViewState.IdRef="TryCatch_4">
       <TryCatch.Try>
-        <ui:ReadRange AddHeaders="True" DataTable="[queryReport]" DisplayName="Read Query Range Workbook" sap2010:WorkflowViewState.IdRef="ReadRange_2" Range="A2" SheetName="Sheet1" WorkbookPath="[in_Config(&quot;Temporary ReportFile&quot;)]" />
+        <ui:ReadRange AddHeaders="True" DataTable="[queryReport]" DisplayName="Read Query Range Workbook" sap2010:WorkflowViewState.IdRef="ReadRange_2" PreserveFormat="True" Range="A2" SheetName="Sheet1" WorkbookPath="[in_Config(&quot;Temporary ReportFile&quot;)]" />
       </TryCatch.Try>
       <TryCatch.Catches>
         <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch`1_4">
@@ -129,7 +129,7 @@
                       <ActivityAction.Argument>
                         <DelegateInArgument x:TypeArguments="ui:WorkbookApplication" Name="ExcelWorkbookScope" />
                       </ActivityAction.Argument>
-                      <ui:ExcelReadRange AddHeaders="True" DataTable="[queryReport]" DisplayName="Read Query Range Worksheet" sap2010:WorkflowViewState.IdRef="ExcelReadRange_3" Range="A2" SheetName="Sheet1" />
+                      <ui:ExcelReadRange AddHeaders="True" DataTable="[queryReport]" DisplayName="Read Query Range Worksheet" sap2010:WorkflowViewState.IdRef="ExcelReadRange_3" PreserveFormat="True" Range="A2" SheetName="Sheet1" />
                     </ActivityAction>
                   </ui:ExcelApplicationScope.Body>
                 </ui:ExcelApplicationScope>
@@ -171,6 +171,7 @@
               <Variable x:TypeArguments="scg:Dictionary(x:String, x:Object)" Default="[New Dictionary(Of String, Object)]" Name="specificContent" />
               <Variable x:TypeArguments="x:String" Name="messageBody" />
               <Variable x:TypeArguments="ui:QueueItem" Name="repeatTransaction" />
+              <Variable x:TypeArguments="scg:IEnumerable(ui:QueueItem)" Name="failedItems" />
             </Sequence.Variables>
             <Assign DisplayName="Assign first row" sap2010:WorkflowViewState.IdRef="Assign_1">
               <Assign.To>
@@ -185,10 +186,10 @@
                 <scg:List x:TypeArguments="ui:FilterOperationArgument" Capacity="4">
                   <ui:FilterOperationArgument BooleanOperator="And" Operator="EQ">
                     <ui:FilterOperationArgument.Column>
-                      <InArgument x:TypeArguments="x:String">["Contract ID"]</InArgument>
+                      <InArgument x:TypeArguments="x:String">["Contract"]</InArgument>
                     </ui:FilterOperationArgument.Column>
                     <ui:FilterOperationArgument.Operand>
-                      <InArgument x:TypeArguments="x:String">[row("Contract ID").ToString]</InArgument>
+                      <InArgument x:TypeArguments="x:String">[row("Contract").ToString]</InArgument>
                     </ui:FilterOperationArgument.Operand>
                   </ui:FilterOperationArgument>
                   <ui:FilterOperationArgument BooleanOperator="And" Operator="EQ">
@@ -212,12 +213,12 @@
                 <OutArgument x:TypeArguments="x:String">[reference]</OutArgument>
               </Assign.To>
               <Assign.Value>
-                <InArgument x:TypeArguments="x:String">[row("Contract ID").ToString + "_" + row("Milestone ID").ToString]</InArgument>
+                <InArgument x:TypeArguments="x:String">[row("Contract").ToString + "_" + row("Milestone ID").ToString]</InArgument>
               </Assign.Value>
             </Assign>
             <If Condition="[io_DispatchedItems.Any(function(qi) qi.Reference = reference)]" DisplayName="If transaction has reference" sap2010:WorkflowViewState.IdRef="If_5">
               <If.Then>
-                <Sequence>
+                <Sequence sap2010:WorkflowViewState.IdRef="Sequence_44">
                   <Assign DisplayName="Assign repeat transaction" sap2010:WorkflowViewState.IdRef="Assign_5">
                     <Assign.To>
                       <OutArgument x:TypeArguments="ui:QueueItem">[repeatTransaction]</OutArgument>
@@ -226,58 +227,74 @@
                       <InArgument x:TypeArguments="ui:QueueItem">[io_DispatchedItems.First(function(qi) qi.Reference = reference)]</InArgument>
                     </Assign.Value>
                   </Assign>
-                  <RemoveFromCollection x:TypeArguments="ui:QueueItem" Collection="[io_DispatchedItems]" DisplayName="Remove From Collection" Item="[repeatTransaction]" sap2010:WorkflowViewState.IdRef="RemoveFromCollection`1_1" />
-                  <sap2010:WorkflowViewState.IdRef>Sequence_44</sap2010:WorkflowViewState.IdRef>
+                  <RemoveFromCollection x:TypeArguments="ui:QueueItem" Collection="[io_DispatchedItems]" DisplayName="Remove From Collection" sap2010:WorkflowViewState.IdRef="RemoveFromCollection`1_1" Item="[repeatTransaction]" />
                 </Sequence>
               </If.Then>
             </If>
-            <If Condition="[repeatTransaction IsNot Nothing]" DisplayName="If any existing items" sap2010:WorkflowViewState.IdRef="If_3">
+            <ui:GetQueueItems Duration="{x:Null}" From="{x:Null}" Priority="{x:Null}" Skip="{x:Null}" TimeoutMS="{x:Null}" To="{x:Null}" Top="{x:Null}" DisplayName="Get Failed Items" FilterStrategy="Equals" sap2010:WorkflowViewState.IdRef="GetQueueItems_2" QueueItemStates="Failed" QueueName="[in_Config(&quot;DispatchQueue&quot;)]" Reference="[reference]" Result="[failedItems]" />
+            <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_11" Level="Trace" Message="[&quot;Got &quot; &amp; failedItems.Count &amp; &quot; failed items for &quot; + reference]" />
+            <If Condition="[failedItems.Count &lt; 6]" DisplayName="If not expired" sap2010:WorkflowViewState.IdRef="If_3">
               <If.Then>
-                <Sequence sap2010:WorkflowViewState.IdRef="Sequence_39">
-                  <Sequence.Variables>
-                    <Variable x:TypeArguments="scg:IEnumerable(ui:QueueItem)" Name="failedItems" />
-                  </Sequence.Variables>
-                  <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_11" Level="Info" Message="[&quot;Existing transaction for &quot; + reference]" />
-                  <ui:GetQueueItems Duration="{x:Null}" From="{x:Null}" Priority="{x:Null}" Skip="{x:Null}" TimeoutMS="{x:Null}" To="{x:Null}" Top="{x:Null}" DisplayName="Get Failed Items" FilterStrategy="Equals" sap2010:WorkflowViewState.IdRef="GetQueueItems_2" QueueItemStates="Failed" QueueName="[in_Config(&quot;DispatchQueue&quot;)]" Reference="[reference]" Result="[failedItems]" />
-                  <If Condition="[failedItems.Count &gt; 5]" DisplayName="If item has failed too many times" sap2010:WorkflowViewState.IdRef="If_4">
+                <Sequence DisplayName="Handle sending new approval" sap2010:WorkflowViewState.IdRef="Sequence_39">
+                  <If Condition="[repeatTransaction IsNot Nothing]" DisplayName="If not new" sap2010:WorkflowViewState.IdRef="If_4">
                     <If.Then>
-                      <Sequence sap2010:WorkflowViewState.IdRef="Sequence_42">
-                        <ui:SetTransactionStatus ContinueOnError="{x:Null}" ServiceBaseAddress="{x:Null}" TimeoutMS="{x:Null}" DisplayName="Set Transaction Expired" ErrorType="Business" sap2010:WorkflowViewState.IdRef="SetTransactionStatus_1" Reason="[&quot;Approval expired after &quot; &amp; failedItems.Count &amp; &quot; months&quot;]" Status="Failed" TransactionItem="[repeatTransaction]">
-                          <ui:SetTransactionStatus.Output>
-                            <scg:Dictionary x:TypeArguments="x:String, InArgument" />
-                          </ui:SetTransactionStatus.Output>
-                        </ui:SetTransactionStatus>
-                        <ui:GetQueueItems Duration="{x:Null}" From="{x:Null}" Priority="{x:Null}" Skip="{x:Null}" TimeoutMS="{x:Null}" To="{x:Null}" Top="{x:Null}" DisplayName="Get Expired Items" FilterStrategy="Equals" sap2010:WorkflowViewState.IdRef="GetQueueItems_3" QueueItemStates="Failed" QueueName="[in_Config(&quot;DispatchQueue&quot;)]" Reference="[reference]" Result="[failedItems]" />
-                        <AddToCollection x:TypeArguments="ui:QueueItem" Collection="[out_StaleTransactions]" DisplayName="Add To Stale Items" sap2010:WorkflowViewState.IdRef="AddToCollection`1_1" Item="[failedItems.First]" />
-                      </Sequence>
+                      <ui:SetTransactionStatus ContinueOnError="{x:Null}" ServiceBaseAddress="{x:Null}" TimeoutMS="{x:Null}" DisplayName="Set Transaction Failed" ErrorType="Business" sap2010:WorkflowViewState.IdRef="SetTransactionStatus_2" Reason="[&quot;No reply for approval for month number &quot; &amp; failedItems.Count]" Status="Failed" TransactionItem="[repeatTransaction]">
+                        <ui:SetTransactionStatus.Output>
+                          <scg:Dictionary x:TypeArguments="x:String, InArgument" />
+                        </ui:SetTransactionStatus.Output>
+                      </ui:SetTransactionStatus>
                     </If.Then>
-                    <If.Else>
-                      <Sequence sap2010:WorkflowViewState.IdRef="Sequence_40">
-                        <ui:SetTransactionStatus ContinueOnError="{x:Null}" ServiceBaseAddress="{x:Null}" TimeoutMS="{x:Null}" DisplayName="Set Transaction Failed" ErrorType="Business" sap2010:WorkflowViewState.IdRef="SetTransactionStatus_2" Reason="[&quot;No reply for approval for month number &quot; &amp; failedItems.Count]" Status="Failed" TransactionItem="[repeatTransaction]">
-                          <ui:SetTransactionStatus.Output>
-                            <scg:Dictionary x:TypeArguments="x:String, InArgument" />
-                          </ui:SetTransactionStatus.Output>
-                        </ui:SetTransactionStatus>
-                        <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke NewApproval workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_3" UnSafe="False" WorkflowFileName="NewApproval.xaml">
-                          <ui:InvokeWorkflowFile.Arguments>
-                            <InArgument x:TypeArguments="sd:DataTable" x:Key="in_ApprovalRows">[filteredRows]</InArgument>
-                            <InArgument x:TypeArguments="x:String" x:Key="in_TransactionReference">[reference]</InArgument>
-                            <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)" x:Key="in_Config">[in_Config]</InArgument>
-                          </ui:InvokeWorkflowFile.Arguments>
-                        </ui:InvokeWorkflowFile>
-                      </Sequence>
-                    </If.Else>
                   </If>
+                  <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke NewApproval workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_3" UnSafe="False" WorkflowFileName="NewApproval.xaml">
+                    <ui:InvokeWorkflowFile.Arguments>
+                      <InArgument x:TypeArguments="sd:DataTable" x:Key="in_ApprovalRows">[filteredRows]</InArgument>
+                      <InArgument x:TypeArguments="x:String" x:Key="in_TransactionReference">[reference]</InArgument>
+                      <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)" x:Key="in_Config">[in_Config]</InArgument>
+                    </ui:InvokeWorkflowFile.Arguments>
+                  </ui:InvokeWorkflowFile>
                 </Sequence>
               </If.Then>
               <If.Else>
-                <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke NewApproval workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_4" UnSafe="False" WorkflowFileName="NewApproval.xaml">
-                  <ui:InvokeWorkflowFile.Arguments>
-                    <InArgument x:TypeArguments="sd:DataTable" x:Key="in_ApprovalRows">[filteredRows]</InArgument>
-                    <InArgument x:TypeArguments="x:String" x:Key="in_TransactionReference">[reference]</InArgument>
-                    <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)" x:Key="in_Config">[in_Config]</InArgument>
-                  </ui:InvokeWorkflowFile.Arguments>
-                </ui:InvokeWorkflowFile>
+                <Sequence DisplayName="Handle stale milestone" sap2010:WorkflowViewState.IdRef="Sequence_45">
+                  <If Condition="[repeatTransaction IsNot Nothing]" DisplayName="If new item exists" sap2010:WorkflowViewState.IdRef="If_6">
+                    <If.Then>
+                      <ui:SetTransactionStatus ContinueOnError="{x:Null}" ServiceBaseAddress="{x:Null}" TimeoutMS="{x:Null}" DisplayName="Set Transaction Expired" ErrorType="Business" sap2010:WorkflowViewState.IdRef="SetTransactionStatus_1" Reason="[&quot;Approval expired after &quot; &amp; failedItems.Count &amp; &quot; months&quot;]" Status="Failed" TransactionItem="[repeatTransaction]">
+                        <ui:SetTransactionStatus.Output>
+                          <scg:Dictionary x:TypeArguments="x:String, InArgument" />
+                        </ui:SetTransactionStatus.Output>
+                      </ui:SetTransactionStatus>
+                    </If.Then>
+                  </If>
+                  <ui:GetQueueItems Duration="{x:Null}" From="{x:Null}" Priority="{x:Null}" Skip="{x:Null}" TimeoutMS="{x:Null}" To="{x:Null}" Top="{x:Null}" DisplayName="Refresh Expired Items" FilterStrategy="Equals" sap2010:WorkflowViewState.IdRef="GetQueueItems_4" QueueItemStates="Failed" QueueName="[in_Config(&quot;DispatchQueue&quot;)]" Reference="[reference]" Result="[failedItems]" />
+                  <ui:ForEach x:TypeArguments="ui:QueueItem" CurrentIndex="{x:Null}" DisplayName="For Each stale item" sap2010:WorkflowViewState.IdRef="ForEach`1_1" Values="[failedItems]">
+                    <ui:ForEach.Body>
+                      <ActivityAction x:TypeArguments="ui:QueueItem">
+                        <ActivityAction.Argument>
+                          <DelegateInArgument x:TypeArguments="ui:QueueItem" Name="failed" />
+                        </ActivityAction.Argument>
+                        <Sequence DisplayName="Body" sap2010:WorkflowViewState.IdRef="Sequence_46">
+                          <Sequence.Variables>
+                            <Variable x:TypeArguments="x:String" Name="requestFilename" />
+                          </Sequence.Variables>
+                          <Assign DisplayName="Assign sent filename" sap2010:WorkflowViewState.IdRef="Assign_6">
+                            <Assign.To>
+                              <OutArgument x:TypeArguments="x:String">[requestFilename]</OutArgument>
+                            </Assign.To>
+                            <Assign.Value>
+                              <InArgument x:TypeArguments="x:String">[failed.SpecificContent("Request Filename").ToString]</InArgument>
+                            </Assign.Value>
+                          </Assign>
+                          <If Condition="[File.Exists(requestFilename)]" DisplayName="If sent email saved to network" sap2010:WorkflowViewState.IdRef="If_7">
+                            <If.Then>
+                              <ui:MoveFile ContinueOnError="{x:Null}" Destination="[in_Config(&quot;Network Share Email Store&quot;) + &quot;\&quot; + Path.GetFileName(requestFilename)]" DisplayName="Move File with override" sap2010:WorkflowViewState.IdRef="MoveFile_1" Overwrite="True" Path="[requestFilename]" />
+                            </If.Then>
+                          </If>
+                        </Sequence>
+                      </ActivityAction>
+                    </ui:ForEach.Body>
+                  </ui:ForEach>
+                  <AddToCollection x:TypeArguments="ui:QueueItem" Collection="[out_StaleTransactions]" DisplayName="Add To Stale Items" sap2010:WorkflowViewState.IdRef="AddToCollection`1_2" Item="[failedItems.First]" />
+                </Sequence>
               </If.Else>
             </If>
             <ui:FilterDataTable DataTable="[queryReport]" DisplayName="Filter remove items Data Table" FilterRowsMode="Remove" sap2010:WorkflowViewState.IdRef="FilterDataTable_2" OutputDataTable="[queryReport]" SelectColumnsMode="Remove">
@@ -285,10 +302,10 @@
                 <scg:List x:TypeArguments="ui:FilterOperationArgument" Capacity="4">
                   <ui:FilterOperationArgument BooleanOperator="And" Operator="EQ">
                     <ui:FilterOperationArgument.Column>
-                      <InArgument x:TypeArguments="x:String">["Contract ID"]</InArgument>
+                      <InArgument x:TypeArguments="x:String">["Contract"]</InArgument>
                     </ui:FilterOperationArgument.Column>
                     <ui:FilterOperationArgument.Operand>
-                      <InArgument x:TypeArguments="x:String">[row("Contract ID").ToString]</InArgument>
+                      <InArgument x:TypeArguments="x:String">[row("Contract").ToString]</InArgument>
                     </ui:FilterOperationArgument.Operand>
                   </ui:FilterOperationArgument>
                   <ui:FilterOperationArgument BooleanOperator="And" Operator="EQ">
@@ -307,6 +324,7 @@
                 </scg:List>
               </ui:FilterDataTable.SelectColumns>
             </ui:FilterDataTable>
+            <Delay DisplayName="Delay 1s" Duration="00:00:01" sap2010:WorkflowViewState.IdRef="Delay_1" />
           </Sequence>
         </While>
       </TryCatch.Try>
@@ -321,11 +339,11 @@
         </Catch>
       </TryCatch.Catches>
     </TryCatch>
-    <sads:DebugSymbol.Symbol>d15DOlxVc2Vyc1xzcGFtaXNoXERvY3VtZW50c1xVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQmlsbGluZ01pbGVzdG9uZVxEaXNwYXRjaC54YW1sYlMDxQIOAgEBVwVeDgIBeV8FcRACAXJyBZcBEAIBX5gBBcMCEAIBAlw+XFYCAXtZP1lWAgF6YQllFAIBdW0NbeEBAgFzdAl09gECAWt8DZMBGAIBYJoBCbcCEQIBBb8CDb8C5AECAQNiC2J7AgF4YwtjkAECAXdkC2RlAgF2bT9ttAECAXR0M3RCAgFwdJ8BdKMBAgFvdK4BdLYBAgFudMQBdPMBAgFsfhGHASwCAWOPARWPAbMCAgFhmwELtgIWAgEHmgF7mgGcAQIBBr8CQb8CtwECAQR+/AF+qwICAWmEAReEAdIBAgFkjwFJjwGGAgIBYqsBVqsBewIBCK8BDbYBFgIBW7cBDdEBIgIBUtIBDdkBFgIBTtoBDekBEgIBQ+oBDZoCEgIBEpsCDbUCIgIBCYQBRoQBVQIBZ4QBuAGEAbwBAgFmhAHHAYQBzwECAWW0ATq0AU8CAV6xATuxAUACAVzEAT7EAU4CAVrHAT7HAVwCAVm8AT68AU0CAVi/AT6/AVsCAVe3AcQBtwHUAQIBVbcBK7cBOgIBU9cBONcBegIBUdQBOdQBRAIBT9oBG9oBXAIBRNwBEecBHAIBReoBG+oBPgIBE+wBEY8CHAIBHJICEZgCKQIBFKgCPqgCTgIBEasCPqsCXAIBEKACPqACTQIBD6MCPqMCWwIBDpsCxAGbAtMBAgEMmwIrmwI6AgEK3QET5AEcAgFK5QET5QHnAQIBRvABE/ABuQECAUDxARPxAYUDAgE68gETjgIYAgEdlAJYlAJmAgEalgJolgJzAgEYlQJclQJnAgEWkgLEAZIC1gECARXiAULiAYMBAgFN3wFD3wFWAgFL5QFT5QFpAgFJ5QGUAeUBqQECAUfwAYEB8AG2AQIBQfEB3gLxAesCAgE+8QGrAvEB0wICATzxAfMC8QGCAwIBO/IBIfIBPQIBHvQBF/wBIgIBLP8BF4wCIgIBH/UBGfkBMwIBNvoBGfoBjAMCATD7ARn7AeIBAgEtgAIZhAIzAgEohQIZiwIxAgEg9QH7AfUB1AICATn1AfUC9QGKAwIBN/oB5QL6AfICAgE0+gGyAvoB2gICATL6AfoC+gGJAwIBMfsBVPsBbQIBL/sBygH7Ad8BAgEugAL6AYACyQICASuAAuoCgAL/AgIBKYcCYIcCbgIBJokCcIkCewIBJIgCZIgCbwIBIoUCzAGFAt4BAgEh</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d15DOlxVc2Vyc1xzcGFtaXNoXERvY3VtZW50c1xVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQmlsbGluZ01pbGVzdG9uZVxEaXNwYXRjaC54YW1sa1MD1wIOAgEBVwVeDgMBgAFfBXEQAgF5cgWXARACAWaYAQXVAhACAQJcPlxWAwGCAVk/WVYDAYEBYQllFAIBfG0NbeEBAgF6dAl0jAICAXJ8DZMBGAIBZ5oBCckCEQIBBdECDdEC5AECAQNiC2J7AgF/YwtjkAECAX5kC2RlAgF9bT9ttAECAXt0M3RCAgF3dLUBdLkBAgF2dMQBdMwBAgF1dNoBdIkCAgFzfhGHASwCAWqPARWPAbMCAgFomwELyAIWAgEHmgF7mgGcAQIBBtECQdECtwECAQR+/AF+qwICAXCEAReEAegBAgFrjwFJjwGGAgIBaasBVqsBewIBCLABDbcBFgIBYrgBDdIBIgIBWdMBDdoBFgIBVdsBDekBEgIBSuoBDeoB/wICAUTrAQ3rAdwBAgFC7AENqwISAgEUrAINxgIiAgELxwINxwJrAgEJhAFGhAFVAgFuhAHOAYQB0gECAW2EAd0BhAHlAQIBbLUBOrUBTwIBZbIBO7IBQAIBY8UBPsUBTgIBYcgBPsgBXAIBYL0BPr0BSgIBX8ABPsABWAIBXrgBxAG4AdQBAgFcuAEruAE6AgFa2AE42AF3AgFY1QE51QFEAgFW2wEb2wFcAgFL3QER5wEcAgFM6gHYAuoB5QICAUjqAaUC6gHNAgIBRuoB7QLqAfwCAgFF6wF86wHZAQIBQ+wBG+wBNwIBFe4BEf8BHAIBM4ICEakCHAIBFrkCPrkCTgIBE7wCPrwCXAIBErECPrECSgIBEbQCPrQCWAIBEKwCxAGsAtMBAgEOrAIrrAI6AgEMxwI0xwI+AgEK3gET5QEcAgFR5gET5gHnAQIBTe8BE/cBGAIBPPgBE/4BKwIBNIMCE4sCGAIBLYwCE4wCigMCASeNAhOnAiACARqoAhOoAtwBAgEX4wFC4wGDAQIBVOABQ+ABVgIBUuYBU+YBaQIBUOYBzwHmAeQBAgFO7wEh7wFEAgE98QEX9QExAgE++gFa+gFoAgE6/AFq/AF1AgE4+wFe+wFpAgE2+AHGAfgB2AECATWDAiGDAkQCAS6FAheJAjECAS+MAuMCjALwAgIBK4wCsAKMAtgCAgEpjAL4AowChwMCASiNAq0BjQK8AQIBJpMCGaQCJAIBG6gCTqgCZwIBGagCxAGoAtkBAgEY8QH4AfEBxwICAUHxAegC8QH9AgIBP4UC+QGFAtICAgEyhQLzAoUCiAMCATCXAhueAiQCASKfAhujAiACARycAkacAnsCASWZAkeZAlgCASOfAimfAkkCAR2hAh+hArsCAgEeoQJToQK7AQIBIaECpQKhArgCAgEf</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
-      <sap2010:ViewStateData Id="Assign_2" sap:VirtualizedContainerService.HintSize="1010,60" />
+      <sap2010:ViewStateData Id="Assign_2" sap:VirtualizedContainerService.HintSize="1101,60" />
       <sap2010:ViewStateData Id="Sequence_11" sap:VirtualizedContainerService.HintSize="200,99">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
@@ -347,10 +365,10 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_13" sap:VirtualizedContainerService.HintSize="200,51">
+      <sap2010:ViewStateData Id="Sequence_13" sap:VirtualizedContainerService.HintSize="222,501">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
             <x:Boolean x:Key="IsPinned">False</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
@@ -364,7 +382,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_5" sap:VirtualizedContainerService.HintSize="1010,287" />
+      <sap2010:ViewStateData Id="TryCatch_5" sap:VirtualizedContainerService.HintSize="1101,728" />
       <sap2010:ViewStateData Id="ReadRange_2" sap:VirtualizedContainerService.HintSize="314,87" />
       <sap2010:ViewStateData Id="ExcelReadRange_3" sap:VirtualizedContainerService.HintSize="314,59" />
       <sap2010:ViewStateData Id="ExcelApplicationScope_2" sap:VirtualizedContainerService.HintSize="414,168" />
@@ -386,10 +404,10 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_4" sap:VirtualizedContainerService.HintSize="1010,314" />
-      <sap2010:ViewStateData Id="Assign_1" sap:VirtualizedContainerService.HintSize="944,60" />
-      <sap2010:ViewStateData Id="FilterDataTable_1" sap:VirtualizedContainerService.HintSize="944,59" />
-      <sap2010:ViewStateData Id="Assign_3" sap:VirtualizedContainerService.HintSize="944,60" />
+      <sap2010:ViewStateData Id="TryCatch_4" sap:VirtualizedContainerService.HintSize="1101,314" />
+      <sap2010:ViewStateData Id="Assign_1" sap:VirtualizedContainerService.HintSize="1035,60" />
+      <sap2010:ViewStateData Id="FilterDataTable_1" sap:VirtualizedContainerService.HintSize="1035,59" />
+      <sap2010:ViewStateData Id="Assign_3" sap:VirtualizedContainerService.HintSize="1035,60" />
       <sap2010:ViewStateData Id="Assign_5" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="RemoveFromCollection`1_1" sap:VirtualizedContainerService.HintSize="242,22" />
       <sap2010:ViewStateData Id="Sequence_44" sap:VirtualizedContainerService.HintSize="264,246">
@@ -399,40 +417,45 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_5" sap:VirtualizedContainerService.HintSize="944,394" />
-      <sap2010:ViewStateData Id="LogMessage_11" sap:VirtualizedContainerService.HintSize="583,91" />
-      <sap2010:ViewStateData Id="GetQueueItems_2" sap:VirtualizedContainerService.HintSize="583,22" />
+      <sap2010:ViewStateData Id="If_5" sap:VirtualizedContainerService.HintSize="1035,394" />
+      <sap2010:ViewStateData Id="GetQueueItems_2" sap:VirtualizedContainerService.HintSize="1035,22" />
+      <sap2010:ViewStateData Id="LogMessage_11" sap:VirtualizedContainerService.HintSize="1035,91" />
+      <sap2010:ViewStateData Id="SetTransactionStatus_2" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="If_4" sap:VirtualizedContainerService.HintSize="464,208" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_3" sap:VirtualizedContainerService.HintSize="464,87" />
+      <sap2010:ViewStateData Id="Sequence_39" sap:VirtualizedContainerService.HintSize="486,459">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="SetTransactionStatus_1" sap:VirtualizedContainerService.HintSize="200,22" />
-      <sap2010:ViewStateData Id="GetQueueItems_3" sap:VirtualizedContainerService.HintSize="200,22" />
-      <sap2010:ViewStateData Id="AddToCollection`1_1" sap:VirtualizedContainerService.HintSize="200,22" />
-      <sap2010:ViewStateData Id="Sequence_42" sap:VirtualizedContainerService.HintSize="222,270">
+      <sap2010:ViewStateData Id="If_6" sap:VirtualizedContainerService.HintSize="502,208" />
+      <sap2010:ViewStateData Id="GetQueueItems_4" sap:VirtualizedContainerService.HintSize="502,22" />
+      <sap2010:ViewStateData Id="Assign_6" sap:VirtualizedContainerService.HintSize="464,60" />
+      <sap2010:ViewStateData Id="MoveFile_1" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="If_7" sap:VirtualizedContainerService.HintSize="464,208" />
+      <sap2010:ViewStateData Id="Sequence_46" sap:VirtualizedContainerService.HintSize="486,432">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="SetTransactionStatus_2" sap:VirtualizedContainerService.HintSize="314,22" />
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_3" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="Sequence_40" sap:VirtualizedContainerService.HintSize="336,273">
+      <sap2010:ViewStateData Id="ForEach`1_1" sap:VirtualizedContainerService.HintSize="502,566" />
+      <sap2010:ViewStateData Id="AddToCollection`1_2" sap:VirtualizedContainerService.HintSize="502,22" />
+      <sap2010:ViewStateData Id="Sequence_45" sap:VirtualizedContainerService.HintSize="524,1062">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_4" sap:VirtualizedContainerService.HintSize="583,421" />
-      <sap2010:ViewStateData Id="Sequence_39" sap:VirtualizedContainerService.HintSize="605,738">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_4" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="If_3" sap:VirtualizedContainerService.HintSize="944,886" />
-      <sap2010:ViewStateData Id="FilterDataTable_2" sap:VirtualizedContainerService.HintSize="944,59" />
-      <sap2010:ViewStateData Id="Sequence_4" sap:VirtualizedContainerService.HintSize="966,1842">
+      <sap2010:ViewStateData Id="If_3" sap:VirtualizedContainerService.HintSize="1035,1210" />
+      <sap2010:ViewStateData Id="FilterDataTable_2" sap:VirtualizedContainerService.HintSize="1035,59" />
+      <sap2010:ViewStateData Id="Delay_1" sap:VirtualizedContainerService.HintSize="1035,22" />
+      <sap2010:ViewStateData Id="Sequence_4" sap:VirtualizedContainerService.HintSize="1057,2421">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -440,7 +463,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="While_1" sap:VirtualizedContainerService.HintSize="992,2000">
+      <sap2010:ViewStateData Id="While_1" sap:VirtualizedContainerService.HintSize="1083,2579">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -449,7 +472,7 @@
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="Throw_5" sap:VirtualizedContainerService.HintSize="200,22" />
-      <sap2010:ViewStateData Id="Catch`1_6" sap:VirtualizedContainerService.HintSize="996,21">
+      <sap2010:ViewStateData Id="Catch`1_6" sap:VirtualizedContainerService.HintSize="1087,21">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">False</x:Boolean>
@@ -457,15 +480,15 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_6" sap:VirtualizedContainerService.HintSize="1010,2227" />
-      <sap2010:ViewStateData Id="Sequence_6" sap:VirtualizedContainerService.HintSize="1032,3132">
+      <sap2010:ViewStateData Id="TryCatch_6" sap:VirtualizedContainerService.HintSize="1101,2806" />
+      <sap2010:ViewStateData Id="Sequence_6" sap:VirtualizedContainerService.HintSize="1123,4152">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Dispatch_1" sap:VirtualizedContainerService.HintSize="1072,3252" />
+      <sap2010:ViewStateData Id="Dispatch_1" sap:VirtualizedContainerService.HintSize="1163,4232" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
