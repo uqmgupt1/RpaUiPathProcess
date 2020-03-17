@@ -13,11 +13,8 @@
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <x:Members>
     <x:Property Name="in_transactionItem" Type="InArgument(ui:QueueItem)" />
-    <x:Property Name="in_partTimeExtension" Type="InArgument(x:Int32)" />
-    <x:Property Name="in_fullTimeExtension" Type="InArgument(x:Int32)" />
     <x:Property Name="out_dueDateNew" Type="OutArgument(x:String)" />
-    <x:Property Name="in_studentID" Type="InArgument(x:String)" />
-    <x:Property Name="in_caseID" Type="InArgument(x:String)" />
+    <x:Property Name="in_Config" Type="InArgument(scg:Dictionary(x:String, x:Object))" />
   </x:Members>
   <mva:VisualBasic.Settings>
     <x:Null />
@@ -76,10 +73,103 @@
       <AssemblyReference>UiPath.PDF</AssemblyReference>
       <AssemblyReference>UiPath.Word</AssemblyReference>
       <AssemblyReference>System.ComponentModel.Composition</AssemblyReference>
+      <AssemblyReference>Microsoft.VisualStudio.Services.Common</AssemblyReference>
       <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence sap2010:Annotation.AnnotationText="This file will update the first tab on the 'Checklist Management  - Person' page. First we check the 'Comments' field to see if this case ID has already been completed, if not we update the 'Due Date' depending if the study type is Master of Philosophy, full time or part time and the 'Comments' field to reflect the changes that we have made.&#xA;In the case where the study type is Master of Philisophy where get the extend to due date from the transaction item's content which should be in the format yyyy-MM-dd, if not we throw a BRE.&#xA;Inputs:&#xA;transactionItem&#xA;partTimeExtension - how many months to add to current date for part time study&#xA;fullTimeExtension - how many months to add for fullt time study&#xA;studentID&#xA;caseID&#xA;Outputs:&#xA;dueDateNew - updated 'Due Date' that we pass through to the second tab" DisplayName="UpdateChecklistManagement_1" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="x:String" Name="studyType" />
+      <Variable x:TypeArguments="x:String" Name="userID" />
+      <Variable x:TypeArguments="x:String" Name="numberOfMonthsFTE" />
+      <Variable x:TypeArguments="x:String" Name="milestone" />
+      <Variable x:TypeArguments="x:String" Name="extendDueDateTo" />
+      <Variable x:TypeArguments="x:String" Name="userName" />
+      <Variable x:TypeArguments="ui:GenericValue" Name="partTimeExtension" />
+      <Variable x:TypeArguments="ui:GenericValue" Name="fullTimeExtension" />
+      <Variable x:TypeArguments="ui:GenericValue" Name="in_studentID" />
+      <Variable x:TypeArguments="ui:GenericValue" Name="in_caseID" />
+    </Sequence.Variables>
+    <Assign DisplayName="Assign partTimeExtension" sap2010:WorkflowViewState.IdRef="Assign_28">
+      <Assign.To>
+        <OutArgument x:TypeArguments="ui:GenericValue">[partTimeExtension]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="ui:GenericValue">[Convert.ToInt32 (in_Config("partTimeExtension").ToString)]</InArgument>
+      </Assign.Value>
+    </Assign>
+    <Assign DisplayName="Assign fullTimeExtension" sap2010:WorkflowViewState.IdRef="Assign_29">
+      <Assign.To>
+        <OutArgument x:TypeArguments="ui:GenericValue">[fullTimeExtension]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="ui:GenericValue">[Convert.ToInt32 (in_Config("fullTimeExtension").ToString)]</InArgument>
+      </Assign.Value>
+    </Assign>
+    <Assign DisplayName="Assign Type" sap2010:WorkflowViewState.IdRef="Assign_22">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">[studyType]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">[in_transactionItem.SpecificContent("Type").ToString]</InArgument>
+      </Assign.Value>
+    </Assign>
+    <Assign DisplayName="Assign UserID" sap2010:WorkflowViewState.IdRef="Assign_23">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">[userID]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">[in_transactionItem.SpecificContent("UserID").ToString]</InArgument>
+      </Assign.Value>
+    </Assign>
+    <Assign DisplayName="Assign NumberOfMonthsFTE" sap2010:WorkflowViewState.IdRef="Assign_24">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">[numberOfMonthsFTE]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">[If(isNothing(in_transactionItem.SpecificContent("NumberOfMonthsFTE")),"",in_transactionItem.SpecificContent("NumberOfMonthsFTE").ToString)]</InArgument>
+      </Assign.Value>
+    </Assign>
+    <Assign DisplayName="Assign Milestone" sap2010:WorkflowViewState.IdRef="Assign_25">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">[milestone]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">[in_transactionItem.SpecificContent("Milestone").ToString]</InArgument>
+      </Assign.Value>
+    </Assign>
+    <Assign DisplayName="Assign ExtendMilestoneDueDateTo" sap2010:WorkflowViewState.IdRef="Assign_26">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">[extendDueDateTo]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">[if(isNothing(in_transactionItem.SpecificContent("ExtendMilestoneDueDateTo")),"",in_transactionItem.SpecificContent("ExtendMilestoneDueDateTo").ToString)]</InArgument>
+      </Assign.Value>
+    </Assign>
+    <Assign DisplayName="Assign UserName" sap2010:WorkflowViewState.IdRef="Assign_27">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">[userName]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">[in_transactionItem.SpecificContent("UserName").ToString]</InArgument>
+      </Assign.Value>
+    </Assign>
+    <Assign DisplayName="Assign - Student ID" sap2010:WorkflowViewState.IdRef="Assign_30">
+      <Assign.To>
+        <OutArgument x:TypeArguments="ui:GenericValue">[in_studentID]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="ui:GenericValue">[in_transactionItem.SpecificContent("StudentId").ToString]</InArgument>
+      </Assign.Value>
+    </Assign>
+    <Assign DisplayName="Assign - Case ID" sap2010:WorkflowViewState.IdRef="Assign_31">
+      <Assign.To>
+        <OutArgument x:TypeArguments="ui:GenericValue">[in_caseID]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="ui:GenericValue">[in_transactionItem.SpecificContent("CaseID").ToString]</InArgument>
+      </Assign.Value>
+    </Assign>
     <ui:BrowserScope Browser="{x:Null}" SearchScope="{x:Null}" TimeoutMS="{x:Null}" UiBrowser="{x:Null}" BrowserType="Chrome" DisplayName="Attach Browser 'chrome.exe Checklist'" sap2010:WorkflowViewState.IdRef="BrowserScope_1" Selector="&lt;html app='chrome.exe' title='Checklist Management - Person' /&gt;">
       <ui:BrowserScope.Body>
         <ActivityAction x:TypeArguments="x:Object">
@@ -94,13 +184,7 @@
               <Variable x:TypeArguments="x:String" Name="regularExpression" />
               <Variable x:TypeArguments="str:Match" Name="regExMatch" />
               <Variable x:TypeArguments="s:DateTime" Name="currentDate" />
-              <Variable x:TypeArguments="x:String" Default="[in_transactionItem.SpecificContent(&quot;Type&quot;).ToString]" Name="studyType" />
-              <Variable x:TypeArguments="x:String" Default="[in_transactionItem.SpecificContent(&quot;UserID&quot;).ToString]" Name="userID" />
-              <Variable x:TypeArguments="x:String" Default="[If(isNothing(in_transactionItem.SpecificContent(&quot;NumberOfMonthsFTE&quot;)),&quot;&quot;,in_transactionItem.SpecificContent(&quot;NumberOfMonthsFTE&quot;).ToString)]" Name="numberOfMonthsFTE" />
-              <Variable x:TypeArguments="x:String" Default="[in_transactionItem.SpecificContent(&quot;Milestone&quot;).ToString]" Name="mileStone" />
               <Variable x:TypeArguments="x:String" Name="commentsFieldNewline" />
-              <Variable x:TypeArguments="x:String" Default="[if(isNothing(in_transactionItem.SpecificContent(&quot;ExtendMilestoneDueDateTo&quot;)),&quot;&quot;,in_transactionItem.SpecificContent(&quot;ExtendMilestoneDueDateTo&quot;).ToString)]" Name="extendDueDateTo" />
-              <Variable x:TypeArguments="x:String" Default="[in_transactionItem.SpecificContent(&quot;UserName&quot;).ToString]" Name="userName" />
             </Sequence.Variables>
             <ui:LogMessage DisplayName="Log Message - updating 'Checklist Management 1' tab" sap2010:WorkflowViewState.IdRef="LogMessage_15" Level="Info" Message="[&quot;Updating 'Checklist Management 1' page&quot;]" />
             <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_18" Level="Info" Message="[&quot;extendedDueDateTo value received from queue payload: &quot; + extendDueDateTo]" />
@@ -215,7 +299,7 @@
                           <OutArgument x:TypeArguments="s:DateTime">[dueDateNew]</OutArgument>
                         </Assign.To>
                         <Assign.Value>
-                          <InArgument x:TypeArguments="s:DateTime">[dueDateNew.AddMonths(in_fullTimeExtension)]</InArgument>
+                          <InArgument x:TypeArguments="s:DateTime">[dueDateNew.AddMonths(fullTimeExtension)]</InArgument>
                         </Assign.Value>
                       </Assign>
                     </Sequence>
@@ -226,7 +310,7 @@
                           <OutArgument x:TypeArguments="s:DateTime">[dueDateNew]</OutArgument>
                         </Assign.To>
                         <Assign.Value>
-                          <InArgument x:TypeArguments="s:DateTime">[dueDateNew.AddMonths(in_partTimeExtension)]</InArgument>
+                          <InArgument x:TypeArguments="s:DateTime">[dueDateNew.AddMonths(partTimeExtension)]</InArgument>
                         </Assign.Value>
                       </Assign>
                     </Sequence>
@@ -261,7 +345,7 @@
                 <OutArgument x:TypeArguments="x:String">[commentsFieldNewline]</OutArgument>
               </Assign.To>
               <Assign.Value>
-                <InArgument x:TypeArguments="x:String">[currentDate.ToString("dd/MM/yyyy") + " " + userName + "/GS: " + mileStone + " extension approved WP, new due date " + dueDateNew.ToString("dd/MM/yyyy") + ", at " + numberOfMonthsFTE + " months FTE, [RPA] Case ID " + in_caseID]</InArgument>
+                <InArgument x:TypeArguments="x:String">[currentDate.ToString("dd/MM/yyyy") + " " + userName + "/GS: " + milestone + " extension approved WP, new due date " + dueDateNew.ToString("dd/MM/yyyy") + ", at " + numberOfMonthsFTE + " months FTE, [RPA] Case ID " + in_caseID]</InArgument>
               </Assign.Value>
             </Assign>
             <ui:LogMessage DisplayName="Log Message - new 'Comments' line" sap2010:WorkflowViewState.IdRef="LogMessage_17" Level="Info" Message="[&quot;Adding new line to 'Comments' field: '&quot; + commentsFieldNewline + &quot;'&quot;]" />
@@ -274,23 +358,33 @@
         </ActivityAction>
       </ui:BrowserScope.Body>
     </ui:BrowserScope>
-    <sads:DebugSymbol.Symbol>d35DOlxVc2Vyc1x1cXJpbmdyYVxkZXZcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcVVFHU19FT01fcHJvY19TSW5ldER1ZURhdGVVcGRhdGVfMS4wXFNJLW5ldFxVcGRhdGVDaGVja2xpc3RJTWFuYWdlbWVudF8xLnhhbWxeUgOWAg4CAQFTBZQCFwIBAlPtAVO0AgMBgAFZC5ECFgIBA2E8YX0CAQliPGJ/AgEIYzxj6AECAQdkPGSCAQIBBmY8ZvYBAgEFZzxngQECAQRpDWncAQIBfmoNatUBAgF7aw1r1wECAXhsDXoYAgF1ew2CARsCAXGDAQ2KARYCAWyLAQ2SARYCAWiTAQ2aARICAWCbAQ2iARsCAVyjAQ3sARICASvtAQ3tAaQCAgEn7gEN8gEbAgEj8wEN+gEWAgEe+wENggIWAgEagwINigIWAgEQiwINiwLxAQIBDYwCDZACGwIBCmmjAWnZAQIBf2p7atIBAgF8a3tr1AECAXl4Z3iaAQIBd2xPbFUCAXaAATmAAUgCAXJ9Z327AQIBdIgBOIgBYgIBb4UBOYUBTAIBbZABOZABcAIBa40BOo0BRgIBaZMBG5MBMQIBYZUBEZgBHAIBY6ABOaABSQIBXZ0BZ50BlgECAV+jAesCowGTAwIBLKUBEcABHAIBTsMBEeoBHAIBLu0BkQHtAaECAgEo7gG0Ae4B4wECASTwAWfwAZYBAgEm+AE4+AFbAgEh9QE59QFJAgEfgAI6gAI/AgEd/QE7/QFIAgEbiAI4iAKbAgIBE4UCOYUCTwIBEYsCkQGLAu4BAgEOjAK0AYwC6AECAQuOAmeOArsBAgEMlgETlgHlAQIBZpcBE5cBqwICAWSnARWxASACAVW5ARm8ASQCAU/EARPLARwCAUrMARPpARwCAS+WAZUBlgHiAQIBZ5cBPJcB/gECAWWoAReoAdQBAgFaqQEXsAEgAgFWugEbugGqAgIBUrsBG7sB0QICAVDJAUDJAXwCAU3GAUHGAU0CAUvMAVbMAZ8BAgEw0wEV3QEgAgFB3gEV6AEgAgE4zgEX0QEiAgEyqAGkAagB0QECAVuuAUSuAYEBAgFZqwFFqwFRAgFXugGwAboBpwICAVO7AUS7AaQCAgFR1AEX1AHkAQIBSNUBF9wBIAIBQt8BF98B5AECAT/gARfnASACATnPARnPAewBAgE10AEZ0AGsAgIBM9QBrAHUAeEBAgFJ2gFE2gFwAgFF1wFF1wFRAgFD3wGsAd8B4QECAUDlAUTlAXACATziAUXiAVECATrPAZ0BzwHpAQIBNtABQtAB/wECATQ=</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d3JDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcVVFHU19FT01fcHJvY19TSW5ldER1ZURhdGVVcGRhdGVfMS4wXFNJLW5ldFxVcGRhdGVDaGVja2xpc3RJTWFuYWdlbWVudF8xLnhhbWx2UAPqAg4CAQFdBWQOAwGaAWUFbA4DAZYBbQV0DgMBkgF1BXwOAwGOAX0FhAEOAwGKAYUBBYwBDgMBhgGNAQWUAQ4DAYIBlQEFnAEOAgF+nQEFpAEOAgF5pQEFrAEOAgF0rQEF6AIXAgECYjdicgMBnQFfOF9LAwGbAWo3anIDAZkBZzhnSwMBlwFyMHJlAwGVAW8xbzwDAZMBejB6ZwMBkQF3MXc5AwGPAYIBMIIBvAEDAY0BfzF/RAMBiwGKATCKAWoDAYkBhwExhwE8AwGHAZIBMJIBygEDAYUBjwExjwFCAwGDAZoBMJoBaQMBgQGXATGXATsCAX+iATeiAXECAXyfATifAUYCAXqqATeqAW4CAXenATinAUMCAXWtAe0BrQG0AgIBc7MBC+UCFgIBA70BDb0B3AECAXG+AQ2+AdUBAgFuvwENvwHXAQIBa8ABDc4BGAIBaM8BDdYBGwIBY9cBDd4BFgIBX98BDeYBFgIBW+cBDe4BEgIBU+8BDfYBGwIBTvcBDcACEgIBIcECDcECpAICAR3CAg3GAhsCARjHAg3OAhYCARPPAg3WAhYCAQ/XAg3eAhYCAQvfAg3fAvEBAgEI4AIN5AIbAgEEvQGjAb0B2QECAXK+AXu+AdIBAgFvvwF7vwHUAQIBbMwBZ8wBmgECAWrAAU/AAVUCAWnUATnUAUgCAWXRAWfRAbsBAgFn3AE43AFiAgFi2QE52QFMAgFg5AE55AFwAgFe4QE64QFGAgFc5wEb5wExAgFU6QER7AEcAgFW9AE59AFJAgFQ8QFn8QGWAQIBUvcB6wL3AZMDAgEi+QERlAIcAgFAlwIRvgIcAgEkwQKRAcECoQICAR7CArQBwgLjAQIBGsQCZ8QClgECARzMAjjMAlsCARbJAjnJAkkCARTUAjrUAj8CARLRAjvRAkgCARDcAjjcApsCAgEO2QI52QJPAgEM3wKRAd8C7gECAQngArQB4ALoAQIBBuICZ+ICuwECAQfqARPqAeUBAgFZ6wET6wGrAgIBV/sBFYUCIAIBR40CGZACJAIBQZgCE58CHAIBPKACE70CHAIBJeoBlQHqAeIBAgFa6wE86wH+AQIBWPwBF/wB1AECAUz9AReEAiACAUiOAhuOAqoCAgFEjwIbjwLRAgIBQp0CQJ0CfAIBP5oCQZoCTQIBPaACVqACnwECASanAhWxAiACATWyAhW8AiACAS6iAhelAiICASj8AaQB/AHRAQIBTYICRIICgQECAUv/AUX/AVECAUmOArABjgKnAgIBRY8CRI8CpAICAUOoAheoAuQBAgE6qQIXsAIgAgE2swIXswLkAQIBM7QCF7sCIAIBL6MCGaMC7AECASukAhmkAqwCAgEpqAKsAagC4QECATuuAkSuAm0CATmrAkWrAlECATezAqwBswLhAQIBNLkCRLkCbQIBMrYCRbYCUQIBMKMCnQGjAukBAgEspAJCpAL/AQIBKg==</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
-      <sap2010:ViewStateData Id="LogMessage_15" sap:VirtualizedContainerService.HintSize="941,91" />
-      <sap2010:ViewStateData Id="LogMessage_18" sap:VirtualizedContainerService.HintSize="941,91" />
-      <sap2010:ViewStateData Id="LogMessage_19" sap:VirtualizedContainerService.HintSize="941,91" />
-      <sap2010:ViewStateData Id="Click_4" sap:VirtualizedContainerService.HintSize="941,68" />
-      <sap2010:ViewStateData Id="GetValue_2" sap:VirtualizedContainerService.HintSize="941,68" />
-      <sap2010:ViewStateData Id="Assign_5" sap:VirtualizedContainerService.HintSize="941,102">
+      <sap2010:ViewStateData Id="Assign_28" sap:VirtualizedContainerService.HintSize="978,60" />
+      <sap2010:ViewStateData Id="Assign_29" sap:VirtualizedContainerService.HintSize="978,60" />
+      <sap2010:ViewStateData Id="Assign_22" sap:VirtualizedContainerService.HintSize="978,60" />
+      <sap2010:ViewStateData Id="Assign_23" sap:VirtualizedContainerService.HintSize="978,60" />
+      <sap2010:ViewStateData Id="Assign_24" sap:VirtualizedContainerService.HintSize="978,60" />
+      <sap2010:ViewStateData Id="Assign_25" sap:VirtualizedContainerService.HintSize="978,60" />
+      <sap2010:ViewStateData Id="Assign_26" sap:VirtualizedContainerService.HintSize="978,60" />
+      <sap2010:ViewStateData Id="Assign_27" sap:VirtualizedContainerService.HintSize="978,60" />
+      <sap2010:ViewStateData Id="Assign_30" sap:VirtualizedContainerService.HintSize="978,60" />
+      <sap2010:ViewStateData Id="Assign_31" sap:VirtualizedContainerService.HintSize="978,60" />
+      <sap2010:ViewStateData Id="LogMessage_15" sap:VirtualizedContainerService.HintSize="942,91" />
+      <sap2010:ViewStateData Id="LogMessage_18" sap:VirtualizedContainerService.HintSize="942,91" />
+      <sap2010:ViewStateData Id="LogMessage_19" sap:VirtualizedContainerService.HintSize="942,91" />
+      <sap2010:ViewStateData Id="Click_4" sap:VirtualizedContainerService.HintSize="942,68" />
+      <sap2010:ViewStateData Id="GetValue_2" sap:VirtualizedContainerService.HintSize="942,68" />
+      <sap2010:ViewStateData Id="Assign_5" sap:VirtualizedContainerService.HintSize="942,102">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsAnnotationDocked">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Assign_6" sap:VirtualizedContainerService.HintSize="941,60" />
+      <sap2010:ViewStateData Id="Assign_6" sap:VirtualizedContainerService.HintSize="942,60" />
       <sap2010:ViewStateData Id="LogMessage_5" sap:VirtualizedContainerService.HintSize="314,91" />
       <sap2010:ViewStateData Id="Throw_3" sap:VirtualizedContainerService.HintSize="314,22" />
       <sap2010:ViewStateData Id="Sequence_11" sap:VirtualizedContainerService.HintSize="336,277">
@@ -300,8 +394,8 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_3" sap:VirtualizedContainerService.HintSize="941,424" />
-      <sap2010:ViewStateData Id="GetValue_4" sap:VirtualizedContainerService.HintSize="941,68" />
+      <sap2010:ViewStateData Id="If_3" sap:VirtualizedContainerService.HintSize="942,424" />
+      <sap2010:ViewStateData Id="GetValue_4" sap:VirtualizedContainerService.HintSize="942,68" />
       <sap2010:ViewStateData Id="LogMessage_10" sap:VirtualizedContainerService.HintSize="314,91" />
       <sap2010:ViewStateData Id="Assign_16" sap:VirtualizedContainerService.HintSize="314,60" />
       <sap2010:ViewStateData Id="Sequence_17" sap:VirtualizedContainerService.HintSize="336,315">
@@ -329,7 +423,7 @@
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="418,971" />
-      <sap2010:ViewStateData Id="Assign_17" sap:VirtualizedContainerService.HintSize="476,60" />
+      <sap2010:ViewStateData Id="Assign_17" sap:VirtualizedContainerService.HintSize="477,60" />
       <sap2010:ViewStateData Id="LogMessage_12" sap:VirtualizedContainerService.HintSize="314,91" />
       <sap2010:ViewStateData Id="Throw_7" sap:VirtualizedContainerService.HintSize="314,22" />
       <sap2010:ViewStateData Id="Sequence_19" sap:VirtualizedContainerService.HintSize="336,277">
@@ -357,29 +451,29 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Switch`1_3" sap:VirtualizedContainerService.HintSize="476,1202" />
-      <sap2010:ViewStateData Id="Sequence_22" sap:VirtualizedContainerService.HintSize="498,1426">
+      <sap2010:ViewStateData Id="Switch`1_3" sap:VirtualizedContainerService.HintSize="477,478" />
+      <sap2010:ViewStateData Id="Sequence_22" sap:VirtualizedContainerService.HintSize="499,702">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_5" sap:VirtualizedContainerService.HintSize="941,1630">
+      <sap2010:ViewStateData Id="If_5" sap:VirtualizedContainerService.HintSize="942,1175">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsAnnotationDocked">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="LogMessage_16" sap:VirtualizedContainerService.HintSize="941,91" />
-      <sap2010:ViewStateData Id="SetValue_4" sap:VirtualizedContainerService.HintSize="941,96" />
-      <sap2010:ViewStateData Id="Assign_20" sap:VirtualizedContainerService.HintSize="941,60" />
-      <sap2010:ViewStateData Id="Assign_7" sap:VirtualizedContainerService.HintSize="941,60" />
-      <sap2010:ViewStateData Id="Assign_21" sap:VirtualizedContainerService.HintSize="941,60" />
-      <sap2010:ViewStateData Id="LogMessage_17" sap:VirtualizedContainerService.HintSize="941,91" />
-      <sap2010:ViewStateData Id="SetValue_5" sap:VirtualizedContainerService.HintSize="941,96" />
-      <sap2010:ViewStateData Id="Sequence_7" sap:VirtualizedContainerService.HintSize="963,4011">
+      <sap2010:ViewStateData Id="LogMessage_16" sap:VirtualizedContainerService.HintSize="942,91" />
+      <sap2010:ViewStateData Id="SetValue_4" sap:VirtualizedContainerService.HintSize="942,96" />
+      <sap2010:ViewStateData Id="Assign_20" sap:VirtualizedContainerService.HintSize="942,60" />
+      <sap2010:ViewStateData Id="Assign_7" sap:VirtualizedContainerService.HintSize="942,60" />
+      <sap2010:ViewStateData Id="Assign_21" sap:VirtualizedContainerService.HintSize="942,60" />
+      <sap2010:ViewStateData Id="LogMessage_17" sap:VirtualizedContainerService.HintSize="942,91" />
+      <sap2010:ViewStateData Id="SetValue_5" sap:VirtualizedContainerService.HintSize="942,96" />
+      <sap2010:ViewStateData Id="Sequence_7" sap:VirtualizedContainerService.HintSize="964,3556">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -387,8 +481,8 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="BrowserScope_1" sap:VirtualizedContainerService.HintSize="977,4119" />
-      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="999,4435">
+      <sap2010:ViewStateData Id="BrowserScope_1" sap:VirtualizedContainerService.HintSize="978,3664" />
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="1000,4980">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -396,7 +490,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="UpdateDueDate_1" sap:VirtualizedContainerService.HintSize="1039,4515">
+      <sap2010:ViewStateData Id="UpdateDueDate_1" sap:VirtualizedContainerService.HintSize="1040,5060">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="ShouldCollapseAll">False</x:Boolean>
