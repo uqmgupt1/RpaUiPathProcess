@@ -15,9 +15,9 @@
     <x:Property Name="in_Config" Type="InArgument(scg:Dictionary(x:String, x:String))" />
     <x:Property Name="in_ResponseMessage" Type="InArgument(snm:MailMessage)" />
     <x:Property Name="out_ResponseApproved" Type="OutArgument(x:Boolean)" />
-    <x:Property Name="out_RejectionNotAchieved" Type="OutArgument(x:Boolean)" />
     <x:Property Name="out_RejectionDetails" Type="OutArgument(x:String)" />
     <x:Property Name="out_AttachmentUpload" Type="OutArgument(x:String)" />
+    <x:Property Name="out_DetailsChanged" Type="OutArgument(x:Boolean)" />
   </x:Members>
   <mva:VisualBasic.Settings>
     <x:Null />
@@ -78,6 +78,7 @@
       <AssemblyReference>UiPath.Studio.Plugin.Workflow</AssemblyReference>
       <AssemblyReference>UiPath.Interop</AssemblyReference>
       <AssemblyReference>System.Collections.Immutable</AssemblyReference>
+      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence sap2010:Annotation.AnnotationText="Description: &#xA;&#xA;Inputs:&#xA;&#xA;Outputs:&#xA;&#xA;Pre Condition:&#xA;&#xA;Post Condition:" DisplayName="ScrapeEmail" sap2010:WorkflowViewState.IdRef="Sequence_1">
@@ -156,18 +157,18 @@
                               </ui:GetValue.Value>
                             </ui:GetValue>
                             <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_73" Level="Trace" Message="[&quot;Reason: &quot; + response]" />
-                            <Assign DisplayName="Assign response not achieved" sap2010:WorkflowViewState.IdRef="Assign_15">
+                            <Assign DisplayName="Assign details changed" sap2010:WorkflowViewState.IdRef="Assign_15">
                               <Assign.To>
-                                <OutArgument x:TypeArguments="x:Boolean">[out_RejectionNotAchieved]</OutArgument>
+                                <OutArgument x:TypeArguments="x:Boolean">[out_DetailsChanged]</OutArgument>
                               </Assign.To>
                               <Assign.Value>
-                                <InArgument x:TypeArguments="x:Boolean">[response.Trim = "Billing milestone not acheived"]</InArgument>
+                                <InArgument x:TypeArguments="x:Boolean">[response.Trim = "Milestone details details have changed"]</InArgument>
                               </Assign.Value>
                             </Assign>
                           </Sequence>
                         </If.Then>
                       </If>
-                      <If Condition="[Not out_RejectionNotAchieved]" DisplayName="If milestone details changed" sap2010:WorkflowViewState.IdRef="If_5">
+                      <If Condition="[out_DetailsChanged]" DisplayName="If milestone details changed" sap2010:WorkflowViewState.IdRef="If_5">
                         <If.Then>
                           <Sequence sap2010:WorkflowViewState.IdRef="Sequence_79">
                             <Sequence.Variables>
@@ -197,12 +198,12 @@
                             </Assign>
                             <ui:WaitUiElementAppear FoundElement="{x:Null}" DisplayName="Find Upload Element" sap2010:WorkflowViewState.IdRef="WaitUiElementAppear_16" WaitActive="False" WaitVisible="False">
                               <ui:WaitUiElementAppear.Target>
-                                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="&lt;webctrl tag='DIV' aaname='Provide any attachment(s) to support the changed details.' class='Question' /&gt;" WaitForReady="INTERACTIVE" />
+                                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="&lt;webctrl tag='DIV' aaname='Provide an attachment to support*' class='Question' /&gt;" WaitForReady="INTERACTIVE" />
                               </ui:WaitUiElementAppear.Target>
                             </ui:WaitUiElementAppear>
                             <ui:GetValue ContinueOnError="{x:Null}" DisplayName="Get Filename Text" sap2010:WorkflowViewState.IdRef="GetValue_60">
                               <ui:GetValue.Target>
-                                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="&lt;webctrl tag='DIV' aaname='Provide any attachment(s) to support the changed details.' class='Question' /&gt;&lt;nav up='2' /&gt;&lt;webctrl tag='DIV' class='Answer' /&gt;" WaitForReady="INTERACTIVE" />
+                                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="&lt;webctrl tag='DIV' aaname='Provide an attachment to support*' class='Question' /&gt;&lt;nav up='2' /&gt;&lt;webctrl tag='DIV' class='Answer' /&gt;" WaitForReady="INTERACTIVE" />
                               </ui:GetValue.Target>
                               <ui:GetValue.Value>
                                 <OutArgument x:TypeArguments="x:String">[response]</OutArgument>
@@ -351,19 +352,8 @@ Path.GetFileName(out_AttachmentUpload))]</InArgument>
                     <DelegateInArgument x:TypeArguments="s:Exception" Name="exception" />
                   </ActivityAction.Argument>
                   <Sequence sap2010:WorkflowViewState.IdRef="Sequence_85">
-                    <ui:RetryScope DisplayName="Retry Scope" sap2010:WorkflowViewState.IdRef="RetryScope_3" NumberOfRetries="3" RetryInterval="00:00:05">
-                      <ui:RetryScope.ActivityBody>
-                        <ActivityAction>
-                          <Sequence DisplayName="Action" sap2010:WorkflowViewState.IdRef="Sequence_84">
-                            <ui:CloseWindow TimeoutMS="{x:Null}" UseWindow="{x:Null}" DisplayName="Close Chrome File Window" sap2010:WorkflowViewState.IdRef="CloseWindow_2" Selector="&lt;html app='chrome.exe' url='file://*.html' /&gt;" WaitForReady="INTERACTIVE" />
-                            <ui:Delete ContinueOnError="{x:Null}" sap2010:WorkflowViewState.IdRef="Delete_3" Path="[filename]" />
-                          </Sequence>
-                        </ActivityAction>
-                      </ui:RetryScope.ActivityBody>
-                      <ui:RetryScope.Condition>
-                        <ActivityFunc x:TypeArguments="x:Boolean" />
-                      </ui:RetryScope.Condition>
-                    </ui:RetryScope>
+                    <ui:CloseWindow TimeoutMS="{x:Null}" UseWindow="{x:Null}" DisplayName="Close Chrome File Window" sap2010:WorkflowViewState.IdRef="CloseWindow_2" Selector="&lt;html app='chrome.exe' url='file://*.html' /&gt;" WaitForReady="INTERACTIVE" />
+                    <ui:Delete ContinueOnError="{x:Null}" DisplayName="Delete temporary file" sap2010:WorkflowViewState.IdRef="Delete_4" Path="[filename]" />
                     <Rethrow sap2010:WorkflowViewState.IdRef="Rethrow_1" />
                   </Sequence>
                 </ActivityAction>
@@ -373,21 +363,10 @@ Path.GetFileName(out_AttachmentUpload))]</InArgument>
         </ActivityAction>
       </ui:OpenBrowser.Body>
     </ui:OpenBrowser>
-    <ui:RetryScope DisplayName="Retry Scope" sap2010:WorkflowViewState.IdRef="RetryScope_1" NumberOfRetries="3" RetryInterval="00:00:05">
-      <ui:RetryScope.ActivityBody>
-        <ActivityAction>
-          <Sequence DisplayName="Action" sap2010:WorkflowViewState.IdRef="Sequence_72">
-            <ui:CloseWindow TimeoutMS="{x:Null}" UseWindow="{x:Null}" DisplayName="Close Chrome File Window" sap2010:WorkflowViewState.IdRef="CloseWindow_1" Selector="&lt;html app='chrome.exe' url='file://*.html' /&gt;" WaitForReady="INTERACTIVE" />
-            <ui:Delete ContinueOnError="{x:Null}" sap2010:WorkflowViewState.IdRef="Delete_1" Path="[filename]" />
-          </Sequence>
-        </ActivityAction>
-      </ui:RetryScope.ActivityBody>
-      <ui:RetryScope.Condition>
-        <ActivityFunc x:TypeArguments="x:Boolean" />
-      </ui:RetryScope.Condition>
-    </ui:RetryScope>
-    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_5" Level="Info" Message="[String.Format(&quot;End ScrapeEmail.xaml, got Response: {1}{0}Reason: {2}{0}Details: {3}{0}Upload: {4}&quot;,&#xA;vbNewLine, out_ResponseApproved,&#xA;If(out_ResponseApproved, &quot;&quot;, out_RejectionNotAchieved.ToString),&#xA;If(out_RejectionDetails Is Nothing, &quot;&quot;, out_RejectionDetails),&#xA;If(out_AttachmentUpload Is Nothing, &quot;&quot;, out_AttachmentUpload))]" />
-    <sads:DebugSymbol.Symbol>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</sads:DebugSymbol.Symbol>
+    <ui:CloseWindow TimeoutMS="{x:Null}" UseWindow="{x:Null}" DisplayName="Close Chrome File Window" sap2010:WorkflowViewState.IdRef="CloseWindow_1" Selector="&lt;html app='chrome.exe' url='file://*.html' /&gt;" WaitForReady="INTERACTIVE" />
+    <ui:Delete ContinueOnError="{x:Null}" DisplayName="Delete temporary file" sap2010:WorkflowViewState.IdRef="Delete_1" Path="[filename]" />
+    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_5" Level="Info" Message="[String.Format(&quot;End ScrapeEmail.xaml, got Response: {1}{0}Reason: {2}{0}Details: {3}{0}Upload: {4}&quot;,&#xD;&#xA;vbNewLine, out_ResponseApproved,&#xD;&#xA;If(out_ResponseApproved, &quot;&quot;, out_DetailsChanged.ToString),&#xD;&#xA;If(out_RejectionDetails Is Nothing, &quot;&quot;, out_RejectionDetails),&#xD;&#xA;If(out_AttachmentUpload Is Nothing, &quot;&quot;, out_AttachmentUpload))]" />
+    <sads:DebugSymbol.Symbol>d2ZDOlxVc2Vyc1xzcGFtaXNoXERvY3VtZW50c1xVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQmlsbGluZ01pbGVzdG9uZVxNYWlsXFNjcmFwZUVtYWlsLnhhbWyMAVQD8gIOAgEBVzdXQgIBAlkFWb8BAwG4AVoFYQ4DAbQBYgViqwEDAbIBYwVjoAEDAa0BZAXtAhYCAQruAgXuAvIBAgEI7wIF7wKOAQIBBfACBfACggQCAQNZclm8AQMBuQFfMF+7AQMBtwFcMVw7AwG1AWJ0YqgBAwGzAWOCAWOdAQMBsAFjPmNKAwGuAWS/AWTzAQMBrAFqC+oCFgIBC+4CnwHuAtQBAgEJ7wJ/7wKLAQIBBvACcvAC/wMCAQRsD9oCIAIBE+ICE+YCHgIBDGziAWyXAgMBqwFyFdcCIAIBFOMCFeMCggICARHkAhXkAp4BAgEO5QIV5QJMAgENdhd6MAMBqQF7F4IBJQMBpAGDAReDAa4BAwGhAYQBF4sBIAMBnAGMAReqARwDAYkBqwEX7QEcAgFf7gEX1gIcAgEV4wKvAeMC5AECARLkAo8B5AKbAQIBD3hxeM4BAwGqAYABQ4ABTQMBpgF9cX2RAgMBqAGDAYYBgwGrAQMBogGJAUOJAW4DAZ8BhgFEhgFaAwGdAYwBJYwBQQMBigGOARuoASYDAYwBqwElqwE7AgFgrQEb6wEmAgFi7gEl7gFLAgEW8AEb1AImAgEYkgEdlgE2AwGaAZcBHZ4BKwMBlQGfAR2fAbIBAwGSAaABHacBJgMBjQGxAR21ATYDAYcBtgEdvQErAwGCAb4BHb4BswECAX+/AR3GASYCAXrHAR3LATYCAXjMAR3TASsCAXPUAR3UAbQBAgFw1QEd6gEiAgFj9gEd/gEmAgFb/wEdgwIiAgFWhAIdhALIAQIBU4UCHZMCKAIBT5QCHZgCNgIBSZkCHcMCIgIBKsQCHcoCJQIBJcsCHdICIgIBHNMCHdMC2wECARmUAXeUAdYBAwGbAZwBSZwBUwMBlwGZAXeZAZkCAwGZAZ8BjAGfAa8BAwGTAaUBSaUBgwEDAZABogFKogFeAwGOAbMBd7MB0gEDAYgBuwFJuwFTAwGEAbgBd7gBkAIDAYYBvgGMAb4BsAEDAYABxAFIxAFXAgF9wQFJwQFfAgF7yQF3yQHQAQIBedEBSdEBUwIBdc4Bd84BjgICAXfUAYwB1AGxAQIBcdUBK9UBXgIBZNcBIegBLAIBZvgBSfgBVQIBXP8BK/8BRgIBV4ECIYECiAECAViEAowBhALFAQIBVJECd5ECpQICAVKFAliFAlsCAVGFAkyFAk8CAVCUAnyUAoYBAgFNlgJilgKSAQIBTJYCnQGWAqMBAgFLlAJFlAJLAgFKmQIrmQJDAgErmwIhwQIyAgEsxgJQxgJXAgEmyQIfyQKHAQIBKMgCMMgCkQECASfLAivLAkYCAR3NAiHNAuYBAgEg0AIh0ALTAQIBHtMCjAHTAtgBAgEa2AEj3wEsAgFr4AEj5wEsAgFngQJ3gQKFAQIBWZsC6QGbAvMBAgFHoQInvgI3AgEtyQJIyQJaAgEpzQJVzQJtAgEjzQLVAc0C4wECASHQAlXQAqYBAgEf3QFO3QF6AgFu2gFP2gFZAgFs5QFO5QGVAQIBauIBT+IBZQIBaKECoQGhAqsBAgFGoQKPAaECkgECAUWkAi24AjgCAS6lAi+pAj0CAT6qAi+xAj0CATmyAi+yAtgBAgE0swIvtwI/AgEvpQJipQJlAgFDpQLJAaUC1wECAUGlAnKlAnUCAUCnAokBpwK3AQIBRK8CW68CYgIBO6wCiQGsArcBAgE9sgKRAbICpwECATayAmOyAoUBAgE1tQKJAbUCswECATOzApwBswKfAQIBMrMCkAGzApMBAgExswKAArMChwICATA=</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -502,17 +481,9 @@ Path.GetFileName(out_AttachmentUpload))]</InArgument>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="CloseWindow_2" sap:VirtualizedContainerService.HintSize="314,68" />
-      <sap2010:ViewStateData Id="Delete_3" sap:VirtualizedContainerService.HintSize="314,22" />
-      <sap2010:ViewStateData Id="Sequence_84" sap:VirtualizedContainerService.HintSize="336,254">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="RetryScope_3" sap:VirtualizedContainerService.HintSize="358,428" />
-      <sap2010:ViewStateData Id="Rethrow_1" sap:VirtualizedContainerService.HintSize="358,22" />
-      <sap2010:ViewStateData Id="Sequence_85" sap:VirtualizedContainerService.HintSize="380,534">
+      <sap2010:ViewStateData Id="Delete_4" sap:VirtualizedContainerService.HintSize="314,22" />
+      <sap2010:ViewStateData Id="Rethrow_1" sap:VirtualizedContainerService.HintSize="314,22" />
+      <sap2010:ViewStateData Id="Sequence_85" sap:VirtualizedContainerService.HintSize="336,316">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -536,18 +507,10 @@ Path.GetFileName(out_AttachmentUpload))]</InArgument>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="OpenBrowser_2" sap:VirtualizedContainerService.HintSize="754,5903" />
-      <sap2010:ViewStateData Id="CloseWindow_1" sap:VirtualizedContainerService.HintSize="314,68" />
-      <sap2010:ViewStateData Id="Delete_1" sap:VirtualizedContainerService.HintSize="314,22" />
-      <sap2010:ViewStateData Id="Sequence_72" sap:VirtualizedContainerService.HintSize="336,254">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="RetryScope_1" sap:VirtualizedContainerService.HintSize="754,428" />
-      <sap2010:ViewStateData Id="LogMessage_5" sap:VirtualizedContainerService.HintSize="740,91" />
-      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="776,7262">
+      <sap2010:ViewStateData Id="CloseWindow_1" sap:VirtualizedContainerService.HintSize="754,68" />
+      <sap2010:ViewStateData Id="Delete_1" sap:VirtualizedContainerService.HintSize="754,22" />
+      <sap2010:ViewStateData Id="LogMessage_5" sap:VirtualizedContainerService.HintSize="754,91" />
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="776,6964">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -555,7 +518,7 @@ Path.GetFileName(out_AttachmentUpload))]</InArgument>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="ScrapeEmail_1" sap:VirtualizedContainerService.HintSize="816,7342" />
+      <sap2010:ViewStateData Id="ScrapeEmail_1" sap:VirtualizedContainerService.HintSize="816,7044" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>

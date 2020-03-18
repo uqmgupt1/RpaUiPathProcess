@@ -8,6 +8,7 @@
  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
  xmlns:scg="clr-namespace:System.Collections.Generic;assembly=mscorlib"
  xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=mscorlib"
+ xmlns:ss="clr-namespace:System.Security;assembly=mscorlib"
  xmlns:ui="http://schemas.uipath.com/workflow/activities"
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <x:Members>
@@ -17,6 +18,7 @@
     <x:Property Name="in_IsBodyHtml" Type="InArgument(x:Boolean)" />
     <x:Property Name="in_Attachments" Type="InArgument(scg:IEnumerable(x:String))" />
     <x:Property Name="in_SenderName" Type="InArgument(x:String)" />
+    <x:Property Name="in_CredentialsAsset" Type="InArgument(x:String)" />
   </x:Members>
   <mva:VisualBasic.Settings>
     <x:Null />
@@ -69,16 +71,34 @@
       <AssemblyReference>System.ValueTuple</AssemblyReference>
       <AssemblyReference>System.ComponentModel.Composition</AssemblyReference>
       <AssemblyReference>Microsoft.VisualStudio.Services.Common</AssemblyReference>
+      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence DisplayName="SendSmtpMessage" sap2010:WorkflowViewState.IdRef="Sequence_4">
     <Sequence.Variables>
       <Variable x:TypeArguments="x:Int32" Default="120000" Name="EMAIL_TIMEOUT" />
+      <Variable x:TypeArguments="x:String" Name="username" />
+      <Variable x:TypeArguments="x:String" Name="password" />
     </Sequence.Variables>
     <If Condition="[in_EmailRecipients = &quot;;&quot;]" DisplayName="If no recipients" sap2010:WorkflowViewState.IdRef="If_1">
       <If.Then>
         <Throw DisplayName="Throw no recipients" Exception="[New System.Exception(&quot;No recipients to email report to.&quot;)]" sap2010:WorkflowViewState.IdRef="Throw_1" />
       </If.Then>
+    </If>
+    <If Condition="[in_CredentialsAsset IsNot Nothing]" DisplayName="If credentials specified">
+      <If.Then>
+        <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke GetAppCredentials workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_1" UnSafe="False" WorkflowFileName="Framework\GetAppCredentials.xaml">
+          <ui:InvokeWorkflowFile.Arguments>
+            <InArgument x:TypeArguments="x:String" x:Key="in_Domain" />
+            <InArgument x:TypeArguments="x:String" x:Key="in_Host">uq.edu.au</InArgument>
+            <InArgument x:TypeArguments="x:String" x:Key="in_Credential">[in_CredentialsAsset]</InArgument>
+            <OutArgument x:TypeArguments="x:String" x:Key="out_Username">[username]</OutArgument>
+            <OutArgument x:TypeArguments="ss:SecureString" x:Key="out_Password" />
+            <OutArgument x:TypeArguments="x:String" x:Key="out_Plaintext">[password]</OutArgument>
+          </ui:InvokeWorkflowFile.Arguments>
+        </ui:InvokeWorkflowFile>
+      </If.Then>
+      <sap2010:WorkflowViewState.IdRef>If_4</sap2010:WorkflowViewState.IdRef>
     </If>
     <While DisplayName="While sending hasn't reached max timespan" sap2010:WorkflowViewState.IdRef="While_1">
       <While.Variables>
@@ -92,14 +112,14 @@
             <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Trace" Message="[&quot;Sending &quot; + in_Subject + &quot; to &quot; + in_EmailRecipients]" />
             <If Condition="[in_IsBodyHtml]" sap2010:WorkflowViewState.IdRef="If_2">
               <If.Then>
-                <ui:SendMail Bcc="{x:Null}" Cc="{x:Null}" Email="{x:Null}" MailMessage="{x:Null}" Password="{x:Null}" TimeoutMS="{x:Null}" AttachmentsCollection="[in_Attachments]" Body="[in_MessageBody]" DisplayName="Send SMTP Mail Message" EnableSSL="True" From="noreply@uq.edu.au" sap2010:WorkflowViewState.IdRef="SendMail_1" IsBodyHtml="True" Name="[in_SenderName]" Port="587" SecureConnection="None" Server="smtp.uq.edu.au" Subject="[in_Subject]" To="[in_EmailRecipients]">
+                <ui:SendMail Bcc="{x:Null}" Cc="{x:Null}" MailMessage="{x:Null}" TimeoutMS="{x:Null}" AttachmentsCollection="[in_Attachments]" Body="[in_MessageBody]" DisplayName="Send SMTP Mail Message" Email="[username]" EnableSSL="True" From="noreply@uq.edu.au" sap2010:WorkflowViewState.IdRef="SendMail_1" IsBodyHtml="True" Name="[in_SenderName]" Password="[password]" Port="587" SecureConnection="None" Server="smtp.uq.edu.au" Subject="[in_Subject]" To="[in_EmailRecipients]">
                   <ui:SendMail.Files>
                     <scg:List x:TypeArguments="InArgument(x:String)" Capacity="0" />
                   </ui:SendMail.Files>
                 </ui:SendMail>
               </If.Then>
               <If.Else>
-                <ui:SendMail Bcc="{x:Null}" Cc="{x:Null}" Email="{x:Null}" MailMessage="{x:Null}" Password="{x:Null}" TimeoutMS="{x:Null}" AttachmentsCollection="[in_Attachments]" Body="[in_MessageBody]" DisplayName="Send SMTP Mail Message" EnableSSL="True" From="noreply@uq.edu.au" sap2010:WorkflowViewState.IdRef="SendMail_2" IsBodyHtml="False" Name="[in_SenderName]" Port="587" SecureConnection="None" Server="smtp.uq.edu.au" Subject="[in_Subject]" To="[in_EmailRecipients]">
+                <ui:SendMail Bcc="{x:Null}" Cc="{x:Null}" MailMessage="{x:Null}" TimeoutMS="{x:Null}" AttachmentsCollection="[in_Attachments]" Body="[in_MessageBody]" DisplayName="Send SMTP Mail Message" Email="[username]" EnableSSL="True" From="noreply@uq.edu.au" sap2010:WorkflowViewState.IdRef="SendMail_2" IsBodyHtml="False" Name="[in_SenderName]" Password="[password]" Port="587" SecureConnection="None" Server="smtp.uq.edu.au" Subject="[in_Subject]" To="[in_EmailRecipients]">
                   <ui:SendMail.Files>
                     <scg:List x:TypeArguments="InArgument(x:String)" Capacity="0" />
                   </ui:SendMail.Files>
@@ -156,12 +176,14 @@
         </TryCatch.Finally>
       </TryCatch>
     </While>
-    <sads:DebugSymbol.Symbol>d2pDOlxVc2Vyc1xzcGFtaXNoXERvY3VtZW50c1xVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQmlsbGluZ01pbGVzdG9uZVxNYWlsXFNlbmRTbXRwTWVzc2FnZS54YW1sNUoDoAEOAgEBTDNMOwIBAk4FUgoCAUhTBZ4BDQIBA04TTjkCAUlQCVCwAQIBS1U3VT0CAQVWNVY8AgEEWQedARICAQhYGFghAgEGUDxQgwECAUxbC3UWAgEgjQELmwEQAgEUfQ+IARoCAQlcDVzLAQIBRF0NbBICASVtDXQWAgEhjQEZjQFDAgEVjwEPmQEaAgEZfhF+lwECARF/EX9vAgEPgAERhwEaAgEKXHtcyAECAUVdG10sAgEmXxFjHwIBNmYRah8CAShyOXI+AgEkbzpvQwIBIpABEZcBGgIBHJgBEZgB3AECARp+f36UAQIBEn84f0ICARCFATuFAU0CAQ2CATyCAUUCAQtfxwNf3QMCAUJfogFftAECAUBfugFfzAECAT5ftQNfwwMCATxfiAJfmwICATtf9wJf/AICATpfnANfrAMCATlf4AJf8QICATdmyANm3gMCATRmogFmtAECATJmugFmzAECATBmtgNmxAMCAS5miAJmmwICAS1m+AJm/QICASxmnQNmrQMCAStm4QJm8gICASmVAT2VAUICAR+SAT6SAUcCAR2YAUKYAa8BAgEb</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d2pDOlxVc2Vyc1xzcGFtaXNoXERvY3VtZW50c1xVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQmlsbGluZ01pbGVzdG9uZVxNYWlsXFNlbmRTbXRwTWVzc2FnZS54YW1sQU0DtAEOAgEBTzNPOwIBAlMFVwoCAVxYBWYKAgFQZwWyAQ0CAQNTE1M5AgFdVQlVsAECAV9YE1g4AgFRWgljIQIBU2k3aT0CAQVqNWo8AgEEbQexARICAQhsGGwhAgEGVTxVgwECAWBeSl5fAgFaX0pfVAIBWF1EXU0CAVdhS2FVAgFVWsIBWuQBAgFUbwuJARYCASChAQuvARACARSRAQ+cARoCAQlwDXDLAQIBTHENgAESAgElgQENiAEWAgEhoQEZoQFDAgEVowEPrQEaAgEZkgERkgGXAQIBEZMBEZMBbwIBD5QBEZsBGgIBCnB7cMgBAgFNcRtxLAIBJnMRdx8CATp6EX4fAgEohgE5hgE+AgEkgwE6gwFDAgEipAERqwEaAgEcrAERrAHcAQIBGpIBf5IBlAECARKTATiTAUICARCZATuZAU0CAQ2WATyWAUUCAQtzywNz4QMCAUpzfXOPAQIBSHOVAXOnAQIBRnO5A3PHAwIBRHP2AXOJAgIBQ3PTAXPfAQIBQXP7AnOAAwIBQHOgA3OwAwIBP3PpAnP1AgIBPXPOAnPfAgIBO3rMA3riAwIBOHp9eo8BAgE2epUBeqcBAgE0eroDesgDAgEyevYBeokCAgExetMBet8BAgEvevwCeoEDAgEueqEDerEDAgEteuoCevYCAgEres8CeuACAgEpqQE9qQFCAgEfpgE+pgFHAgEdrAFCrAGvAQIBGw==</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
       <sap2010:ViewStateData Id="Throw_1" sap:VirtualizedContainerService.HintSize="200,22" />
-      <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="464,208" />
+      <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="719,208" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_1" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="If_4" sap:VirtualizedContainerService.HintSize="719,235" />
       <sap2010:ViewStateData Id="LogMessage_1" sap:VirtualizedContainerService.HintSize="653,91" />
       <sap2010:ViewStateData Id="SendMail_1" sap:VirtualizedContainerService.HintSize="314,145" />
       <sap2010:ViewStateData Id="SendMail_2" sap:VirtualizedContainerService.HintSize="314,145" />
@@ -184,10 +206,10 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Catch`1_1" sap:VirtualizedContainerService.HintSize="400,446">
+      <sap2010:ViewStateData Id="Catch`1_1" sap:VirtualizedContainerService.HintSize="679,21">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
             <x:Boolean x:Key="IsPinned">False</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
@@ -202,8 +224,8 @@
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="If_3" sap:VirtualizedContainerService.HintSize="464,394" />
-      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="414,608" />
-      <sap2010:ViewStateData Id="While_1" sap:VirtualizedContainerService.HintSize="464,766">
+      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="693,875" />
+      <sap2010:ViewStateData Id="While_1" sap:VirtualizedContainerService.HintSize="719,1033">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -211,14 +233,14 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_4" sap:VirtualizedContainerService.HintSize="486,1138">
+      <sap2010:ViewStateData Id="Sequence_4" sap:VirtualizedContainerService.HintSize="741,1680">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="SendSmtpMessage_1" sap:VirtualizedContainerService.HintSize="526,1218" />
+      <sap2010:ViewStateData Id="SendSmtpMessage_1" sap:VirtualizedContainerService.HintSize="781,1760" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
