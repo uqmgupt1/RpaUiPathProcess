@@ -58,6 +58,8 @@
       <AssemblyReference>UiPath.Excel</AssemblyReference>
       <AssemblyReference>UiPath.Mail</AssemblyReference>
       <AssemblyReference>System.Data.DataSetExtensions</AssemblyReference>
+      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
+      <AssemblyReference>System.ComponentModel.Composition</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence DisplayName="Create Queue Items" sap2010:WorkflowViewState.IdRef="Sequence_3">
@@ -68,22 +70,42 @@
       <Variable x:TypeArguments="sd:DataTable" Name="InputDataTable" />
       <Variable x:TypeArguments="sd:DataTable" Name="uniqueValuesDT" />
       <Variable x:TypeArguments="x:Int32" Name="counter" />
+      <Variable x:TypeArguments="x:String" Name="driveLetter" />
+      <Variable x:TypeArguments="x:String" Name="rootDrive" />
     </Sequence.Variables>
-    <ui:GetRobotAsset TimeoutMS="{x:Null}" sap2010:Annotation.AnnotationText="SA_Sinet_InputFileName" AssetName="SA_Sinet_InputFileName" DisplayName="Get Asset" sap2010:WorkflowViewState.IdRef="GetRobotAsset_1">
+    <ui:GetRobotAsset TimeoutMS="{x:Null}" sap2010:Annotation.AnnotationText="SA_EnrollDrop_InputFileName" AssetName="SA_EnrollDrop_InputFileName" DisplayName="Get Asset" sap2010:WorkflowViewState.IdRef="GetRobotAsset_1">
       <ui:GetRobotAsset.Value>
         <OutArgument x:TypeArguments="x:String">[InputFileName]</OutArgument>
       </ui:GetRobotAsset.Value>
     </ui:GetRobotAsset>
-    <ui:GetRobotAsset TimeoutMS="{x:Null}" sap2010:Annotation.AnnotationText="SA_Sinet_InputFilePath" AssetName="SA_Sinet_InputFilePath" DisplayName="Get Asset" sap2010:WorkflowViewState.IdRef="GetRobotAsset_2">
+    <ui:GetRobotAsset TimeoutMS="{x:Null}" sap2010:Annotation.AnnotationText="SA_EnrollDrop_InputFilePath" AssetName="SA_EnrollDrop_InputFilePath" DisplayName="Get Asset" sap2010:WorkflowViewState.IdRef="GetRobotAsset_2">
       <ui:GetRobotAsset.Value>
         <OutArgument x:TypeArguments="x:String">[InputFilePath]</OutArgument>
       </ui:GetRobotAsset.Value>
     </ui:GetRobotAsset>
-    <ui:GetRobotAsset TimeoutMS="{x:Null}" sap2010:Annotation.AnnotationText="SA_Sinet_InputFileSheetName" AssetName="SA_Sinet_InputFileSheetName" DisplayName="Get Asset" sap2010:WorkflowViewState.IdRef="GetRobotAsset_3">
+    <ui:GetRobotAsset TimeoutMS="{x:Null}" sap2010:Annotation.AnnotationText="SA_EnrollDrop_InputFileSheetName" AssetName="SA_EnrollDrop_InputFileSheetName" DisplayName="Get Asset" sap2010:WorkflowViewState.IdRef="GetRobotAsset_3">
       <ui:GetRobotAsset.Value>
         <OutArgument x:TypeArguments="x:String">[InputFileSheetName]</OutArgument>
       </ui:GetRobotAsset.Value>
     </ui:GetRobotAsset>
+    <Assign sap2010:WorkflowViewState.IdRef="Assign_4">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">[rootDrive]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">[Path.GetPathRoot(InputFilePath).Replace("{0}", "").TrimEnd("\"c)]</InArgument>
+      </Assign.Value>
+    </Assign>
+    <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke MountFileServer workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_1" UnSafe="False" WorkflowFileName="MountFileServer.xaml">
+      <ui:InvokeWorkflowFile.Arguments>
+        <InArgument x:TypeArguments="x:String" x:Key="in_Credentials">SSO_rpa00002</InArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="in_MappedDrive">[rootDrive]</InArgument>
+        <OutArgument x:TypeArguments="x:String" x:Key="out_DriveLetter">[driveLetter]</OutArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="in_DriveLetter">
+          <Literal x:TypeArguments="x:String" Value="" />
+        </InArgument>
+      </ui:InvokeWorkflowFile.Arguments>
+    </ui:InvokeWorkflowFile>
     <ui:ReadRange Range="{x:Null}" AddHeaders="True" DataTable="[InputDataTable]" DisplayName="Read Range" sap2010:WorkflowViewState.IdRef="ReadRange_1" SheetName="[InputFileSheetName]" WorkbookPath="[InputFilePath + &quot;\&quot; + InputFileName]" />
     <Assign sap2010:WorkflowViewState.IdRef="Assign_1">
       <Assign.To>
@@ -143,7 +165,7 @@
       </ui:ForEachRow.Body>
     </ui:ForEachRow>
     <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_3" Level="Info" Message="[counter.ToString + &quot; queue item(s) added&quot;]" />
-    <sads:DebugSymbol.Symbol>d1RDOlxVc2Vyc1x1cXNkZWJiZVxEb2N1bWVudHNcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcU0FfQ3JlYXRlUXVldWVJdGVtc1xNYWluLnhhbWwlPwOTAQ4CAQFIBUwYAgEwTQVRGAIBLFIFVhgCAShXBVf8AQIBIFgFXw4CARtgBWcOAgEXaAWQARUCAQWRAQWRAawBAgECSjFKQAIBMkhxSIkBAgExTzFPQAIBLk1xTYkBAgEtVDFURQIBKlJ2UpMBAgEpV0BXUgIBJlekAVe6AQIBJFfIAVf5AQIBIV00XWsCAR5aNVpFAgEcZS9lMAIBGmIwYjkCARhoNmhIAgEVbguNARYCAQaRAXKRAakBAgEDbw2MARgCAQdxEYABHAIBCogBFYgB2QECAQhyE3YlAgESdxN30gECARB4E38cAgELiAGDAYgB1gECAQly3AFyiQICARRywQFy0QECARN3gAF3zwECARF9PX1KAgEOej56RwIBDA==</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d19DOlxVc2Vyc1x1cXNkZWJiZVxEb2N1bWVudHNcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcU0FfRW5yb2xsRHJvcF9DcmVhdGVRdWV1ZUl0ZW1zXE1haW4ueGFtbC5BA6kBDgIBAUwFUBgCATxRBVUYAgE4VgVaGAIBNFsFYg4CATBjBWwdAgEobQVt/AECASBuBXUOAgEbdgV9DgIBF34FpgEVAgEFpwEFpwGsAQIBAk4xTkACAT5MdkyTAQIBPVMxU0ACATpRdlGTAQIBOVgxWEUCATZWe1adAQIBNWAwYHICATNdMV08AgExZ0lnVgIBLmVHZVMCAS1pC2k6AgEsZkdmUgIBKmO8AWPSAQIBKW1AbVICASZtpAFtugECASRtyAFt+QECASFzNHNrAgEecDVwRQIBHHsvezACARp4MHg5AgEYfjZ+SAIBFYQBC6MBFgIBBqcBcqcBqQECAQOFAQ2iARgCAQeHARGWARwCAQqeARWeAdkBAgEIiAETjAElAgESjQETjQHSAQIBEI4BE5UBHAIBC54BgwGeAdYBAgEJiAHcAYgBiQICARSIAcEBiAHRAQIBE40BgAGNAc8BAgERkwE9kwFKAgEOkAE+kAFHAgEM</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -161,13 +183,15 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="GetRobotAsset_3" sap:VirtualizedContainerService.HintSize="470,49">
+      <sap2010:ViewStateData Id="GetRobotAsset_3" sap:VirtualizedContainerService.HintSize="470,64">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsAnnotationDocked">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Assign_4" sap:VirtualizedContainerService.HintSize="470,60" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_1" sap:VirtualizedContainerService.HintSize="470,87" />
       <sap2010:ViewStateData Id="ReadRange_1" sap:VirtualizedContainerService.HintSize="470,87" />
       <sap2010:ViewStateData Id="Assign_1" sap:VirtualizedContainerService.HintSize="470,60" />
       <sap2010:ViewStateData Id="Assign_2" sap:VirtualizedContainerService.HintSize="470,60" />
@@ -200,14 +224,14 @@
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="ForEachRow_1" sap:VirtualizedContainerService.HintSize="470,876" />
       <sap2010:ViewStateData Id="LogMessage_3" sap:VirtualizedContainerService.HintSize="470,91" />
-      <sap2010:ViewStateData Id="Sequence_3" sap:VirtualizedContainerService.HintSize="492,1725">
+      <sap2010:ViewStateData Id="Sequence_3" sap:VirtualizedContainerService.HintSize="492,1967">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Main_1" sap:VirtualizedContainerService.HintSize="532,1845" />
+      <sap2010:ViewStateData Id="Main_1" sap:VirtualizedContainerService.HintSize="532,2087" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
