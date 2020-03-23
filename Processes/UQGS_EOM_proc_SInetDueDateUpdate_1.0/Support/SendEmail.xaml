@@ -12,10 +12,10 @@
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <x:Members>
     <x:Property Name="in_Config" Type="InArgument(scg:Dictionary(x:String, x:Object))" />
-    <x:Property Name="receiverAddress" Type="InArgument(x:String)" />
-    <x:Property Name="body" Type="InArgument(x:String)" />
-    <x:Property Name="subject" Type="InArgument(x:String)" />
-    <x:Property Name="attachmentPath" Type="InArgument(x:String)" />
+    <x:Property Name="in_AttachmentPath" Type="InArgument(x:String)" />
+    <x:Property Name="in_Subject" Type="InArgument(x:String)" />
+    <x:Property Name="in_Body" Type="InArgument(x:String)" />
+    <x:Property Name="in_ReceiverAddress" Type="InArgument(x:String)" />
   </x:Members>
   <mva:VisualBasic.Settings>
     <x:Null />
@@ -74,35 +74,59 @@
       <AssemblyReference>System.ComponentModel.Composition</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
-  <Sequence sap2010:Annotation.AnnotationText="This file will send and email to the specified recipient. If attachment path is not empty it will attach file using full file path and then delete the file.&#xD;&#xA;Inputs:&#xD;&#xA;receiverAddress&#xD;&#xA;body&#xD;&#xA;subject&#xD;&#xA;attachmentPath - full file path" DisplayName="Send Mail" sap2010:WorkflowViewState.IdRef="Sequence_3">
+  <Sequence sap2010:Annotation.AnnotationText="This file will send and email to the specified recipient. If attachment path is not empty it will attach file using full file path and then delete the file.&#xA;Inputs:&#xA;receiverAddress&#xA;body&#xA;subject&#xA;attachmentPath - full file path" DisplayName="Send Mail" sap2010:WorkflowViewState.IdRef="Sequence_3">
     <Sequence.Variables>
-      <Variable x:TypeArguments="x:String" Default="[in_Config(&quot;smtpServer&quot;).ToString]" Name="smtpServer" />
-      <Variable x:TypeArguments="x:Int32" Default="[Convert.ToInt32 (in_Config(&quot;smtpPort&quot;).ToString)]" Name="smtpPort" />
-      <Variable x:TypeArguments="x:String" Default="[in_Config(&quot;Environment&quot;).ToString]" Name="environment" />
+      <Variable x:TypeArguments="x:String" Name="smtpServer" />
+      <Variable x:TypeArguments="x:Int32" Name="smtpPort" />
+      <Variable x:TypeArguments="x:String" Name="environment" />
     </Sequence.Variables>
+    <Assign DisplayName="Assign smtpServer" sap2010:WorkflowViewState.IdRef="Assign_1">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">[smtpServer]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">[in_Config("smtpServer").ToString]</InArgument>
+      </Assign.Value>
+    </Assign>
+    <Assign DisplayName="Assign smtpPort" sap2010:WorkflowViewState.IdRef="Assign_2">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:Int32">[smtpPort]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:Int32">[Convert.ToInt32 (in_Config("smtpPort").ToString)]</InArgument>
+      </Assign.Value>
+    </Assign>
+    <Assign DisplayName="Assign environment" sap2010:WorkflowViewState.IdRef="Assign_3">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">[environment]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">[in_Config("Environment").ToString]</InArgument>
+      </Assign.Value>
+    </Assign>
     <TryCatch DisplayName="Try Catch - Send Mail" sap2010:WorkflowViewState.IdRef="TryCatch_1">
       <TryCatch.Try>
         <Sequence DisplayName="Try - SendMail" sap2010:WorkflowViewState.IdRef="Sequence_1">
-          <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;Sending email to: &quot; + receiverAddress]" />
-          <If Condition="[attachmentPath IS NOTHING]" DisplayName="If no attachment" sap2010:WorkflowViewState.IdRef="If_1">
+          <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;Sending email to: &quot; + in_ReceiverAddress]" />
+          <If Condition="[File.Exists(in_AttachmentPath)]" DisplayName="If no attachment" sap2010:WorkflowViewState.IdRef="If_1">
             <If.Then>
-              <ui:SendMail Bcc="{x:Null}" Cc="{x:Null}" Email="{x:Null}" MailMessage="{x:Null}" Password="{x:Null}" TimeoutMS="{x:Null}" Body="[body]" DisplayName="Send SMTP Mail Message - No Attachment" EnableSSL="True" From="noreply@uq.edu.au" sap2010:WorkflowViewState.IdRef="SendMail_2" IsBodyHtml="False" Name="[&quot;UiPath RPA &quot; + environment + &quot; Host&quot;]" Port="[smtpPort]" SecureConnection="Auto" Server="[smtpServer]" Subject="[subject]" To="[receiverAddress]">
+              <Sequence DisplayName="false" sap2010:WorkflowViewState.IdRef="Sequence_4">
+                <ui:SendMail Bcc="{x:Null}" Cc="{x:Null}" Email="{x:Null}" MailMessage="{x:Null}" Password="{x:Null}" TimeoutMS="{x:Null}" Body="[in_Body]" DisplayName="Send SMTP Mail Message - Attachment" EnableSSL="True" From="noreply@uq.edu.au" sap2010:WorkflowViewState.IdRef="SendMail_1" IsBodyHtml="False" Name="[&quot;UiPath RPA &quot; + environment + &quot; Host&quot;]" Port="[smtpPort]" SecureConnection="Auto" Server="[smtpServer]" Subject="[in_Subject]" To="[in_ReceiverAddress]">
+                  <ui:SendMail.Files>
+                    <scg:List x:TypeArguments="InArgument(x:String)" Capacity="4">
+                      <InArgument x:TypeArguments="x:String">[in_AttachmentPath]</InArgument>
+                    </scg:List>
+                  </ui:SendMail.Files>
+                </ui:SendMail>
+                <ui:Delete ContinueOnError="{x:Null}" DisplayName="Delete image" sap2010:WorkflowViewState.IdRef="Delete_1" Path="[in_AttachmentPath]" />
+              </Sequence>
+            </If.Then>
+            <If.Else>
+              <ui:SendMail Bcc="{x:Null}" Cc="{x:Null}" Email="{x:Null}" MailMessage="{x:Null}" Password="{x:Null}" TimeoutMS="{x:Null}" Body="[in_Body]" DisplayName="Send SMTP Mail Message - No Attachment" EnableSSL="True" From="noreply@uq.edu.au" sap2010:WorkflowViewState.IdRef="SendMail_2" IsBodyHtml="False" Name="[&quot;UiPath RPA &quot; + environment + &quot; Host&quot;]" Port="[smtpPort]" SecureConnection="Auto" Server="[smtpServer]" Subject="[in_Subject]" To="[in_ReceiverAddress]">
                 <ui:SendMail.Files>
                   <scg:List x:TypeArguments="InArgument(x:String)" Capacity="4" />
                 </ui:SendMail.Files>
               </ui:SendMail>
-            </If.Then>
-            <If.Else>
-              <Sequence DisplayName="false" sap2010:WorkflowViewState.IdRef="Sequence_4">
-                <ui:SendMail Bcc="{x:Null}" Cc="{x:Null}" Email="{x:Null}" MailMessage="{x:Null}" Password="{x:Null}" TimeoutMS="{x:Null}" Body="[body]" DisplayName="Send SMTP Mail Message - Attachment" EnableSSL="True" From="noreply@uq.edu.au" sap2010:WorkflowViewState.IdRef="SendMail_1" IsBodyHtml="False" Name="[&quot;UiPath RPA &quot; + environment + &quot; Host&quot;]" Port="[smtpPort]" SecureConnection="Auto" Server="[smtpServer]" Subject="[subject]" To="[receiverAddress]">
-                  <ui:SendMail.Files>
-                    <scg:List x:TypeArguments="InArgument(x:String)" Capacity="4">
-                      <InArgument x:TypeArguments="x:String">[attachmentPath]</InArgument>
-                    </scg:List>
-                  </ui:SendMail.Files>
-                </ui:SendMail>
-                <ui:Delete ContinueOnError="{x:Null}" DisplayName="Delete image" sap2010:WorkflowViewState.IdRef="Delete_1" Path="[attachmentPath]" />
-              </Sequence>
             </If.Else>
           </If>
           <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[&quot;Email successfully sent!&quot;]" />
@@ -123,12 +147,14 @@
         </Catch>
       </TryCatch.Catches>
     </TryCatch>
-    <sads:DebugSymbol.Symbol>d2hEOlxDbGllbnRzXFVRXERFVlxScGFVaVBhdGhQcm9jZXNzXFByb2Nlc3Nlc1xVUUdTX0VPTV9wcm9jX1NJbmV0RHVlRGF0ZVVwZGF0ZV8xLjBcU3VwcG9ydFxTZW5kRW1haWwueGFtbCdNA38OAgEBTzRPYgIBBVAzUHECAQRRNFFjAgECUwV9EAIBB1UJbRQCARB1DXkYAgEIVgtWrwECAThXC2sQAgETbAtsowECARF2D3alAQIBDncPd7MBAgELeA941gECAQlWeFasAQIBOVcZVzYCARRZD10dAgEqYA9pGgIBFmx4bKABAgESdn12ogECAQ93fXewAQIBDHg4eKkBAgEKWdEDWeQDAgE2WY8BWZcBAgE0WcIDWc0DAgEyWeMBWfYBAgExWf8CWYsDAgEvWasDWbkDAgEtWbwCWfkCAgErYRFnHwIBGmgRaJcBAgEXYdADYeMDAgEoZD5kTgIBJmGRAWGZAQIBJGHBA2HMAwIBImHiAWH1AQIBIWH+AmGKAwIBH2GqA2G4AwIBHWG7AmH4AgIBG2iCAWiUAQIBGA==</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d2BDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcVVFHU19FT01fcHJvY19TSW5ldER1ZURhdGVVcGRhdGVfMS4wXFN1cHBvcnRcU2VuZEVtYWlsLnhhbWwtTQOXAQ4CAQFTBVoOAgE+WwViDgIBOmMFag4CATVrBZUBEAIBAlgwWFICAUFVMVU9AgE/YC9gYQIBPV0wXToCATtoMGhTAgE4ZTFlPgIBNm0JhQEUAgELjQENkQEYAgEDbgtusgECATJvC4MBEAIBDoQBC4QBowECAQyOAQ+OAaUBAgEJjwEPjwGzAQIBBpABD5AB1gECAQRueG6vAQIBM28ZbzsCAQ9xD3oaAgEefQ+BAR0CARCEAXiEAaABAgENjgF9jgGiAQIBCo8BfY8BsAECAQeQATiQAakBAgEFchF4HwIBInkReZoBAgEffdcDfe0DAgEcfY8BfZoBAgEafcUDfdMDAgEYfeYBffkBAgEXfYIDfY4DAgEVfa4DfbwDAgETfb8CffwCAgERctYDcuwDAgEwdT51UQIBLnKRAXKcAQIBLHLEA3LSAwIBKnLlAXL4AQIBKXKBA3KNAwIBJ3KtA3K7AwIBJXK+AnL7AgIBI3mCAXmXAQIBIA==</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
+      <sap2010:ViewStateData Id="Assign_1" sap:VirtualizedContainerService.HintSize="715,60" />
+      <sap2010:ViewStateData Id="Assign_2" sap:VirtualizedContainerService.HintSize="715,60" />
+      <sap2010:ViewStateData Id="Assign_3" sap:VirtualizedContainerService.HintSize="715,60" />
       <sap2010:ViewStateData Id="LogMessage_1" sap:VirtualizedContainerService.HintSize="675,91" />
-      <sap2010:ViewStateData Id="SendMail_2" sap:VirtualizedContainerService.HintSize="314,145" />
       <sap2010:ViewStateData Id="SendMail_1" sap:VirtualizedContainerService.HintSize="314,145" />
       <sap2010:ViewStateData Id="Delete_1" sap:VirtualizedContainerService.HintSize="314,22" />
       <sap2010:ViewStateData Id="Sequence_4" sap:VirtualizedContainerService.HintSize="336,331">
@@ -138,6 +164,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="SendMail_2" sap:VirtualizedContainerService.HintSize="314,145" />
       <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="675,479">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
@@ -173,7 +200,7 @@
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="715,1652" />
-      <sap2010:ViewStateData Id="Sequence_3" sap:VirtualizedContainerService.HintSize="737,1893">
+      <sap2010:ViewStateData Id="Sequence_3" sap:VirtualizedContainerService.HintSize="737,2193">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -181,7 +208,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Main_1" sap:VirtualizedContainerService.HintSize="777,1973">
+      <sap2010:ViewStateData Id="Main_1" sap:VirtualizedContainerService.HintSize="777,2273">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="ShouldExpandAll">True</x:Boolean>
