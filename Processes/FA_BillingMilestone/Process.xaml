@@ -17,15 +17,15 @@
     <x:Property Name="in_TransactionSubject" Type="InArgument(x:String)" />
     <x:Property Name="in_TransactionReceived" Type="InArgument(s:DateTime)" />
     <x:Property Name="in_TransactionFilename" Type="InArgument(x:String)" />
-    <x:Property Name="out_ProjectsUpdated" Type="OutArgument(x:Int32)" />
-    <x:Property Name="out_ProjectsSkipped" Type="OutArgument(x:Int32)" />
-    <x:Property Name="out_GrantorsUpdated" Type="OutArgument(x:Int32)" />
-    <x:Property Name="out_GrantorsSkipped" Type="OutArgument(x:Int32)" />
-    <x:Property Name="out_LinesUpdated" Type="OutArgument(x:Int32)" />
-    <x:Property Name="out_LinesSkipped" Type="OutArgument(x:Int32)" />
-    <x:Property Name="out_EventsUpdated" Type="OutArgument(x:Int32)" />
-    <x:Property Name="out_EventsSkipped" Type="OutArgument(x:Int32)" />
     <x:Property Name="in_TransactionItem" Type="InArgument(ui:QueueItem)" />
+    <x:Property Name="out_ProjectsUpdated" Type="OutArgument(x:Int32)" />
+    <x:Property Name="out_ProjectsTotal" Type="OutArgument(x:Int32)" />
+    <x:Property Name="out_GrantorsUpdated" Type="OutArgument(x:Int32)" />
+    <x:Property Name="out_GrantorsTotal" Type="OutArgument(x:Int32)" />
+    <x:Property Name="out_LinesUpdated" Type="OutArgument(x:Int32)" />
+    <x:Property Name="out_LinesTotal" Type="OutArgument(x:Int32)" />
+    <x:Property Name="out_EventsUpdated" Type="OutArgument(x:Int32)" />
+    <x:Property Name="out_EventsTotal" Type="OutArgument(x:Int32)" />
   </x:Members>
   <mva:VisualBasic.Settings>
     <x:Null />
@@ -58,6 +58,7 @@
       <x:String>System.Net</x:String>
       <x:String>Microsoft.VisualBasic.CompilerServices</x:String>
       <x:String>System.Web.Mail</x:String>
+      <x:String>UiPath.Mail</x:String>
     </sco:Collection>
   </TextExpression.NamespacesForImplementation>
   <TextExpression.ReferencesForImplementation>
@@ -85,10 +86,11 @@
       <AssemblyReference>System.Collections.Immutable</AssemblyReference>
       <AssemblyReference>UiPath.Studio.Plugin.Workflow</AssemblyReference>
       <AssemblyReference>System.Web</AssemblyReference>
-      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
+      <AssemblyReference>UiPath.Mail.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.Mail</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
-  <Sequence sap2010:Annotation.AnnotationText="Description: In this file all other process specific files will be invoked. If an application exception occurs, the current transaction can be retried. If a BRE is thrown, the transaction will be skipped. Can be a flowchart or sequence. " DisplayName="ProcessTransaction" sap2010:WorkflowViewState.IdRef="Sequence_1">
+  <Sequence sap2010:Annotation.AnnotationText="Description: In this file all other process specific files will be invoked. If an application exception occurs, the current transaction can be retried. If a BRE is thrown, the transaction will be skipped. Can be a flowchart or sequence. &#xA;&#xA;Scrapes data from the Transaction Message, Then enters UniFi and updates the Billing Milestone items.&#xA;&#xA;Inputs:&#xA;in_Config &lt;Dictionary&lt;String, String&gt;&gt;.&#xA;in_TransactionMessage &lt;MailMessage&gt;.&#xA;in_TransactionSubject &lt;String&gt;.&#xA;in_TransactionReceived &lt;DateTime&gt;.&#xA;in_TransactionFilename &lt;String&gt;.&#xA;in_TransactionItem &lt;QueueItem&gt;.&#xA;&#xA;Outputs:&#xA;out_ProjectsUpdated &lt;Integer&gt;: &#xA;out_ProjectsTotal &lt;Integer&gt;.&#xA;out_GrantorsUpdated &lt;Integer&gt;: &#xA;out_GrantorsTotal &lt;Integer&gt;.&#xA;out_LinesUpdated &lt;Integer&gt;: &#xA;out_LinesTotal &lt;Integer&gt;.&#xA;out_EventsUpdated &lt;Integer&gt;: &#xA;out_EventsTotal &lt;Integer&gt;.&#xA;&#xA;Pre Condition: NA&#xA;Post Condition: NA" DisplayName="ProcessTransaction" sap2010:WorkflowViewState.IdRef="Sequence_1">
     <Sequence.Variables>
       <Variable x:TypeArguments="x:Boolean" Name="milestoneApproved" />
       <Variable x:TypeArguments="x:String" Name="milestoneAttachmentUpload" />
@@ -96,16 +98,31 @@
       <Variable x:TypeArguments="x:Boolean" Name="milestoneDetailsChanged" />
     </Sequence.Variables>
     <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;Start Process.xaml, got &quot; + in_TransactionItem.Reference]" />
-    <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke ScrapeEmail workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_1" UnSafe="False" WorkflowFileName="Mail\ScrapeEmail.xaml">
-      <ui:InvokeWorkflowFile.Arguments>
-        <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)" x:Key="in_Config">[in_Config]</InArgument>
-        <InArgument x:TypeArguments="snm:MailMessage" x:Key="in_ResponseMessage">[in_TransactionMessage]</InArgument>
-        <OutArgument x:TypeArguments="x:Boolean" x:Key="out_ResponseApproved">[milestoneApproved]</OutArgument>
-        <OutArgument x:TypeArguments="x:String" x:Key="out_RejectionDetails">[milestoneRejectionDetails]</OutArgument>
-        <OutArgument x:TypeArguments="x:String" x:Key="out_AttachmentUpload">[milestoneAttachmentUpload]</OutArgument>
-        <OutArgument x:TypeArguments="x:Boolean" x:Key="out_DetailsChanged">[milestoneDetailsChanged]</OutArgument>
-      </ui:InvokeWorkflowFile.Arguments>
-    </ui:InvokeWorkflowFile>
+    <TryCatch DisplayName="Try Catch" sap2010:WorkflowViewState.IdRef="TryCatch_1">
+      <TryCatch.Try>
+        <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke ScrapeEmail workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_1" UnSafe="False" WorkflowFileName="Mail\ScrapeEmail.xaml">
+          <ui:InvokeWorkflowFile.Arguments>
+            <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)" x:Key="in_Config">[in_Config]</InArgument>
+            <InArgument x:TypeArguments="snm:MailMessage" x:Key="in_ResponseMessage">[in_TransactionMessage]</InArgument>
+            <OutArgument x:TypeArguments="x:Boolean" x:Key="out_ResponseApproved">[milestoneApproved]</OutArgument>
+            <OutArgument x:TypeArguments="x:Boolean" x:Key="out_DetailsChanged">[milestoneDetailsChanged]</OutArgument>
+            <OutArgument x:TypeArguments="x:String" x:Key="out_RejectionDetails">[milestoneRejectionDetails]</OutArgument>
+            <OutArgument x:TypeArguments="x:String" x:Key="out_AttachmentUpload">[milestoneAttachmentUpload]</OutArgument>
+            <InArgument x:TypeArguments="x:String" x:Key="in_ResponseReference">[in_TransactionItem.Reference]</InArgument>
+          </ui:InvokeWorkflowFile.Arguments>
+        </ui:InvokeWorkflowFile>
+      </TryCatch.Try>
+      <TryCatch.Catches>
+        <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch`1_1">
+          <ActivityAction x:TypeArguments="s:Exception">
+            <ActivityAction.Argument>
+              <DelegateInArgument x:TypeArguments="s:Exception" Name="exception" />
+            </ActivityAction.Argument>
+            <Throw DisplayName="Throw scrape error" Exception="[New ApplicationException(String.Format(in_Config(&quot;SystemError ScrapeError&quot;), exception.Message, exception.Source), exception)]" sap2010:WorkflowViewState.IdRef="Throw_7" />
+          </ActivityAction>
+        </Catch>
+      </TryCatch.Catches>
+    </TryCatch>
     <If Condition="[Not milestoneApproved]" DisplayName="If response is no" sap2010:WorkflowViewState.IdRef="If_6">
       <If.Then>
         <Throw DisplayName="Throw milestone not approved" Exception="[New BusinessRuleException(String.Format(in_Config(&quot;RuleException NotApproved&quot;), in_TransactionItem.SpecificContent(&quot;Contract&quot;).ToString, in_TransactionItem.SpecificContent(&quot;Milestone ID&quot;).ToString, in_Config(&quot;Network Share Email Store&quot;)))]" sap2010:WorkflowViewState.IdRef="Throw_2" />
@@ -180,12 +197,22 @@
         </ui:CommentOut.Body>
       </ui:CommentOut>
     </Sequence>
-    <sads:DebugSymbol.Symbol>d11DOlxVc2Vyc1xzcGFtaXNoXERvY3VtZW50c1xVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQmlsbGluZ01pbGVzdG9uZVxQcm9jZXNzLnhhbWwSWwO4AQ4CAQFiBWK8AQIBGGMFbB0CAQptBXEKAgEFcgW2ARACAQJicmK5AQIBGWZSZmkCARZoTmhpAgEUaU5paQIBEmVcZWcCARBnT2diAgEOY7gBY88BAgENak1qZgIBC20TbSwCAQZvCW+MAwIBCHMHc2ECAQR0B7UBFwIBA29Fb98CAgEJ</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d0VDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQmlsbGluZ01pbGVzdG9uZVxQcm9jZXNzLnhhbWwWXQPJAQ4CAQFkBWS8AQIBHGUFfRACAQp+BYIBCgIBBYMBBccBEAIBAmRyZLkBAgEdZwlxIQIBDXkNefcBAgELfhN+LAIBBoABCYABjAMCAQiEAQeEAWECAQSFAQfGARcCAQNvUW9vAgEbalZqbQIBGW1SbW0CARduUm5tAgEVaWBpawIBE2tTa2YCARFnvAFn0wECARBsUWxqAgEOeT95ygECAQyAAUWAAd8CAgEJ</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
       <sap2010:ViewStateData Id="LogMessage_1" sap:VirtualizedContainerService.HintSize="464,91" />
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_1" sap:VirtualizedContainerService.HintSize="464,87" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_1" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="Throw_7" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="Catch`1_1" sap:VirtualizedContainerService.HintSize="404,21">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="464,314" />
       <sap2010:ViewStateData Id="Throw_2" sap:VirtualizedContainerService.HintSize="200,22" />
       <sap2010:ViewStateData Id="If_6" sap:VirtualizedContainerService.HintSize="464,208" />
       <sap2010:ViewStateData Id="Sequence_17" sap:VirtualizedContainerService.HintSize="200,99">
@@ -306,7 +333,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="486,1001">
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="486,1588">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -314,7 +341,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="ProcessTransaction_1" sap:VirtualizedContainerService.HintSize="526,1081" />
+      <sap2010:ViewStateData Id="ProcessTransaction_1" sap:VirtualizedContainerService.HintSize="526,1708" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>

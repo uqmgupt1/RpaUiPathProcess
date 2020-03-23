@@ -1,4 +1,4 @@
-<Activity mc:Ignorable="sap sap2010 sads" x:Class="GetExchangeMail" this:GetExchangeMail.in_MailboxPath="Inbox"
+﻿<Activity mc:Ignorable="sap sap2010 sads" x:Class="GetExchangeMail" this:GetExchangeMail.in_MailboxPath="Inbox"
  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
  xmlns:mewd="clr-namespace:Microsoft.Exchange.WebServices.Data;assembly=Microsoft.Exchange.WebServices"
@@ -14,11 +14,11 @@
  xmlns:ui="http://schemas.uipath.com/workflow/activities"
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <x:Members>
-    <x:Property Name="in_CredentialsAsset" Type="InArgument(x:String)" />
     <x:Property Name="in_ServerName" Type="InArgument(x:String)" />
-    <x:Property Name="out_Messages" Type="OutArgument(scg:List(snm:MailMessage))" />
-    <x:Property Name="in_Number" Type="InArgument(x:Int32)" />
+    <x:Property Name="in_CredentialsAsset" Type="InArgument(x:String)" />
     <x:Property Name="in_MailboxPath" Type="InArgument(x:String)" />
+    <x:Property Name="opt_Number" Type="InArgument(x:Int32)" />
+    <x:Property Name="out_Messages" Type="OutArgument(scg:List(snm:MailMessage))" />
   </x:Members>
   <mva:VisualBasic.Settings>
     <x:Null />
@@ -81,7 +81,7 @@
       <AssemblyReference>Microsoft.Exchange.WebServices</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
-  <Sequence sap2010:Annotation.AnnotationText="Description: Checks if the mailbox path is accessible by the user and returns a number or 1 email message.&#xA;&#xA;Inputs:&#xA;in_CredentialsAsset (String): Orchestrator credentials asset.&#xA;in_ServerName (String): Exchange URL.&#xA;in_MailboxPath (String): Path to a shared mailbox folder or subfolder of the users mailbox.&#xA;in_Number (Integer) [optional]: If not set then get the first email.&#xA;&#xA;Outputs:&#xA;out_Messages (List&lt;MailMessage&gt;): List of mail messages from the mailbox folder.&#xA;&#xA;Pre Condition: NA.&#xA;&#xA;Post Condition:&#xA;Exchange server is reachable.&#xA;Username and password are correct.&#xA;If shared mailbox then email exists.&#xA;If subfolder then path is valid." DisplayName="Get Exchange Mail" sap2010:WorkflowViewState.IdRef="Sequence_1">
+  <Sequence sap2010:Annotation.AnnotationText="Description: Checks if the mailbox path is accessible by the user and returns a number or 1 email message.&#xA;&#xA;Inputs:&#xA;in_CredentialsAsset &lt;String&gt;: Orchestrator credentials asset.&#xA;in_ServerName &lt;String&gt;: Exchange URL.&#xA;in_MailboxPath &lt;String&gt;: Path to a shared mailbox folder or subfolder of the users mailbox.&#xA;opt_Number &lt;Integer&gt;: If not set then get the first email.&#xA;&#xA;Outputs:&#xA;out_Messages &lt;List&lt;MailMessage&gt;&gt;: List of mail messages from the mailbox folder.&#xA;&#xA;Pre Condition: NA.&#xA;&#xA;Post Condition:&#xA;ServerName is usable.&#xA;Username and password are correct.&#xA;If shared mailbox then email exists.&#xA;If subfolder then path is valid." DisplayName="Get Exchange Mail" sap2010:WorkflowViewState.IdRef="Sequence_1">
     <Sequence.Variables>
       <Variable x:TypeArguments="x:String" Name="password" />
       <Variable x:TypeArguments="x:String" Name="username" />
@@ -89,11 +89,11 @@
       <Variable x:TypeArguments="scg:List(x:String)" Name="parts" />
       <Variable x:TypeArguments="mewd:FolderId" Name="folder" />
     </Sequence.Variables>
-    <If Condition="[in_Number = 0]" DisplayName="If number not set" sap2010:WorkflowViewState.IdRef="If_2">
+    <If Condition="[opt_Number = 0]" DisplayName="If number not set" sap2010:WorkflowViewState.IdRef="If_2">
       <If.Then>
         <Assign DisplayName="Assign one email" sap2010:WorkflowViewState.IdRef="Assign_6">
           <Assign.To>
-            <OutArgument x:TypeArguments="x:Int32">[in_Number]</OutArgument>
+            <OutArgument x:TypeArguments="x:Int32">[opt_Number]</OutArgument>
           </Assign.To>
           <Assign.Value>
             <InArgument x:TypeArguments="x:Int32">1</InArgument>
@@ -103,9 +103,9 @@
     </If>
     <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke GetAppCredentials workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_1" UnSafe="False" WorkflowFileName="Framework\GetAppCredentials.xaml">
       <ui:InvokeWorkflowFile.Arguments>
-        <InArgument x:TypeArguments="x:String" x:Key="in_Domain" />
-        <InArgument x:TypeArguments="x:String" x:Key="in_Host">uq.edu.au</InArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="opt_Domain" />
         <InArgument x:TypeArguments="x:String" x:Key="in_Credential">[in_CredentialsAsset]</InArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="opt_Host">uq.edu.au</InArgument>
         <OutArgument x:TypeArguments="x:String" x:Key="out_Username">[username]</OutArgument>
         <OutArgument x:TypeArguments="ss:SecureString" x:Key="out_Password" />
         <OutArgument x:TypeArguments="x:String" x:Key="out_Plaintext">[password]</OutArgument>
@@ -241,7 +241,7 @@
         </Sequence>
       </ui:CommentOut.Body>
     </ui:CommentOut>
-    <ui:GetExchangeMailMessages Domain="{x:Null}" EmailAutodiscover="{x:Null}" TimeoutMS="{x:Null}" CustomFolder="[String.Join(&quot;\&quot;, parts)]" DisplayName="Get Exchange Mail Messages" ExchangeVersion="Exchange2007_SP1" GetAttachements="True" sap2010:WorkflowViewState.IdRef="GetExchangeMailMessages_6" IsBodyHtml="True" MailFolder="Calendar" MarkAsRead="False" Messages="[out_Messages]" OnlyUnreadMessages="False" Password="[password]" Server="[in_ServerName]" SharedMailbox="[mailbox]" Top="[in_Number]" User="[username]" />
+    <ui:GetExchangeMailMessages Domain="{x:Null}" EmailAutodiscover="{x:Null}" TimeoutMS="{x:Null}" CustomFolder="[String.Join(&quot;\&quot;, parts)]" DisplayName="Get Exchange Mail Messages" ExchangeVersion="Exchange2007_SP1" GetAttachements="True" sap2010:WorkflowViewState.IdRef="GetExchangeMailMessages_6" IsBodyHtml="True" MailFolder="Calendar" MarkAsRead="False" Messages="[out_Messages]" OnlyUnreadMessages="False" Password="[password]" Server="[in_ServerName]" SharedMailbox="[mailbox]" Top="[opt_Number]" User="[username]" />
     <Assign DisplayName="Reset password" sap2010:WorkflowViewState.IdRef="Assign_20">
       <Assign.To>
         <OutArgument x:TypeArguments="x:String">[password]</OutArgument>
@@ -251,7 +251,7 @@
       </Assign.Value>
     </Assign>
     <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;End GetExchangeMail.xaml, got &quot; &amp; out_Messages.Count &amp; &quot; from &quot; + in_MailboxPath]" />
-    <sads:DebugSymbol.Symbol>d2pDOlxVc2Vyc1xzcGFtaXNoXERvY3VtZW50c1xVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQmlsbGluZ01pbGVzdG9uZVxNYWlsXEdldEV4Y2hhbmdlTWFpbC54YW1sLAFpAW8BAlQD/wEOAgEBWDRYPwIBAlwFZwoCATxoBXEdAgEzcgVy8AECAS9zBXoOAgErewWTAQoCASCUAQWUAbgCAgEblQEF8wEVAgEa9AEF9AGWBAIBC/UBBfwBDgIBB/0BBf0B5gECAQNcE1wkAgE9XgllEgIBP2xGbFsCATptRm1QAgE4a0BrSQIBN29Hb1ECATVovgFo4AECATRyhQFy7QECATB4OniGAQIBLnU7dUICASx7E3s6AgEhfQmRARQCASKUAYYBlAG1AgIBHPQB9AP0AYEEAgEY9AFy9AGXAQIBFvQBhwT0AZMEAgEU9AHkA/QB7wMCARL0AfsC9AGLAwIBEPQBxAP0AdUDAgEO9AGwA/QBvAMCAQz6ATD6ATkCAQr3ATH3ATsCAQj9AXL9AeMBAgEEYzNjNAIBQmA0YD8CAUCBAQuIARQCASeJAQuQARQCASOGATaGAUMCASqDATeDAUACASiOAUCOAVYCASaLAUGLAUgCASQ=</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d1JDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQmlsbGluZ01pbGVzdG9uZVxNYWlsXEdldEV4Y2hhbmdlTWFpbC54YW1sLAFpAW8BAlQD/wEOAgEBWDRYPwIBAlwFZwoCATxoBXEdAgEzcgVy8AECAS9zBXoOAgErewWTAQoCASCUAQWUAbgCAgEblQEF8wEVAgEa9AEF9AGXBAIBC/UBBfwBDgIBB/0BBf0B5gECAQNcE1wlAgE9XgllEgIBP2tGa1sCATptRm1QAgE4b0dvUQIBNmxBbEoCATVovgFo4AECATRyhQFy7QECATB4OniGAQIBLnU7dUICASx7E3s6AgEhfQmRARQCASKUAYYBlAG1AgIBHPQB9AP0AYIEAgEY9AFy9AGXAQIBFvQBiAT0AZQEAgEU9AHkA/QB7wMCARL0AfsC9AGLAwIBEPQBxAP0AdUDAgEO9AGwA/QBvAMCAQz6ATD6ATkCAQr3ATH3ATsCAQj9AXL9AeMBAgEEYzNjNAIBQmA0YEACAUCBAQuIARQCASeJAQuQARQCASOGATaGAUMCASqDATeDAUACASiOAUCOAVYCASaLAUGLAUgCASQ=</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -340,7 +340,7 @@
       <sap2010:ViewStateData Id="GetExchangeMailMessages_6" sap:VirtualizedContainerService.HintSize="464,22" />
       <sap2010:ViewStateData Id="Assign_20" sap:VirtualizedContainerService.HintSize="464,60" />
       <sap2010:ViewStateData Id="LogMessage_1" sap:VirtualizedContainerService.HintSize="464,91" />
-      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="486,2339">
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="486,2354">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -348,7 +348,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="InitExchange_1" sap:VirtualizedContainerService.HintSize="526,2419" />
+      <sap2010:ViewStateData Id="InitExchange_1" sap:VirtualizedContainerService.HintSize="526,2434" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>

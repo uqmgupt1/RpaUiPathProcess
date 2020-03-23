@@ -8,13 +8,14 @@
  xmlns:scg="clr-namespace:System.Collections.Generic;assembly=mscorlib"
  xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=mscorlib"
  xmlns:sd="clr-namespace:System.Data;assembly=System.Data"
+ xmlns:sg="clr-namespace:System.Globalization;assembly=mscorlib"
  xmlns:snm="clr-namespace:System.Net.Mail;assembly=System"
  xmlns:ui="http://schemas.uipath.com/workflow/activities"
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <x:Members>
-    <x:Property Name="in_ApprovalRows" Type="InArgument(sd:DataTable)" />
-    <x:Property Name="in_TransactionReference" Type="InArgument(x:String)" />
     <x:Property Name="in_Config" Type="InArgument(scg:Dictionary(x:String, x:String))" />
+    <x:Property Name="in_TransactionReference" Type="InArgument(x:String)" />
+    <x:Property Name="in_ApprovalRows" Type="InArgument(sd:DataTable)" />
     <x:Property Name="out_SentTransaction" Type="OutArgument(ui:QueueItem)" />
   </x:Members>
   <mva:VisualBasic.Settings>
@@ -47,6 +48,7 @@
       <x:String>System.Xml.Serialization</x:String>
       <x:String>Newtonsoft.Json</x:String>
       <x:String>System.Globalization</x:String>
+      <x:String>Microsoft.VisualBasic.CompilerServices</x:String>
     </sco:Collection>
   </TextExpression.NamespacesForImplementation>
   <TextExpression.ReferencesForImplementation>
@@ -77,12 +79,22 @@
       <AssemblyReference>UiPath.Studio.Plugin.Workflow</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
-  <Sequence DisplayName="NewApproval" sap2010:WorkflowViewState.IdRef="Sequence_4">
+  <Sequence sap2010:Annotation.AnnotationText="Description:&#xA;Compiles all transaction item details, generates an approval form from the template, sends this off to the business and saves the email in the Bot Files folder, then starts a transaction in the Dispatch orchestrator queue.&#xA;&#xA;Inputs:&#xA;in_Config &lt;Dictionary&lt;String, String&gt;&gt;.&#xA;in_TransactionReference &lt;String&gt;: The unique combo of Contract ID and Milestone ID.&#xA;in_ApprovalRows &lt;DataTable&gt;: All billing milestones for the Transaction Reference.&#xA;&#xA;Outputs:&#xA;out_SentTransaction &lt;QueueItem&gt;.&#xA;&#xA;Pre Condition:&#xA;Network Share Bot Files, HtmlTemplate and DispatchQueue are all set in the Config.&#xA;&#xA;Post Condition:&#xA;out_SentTransaction is In Progress and email is saved to Bot Files." DisplayName="NewApproval" sap2010:WorkflowViewState.IdRef="Sequence_4">
     <Sequence.Variables>
       <Variable x:TypeArguments="scg:Dictionary(x:String, x:String)" Default="[New Dictionary(Of String, String)]" Name="specificContent" />
       <Variable x:TypeArguments="snm:MailMessage" Name="requestMessage" />
+      <Variable x:TypeArguments="sg:CultureInfo" Default="[New CultureInfo(&quot;en-AU&quot;)]" Name="CULTURE" />
+      <Variable x:TypeArguments="sd:DataRow" Name="row" />
     </Sequence.Variables>
     <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Trace" Message="[&quot;Building &quot; &amp; in_ApprovalRows.Rows.Count &amp; &quot; items for &quot; + in_TransactionReference]" />
+    <Assign DisplayName="Assign first row" sap2010:WorkflowViewState.IdRef="Assign_37">
+      <Assign.To>
+        <OutArgument x:TypeArguments="sd:DataRow">[row]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="sd:DataRow">[in_ApprovalRows.Rows(0)]</InArgument>
+      </Assign.Value>
+    </Assign>
     <ui:ForEach x:TypeArguments="sd:DataColumn" CurrentIndex="{x:Null}" DisplayName="For Each column" sap2010:WorkflowViewState.IdRef="ForEach`1_1" Values="[in_ApprovalRows.Columns]">
       <ui:ForEach.Body>
         <ActivityAction x:TypeArguments="sd:DataColumn">
@@ -98,7 +110,7 @@
                     <OutArgument x:TypeArguments="x:String">[specificContent(column.ColumnName)]</OutArgument>
                   </Assign.To>
                   <Assign.Value>
-                    <InArgument x:TypeArguments="x:String">[in_ApprovalRows.Rows(0).Item(column).ToString]</InArgument>
+                    <InArgument x:TypeArguments="x:String">[row(column).ToString]</InArgument>
                   </Assign.Value>
                 </Assign>
               </Switch.Default>
@@ -110,20 +122,20 @@
                   <InArgument x:TypeArguments="x:String">[JsonConvert.SerializeObject(in_ApprovalRows.AsEnumerable.Select(function(r) r(column).ToString).Distinct)]</InArgument>
                 </Assign.Value>
               </Assign>
-              <Assign x:Key="CI username" DisplayName="Assign request recipient" sap2010:WorkflowViewState.IdRef="Assign_32">
+              <Assign x:Key="CI username" DisplayName="Assign request recipient specific content" sap2010:WorkflowViewState.IdRef="Assign_32">
                 <Assign.To>
                   <OutArgument x:TypeArguments="x:String">[specificContent("Request Recipient")]</OutArgument>
                 </Assign.To>
                 <Assign.Value>
-                  <InArgument x:TypeArguments="x:String">[in_ApprovalRows.Rows(0).Item(column).ToString.ToLower + "@uq.edu.au"]</InArgument>
+                  <InArgument x:TypeArguments="x:String">[row(column).ToString.ToLower + "@uq.edu.au"]</InArgument>
                 </Assign.Value>
               </Assign>
-              <Assign x:Key="Due Date" DisplayName="Assign ci username specific content" sap2010:WorkflowViewState.IdRef="Assign_34">
+              <Assign x:Key="Due Date" DisplayName="Assign due date specific content" sap2010:WorkflowViewState.IdRef="Assign_34">
                 <Assign.To>
                   <OutArgument x:TypeArguments="x:String">[specificContent("Due Date")]</OutArgument>
                 </Assign.To>
                 <Assign.Value>
-                  <InArgument x:TypeArguments="x:String">[CDate(in_ApprovalRows.Rows(0).Item(column)).ToString("yyyy-MM-dd")]</InArgument>
+                  <InArgument x:TypeArguments="x:String">[Convert.ToDateTime(row(column).ToString, CULTURE).ToString("yyyy-MM-dd")]</InArgument>
                 </Assign.Value>
               </Assign>
             </Switch>
@@ -131,6 +143,18 @@
         </ActivityAction>
       </ui:ForEach.Body>
     </ui:ForEach>
+    <If Condition="[in_Config(&quot;OperatingEnvironment&quot;) &lt;&gt; &quot;PROD&quot;]" DisplayName="DO NOT REMOVE AS THIS STOPS US SPAMMING THE BUSINESS" sap2010:WorkflowViewState.IdRef="If_1">
+      <If.Then>
+        <Assign DisplayName="Assign request recipient specific content" sap2010:WorkflowViewState.IdRef="Assign_36">
+          <Assign.To>
+            <OutArgument x:TypeArguments="x:String">[specificContent("Request Recipient")]</OutArgument>
+          </Assign.To>
+          <Assign.Value>
+            <InArgument x:TypeArguments="x:String">["rpagrm01@uq.edu.au"]</InArgument>
+          </Assign.Value>
+        </Assign>
+      </If.Then>
+    </If>
     <Assign DisplayName="Assign request sent" sap2010:WorkflowViewState.IdRef="Assign_35">
       <Assign.To>
         <OutArgument x:TypeArguments="x:String">[specificContent("Request Sent")]</OutArgument>
@@ -144,7 +168,7 @@
         <OutArgument x:TypeArguments="x:String">[specificContent("Request Filename")]</OutArgument>
       </Assign.To>
       <Assign.Value>
-        <InArgument x:TypeArguments="x:String">[String.Format("{0}\request_{1}_{2}.eml", in_Config("Network Share Bot Files"), in_TransactionReference, specificContent("Request Sent"))]</InArgument>
+        <InArgument x:TypeArguments="x:String">[String.Format("{0}\{1}_request_{2}.eml", in_Config("Network Share Bot Files"), in_TransactionReference, specificContent("Request Sent"))]</InArgument>
       </Assign.Value>
     </Assign>
     <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_3" Level="Info" Message="[&quot;Sending approval to &quot; + specificContent(&quot;Request Recipient&quot;).ToString]" />
@@ -156,36 +180,36 @@
         <OutArgument x:TypeArguments="snm:MailMessage" x:Key="out_RequestMessage">[requestMessage]</OutArgument>
       </ui:InvokeWorkflowFile.Arguments>
     </ui:InvokeWorkflowFile>
-    <If Condition="True" DisplayName="If sending via exchage to avoid rate limit issues" sap2010:WorkflowViewState.IdRef="If_1">
-      <If.Then>
-        <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke SendExchangeMessage workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_3" UnSafe="False" WorkflowFileName="Mail\SendExchangeMessage.xaml">
-          <ui:InvokeWorkflowFile.Arguments>
-            <InArgument x:TypeArguments="x:String" x:Key="in_EmailRecipients">[requestMessage.To.First.Address]</InArgument>
-            <InArgument x:TypeArguments="x:String" x:Key="in_Subject">[requestMessage.Subject]</InArgument>
-            <InArgument x:TypeArguments="x:String" x:Key="in_MessageBody">[requestMessage.Body]</InArgument>
-            <InArgument x:TypeArguments="x:Boolean" x:Key="in_IsBodyHtml">[requestMessage.IsBodyHtml]</InArgument>
-            <InArgument x:TypeArguments="scg:IEnumerable(x:String)" x:Key="in_Attachments" />
-            <InArgument x:TypeArguments="x:String" x:Key="in_SenderName">[requestMessage.From.DisplayName]</InArgument>
-            <InArgument x:TypeArguments="x:String" x:Key="in_CredentialsAsset">[in_Config("Credentials_Exchange")]</InArgument>
-            <InArgument x:TypeArguments="x:String" x:Key="in_ServerName">[in_Config("Exchange_ServerName")]</InArgument>
-          </ui:InvokeWorkflowFile.Arguments>
-        </ui:InvokeWorkflowFile>
-      </If.Then>
-      <If.Else>
-        <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke SendSmtpMessage workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_4" UnSafe="False" WorkflowFileName="Mail\SendSmtpMessage.xaml">
-          <ui:InvokeWorkflowFile.Arguments>
-            <InArgument x:TypeArguments="x:String" x:Key="in_EmailRecipients">[requestMessage.To.First.Address]</InArgument>
-            <InArgument x:TypeArguments="x:String" x:Key="in_Subject">[requestMessage.Subject]</InArgument>
-            <InArgument x:TypeArguments="x:String" x:Key="in_MessageBody">[requestMessage.Body]</InArgument>
-            <InArgument x:TypeArguments="x:Boolean" x:Key="in_IsBodyHtml">[requestMessage.IsBodyHtml]</InArgument>
-            <InArgument x:TypeArguments="scg:IEnumerable(x:String)" x:Key="in_Attachments" />
-            <InArgument x:TypeArguments="x:String" x:Key="in_SenderName">[requestMessage.From.DisplayName]</InArgument>
-            <InArgument x:TypeArguments="x:String" x:Key="in_CredentialsAsset">[in_Config("Credentials_Exchange")]</InArgument>
-          </ui:InvokeWorkflowFile.Arguments>
-        </ui:InvokeWorkflowFile>
-      </If.Else>
-    </If>
-    <ui:SaveMail DisplayName="Save Mail Message" FilePath="[specificContent(&quot;Request Filename&quot;)]" sap2010:WorkflowViewState.IdRef="SaveMail_1" MailMessage="[requestMessage]" />
+    <ui:CommentOut DisplayName="Comment Out" sap2010:WorkflowViewState.IdRef="CommentOut_1">
+      <ui:CommentOut.Body>
+        <Sequence DisplayName="Ignored Activities" sap2010:WorkflowViewState.IdRef="Sequence_6">
+          <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke SendExchangeMessage workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_3" UnSafe="False" WorkflowFileName="Mail\SendExchangeMessage.xaml">
+            <ui:InvokeWorkflowFile.Arguments>
+              <InArgument x:TypeArguments="x:String" x:Key="in_ServerName">[in_Config("Exchange_ServerName")]</InArgument>
+              <InArgument x:TypeArguments="x:String" x:Key="in_CredentialsAsset">[in_Config("Credentials_Exchange")]</InArgument>
+              <InArgument x:TypeArguments="x:String" x:Key="in_EmailRecipients">[requestMessage.To.First.Address]</InArgument>
+              <InArgument x:TypeArguments="x:String" x:Key="in_Subject">[requestMessage.Subject]</InArgument>
+              <InArgument x:TypeArguments="x:String" x:Key="in_MessageBody">[requestMessage.Body]</InArgument>
+              <InArgument x:TypeArguments="x:Boolean" x:Key="in_IsBodyHtml">[requestMessage.IsBodyHtml]</InArgument>
+              <InArgument x:TypeArguments="scg:IEnumerable(x:String)" x:Key="in_Attachments" />
+            </ui:InvokeWorkflowFile.Arguments>
+          </ui:InvokeWorkflowFile>
+        </Sequence>
+      </ui:CommentOut.Body>
+    </ui:CommentOut>
+    <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke SendSmtpMessage workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_4" UnSafe="False" WorkflowFileName="Mail\SendSmtpMessage.xaml">
+      <ui:InvokeWorkflowFile.Arguments>
+        <InArgument x:TypeArguments="x:String" x:Key="in_CredentialsAsset" />
+        <InArgument x:TypeArguments="x:String" x:Key="in_SenderName">[requestMessage.From.DisplayName]</InArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="in_EmailRecipients">[requestMessage.To.First.Address]</InArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="in_Subject">[requestMessage.Subject]</InArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="in_MessageBody">[requestMessage.Body]</InArgument>
+        <InArgument x:TypeArguments="x:Boolean" x:Key="in_IsBodyHtml">[requestMessage.IsBodyHtml]</InArgument>
+        <InArgument x:TypeArguments="scg:IEnumerable(x:String)" x:Key="in_Attachments" />
+      </ui:InvokeWorkflowFile.Arguments>
+    </ui:InvokeWorkflowFile>
+    <ui:SaveMail DisplayName="Save Mail Message" FilePath="[&quot;Temp\&quot; + Path.GetFileName(specificContent(&quot;Request Filename&quot;))]" sap2010:WorkflowViewState.IdRef="SaveMail_1" MailMessage="[requestMessage]" />
+    <ui:MoveFile ContinueOnError="{x:Null}" Destination="[specificContent(&quot;Request Filename&quot;)]" DisplayName="Move File to Network" sap2010:WorkflowViewState.IdRef="MoveFile_1" Overwrite="False" Path="[&quot;Temp\&quot; + Path.GetFileName(specificContent(&quot;Request Filename&quot;))]" />
     <ui:AddTransactionItem ContinueOnError="{x:Null}" TimeoutMS="{x:Null}" DisplayName="Add Dispatch Transaction Item" sap2010:WorkflowViewState.IdRef="AddTransactionItem_1" QueueType="[in_Config(&quot;DispatchQueue&quot;)]" Reference="[in_TransactionReference]" TransactionItem="[out_SentTransaction]">
       <ui:AddTransactionItem.TransactionInformation>
         <InArgument x:TypeArguments="x:String" x:Key="Contract">[specificContent("Contract")]</InArgument>
@@ -193,7 +217,7 @@
         <InArgument x:TypeArguments="x:String" x:Key="Customer Name">[specificContent("Customer Name")]</InArgument>
         <InArgument x:TypeArguments="x:String" x:Key="Project title">[specificContent("Project title")]</InArgument>
         <InArgument x:TypeArguments="x:String" x:Key="CI Name">[specificContent("CI Name")]</InArgument>
-        <InArgument x:TypeArguments="x:String" x:Key="Project description">[specificContent("Project description")]</InArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="Milestone Description">[specificContent("Milestone Description")]</InArgument>
         <InArgument x:TypeArguments="x:String" x:Key="Due Date">[specificContent("Due Date")]</InArgument>
         <InArgument x:TypeArguments="x:String" x:Key="Project ID">[specificContent("Project ID")]</InArgument>
         <InArgument x:TypeArguments="x:String" x:Key="Research master number">[specificContent("Research master number")]</InArgument>
@@ -202,52 +226,91 @@
         <InArgument x:TypeArguments="x:String" x:Key="Request Filename">[specificContent("Request Filename")]</InArgument>
       </ui:AddTransactionItem.TransactionInformation>
     </ui:AddTransactionItem>
-    <Assign DisplayName="Assign spoof successful">
-      <Assign.To>
-        <OutArgument x:TypeArguments="ui:QueueItemStatus">[out_SentTransaction.Status]</OutArgument>
-      </Assign.To>
-      <Assign.Value>
-        <InArgument x:TypeArguments="ui:QueueItemStatus">[QueueItemStatus.Successful]</InArgument>
-      </Assign.Value>
-      <sap2010:WorkflowViewState.IdRef>Assign_36</sap2010:WorkflowViewState.IdRef>
-    </Assign>
-    <sads:DebugSymbol.Symbol>d2FDOlxVc2Vyc1xzcGFtaXNoXERvY3VtZW50c1xVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQmlsbGluZ01pbGVzdG9uZVxOZXdBcHByb3ZhbC54YW1sTlAD1wEOAgEBUk5ScwIBAlUFVegBAgF3VgWFARICAWGGAQWNAQ4CAV2OAQWVAQ4CAVaWAQWWAdMBAgFTlwEFngEdAgFJnwEFuwEKAgErvAEFvAG7AQIBJr0BBcwBHQIBB80BBdUBDgIBA1VzVeUBAgF4VpwBVrcBAgF2XAuCARYCAWKLATCLAUwCAWCIATGIAVICAV6TATCTAboBAgFZkAExkAFWAgFXlgFylgHQAQIBVJsBZZsBdgIBUZwBU5wBYwIBT5kBXJkBZwIBTZoBUJoBaQIBS5cBwgGXAeMBAgFKnwETnwEZAgEsoQEJrAEhAgE6rwEJuQEhAgEtvAGmAbwBuAECASm8ATu8AWwCASe9AewBvQGHAgIBJMIBRsIBaAIBIr0BuQG9AeEBAgEgxwFPxwF6AgEewQFGwQFoAgEcyQFKyQFwAgEaxAFMxAF0AgEYwwFAwwFcAgEWvwFBvwFeAgEUxQFBxQFeAgESyAFFyAFmAgEQvQGYAr0BrwICAQ7KAUnKAW4CAQzGAUPGAWICAQrAAUXAAWYCAQjSATrSAVYCAQbPATvPAVcCAQRdDV3OAQIBdF4NgQEWAgFjqgFKqgFsAgFHpAFHpAFfAgFFpgFLpgFmAgFDqAFKqAFrAgFBqQFQqQFzAgE/owFPowFwAgE+oQHEAaEB4wECAT2lAUulAWACATuyAUeyAV8CATi0AUu0AWYCATa2AUq2AWsCATS3AVC3AXMCATKxAU+xAXACATGvAcABrwHbAQIBMLMBS7MBYAIBLl17XcsBAgF1XlxecQIBZGkPcBgCAXBxD3gYAgFseQ+AARgCAWhgEWcaAgFlbjpupQECAXNrO2taAgFxdjp2gAECAW9zO3NhAgFtfjp+fgIBa3s7e1gCAWllPGVrAgFnYj1iYQIBZg==</sads:DebugSymbol.Symbol>
+    <ui:CommentOut DisplayName="Comment Out" sap2010:WorkflowViewState.IdRef="CommentOut_3">
+      <ui:CommentOut.Body>
+        <Sequence DisplayName="Ignored Activities" sap2010:WorkflowViewState.IdRef="Sequence_8">
+          <ui:InvokeCode ContinueOnError="{x:Null}" Code="Transaction = New QueueItem&#xA;Transaction.QueueName = QueueName&#xA;Transaction.Reference = Reference&#xA;Transaction.SpecificContent = SpecificContent.ToDictionary(Function(k) k.Key, Function(v) CObj(v.Value))&#xA;Transaction.Status = QueueItemStatus.InProgress" DisplayName="Invoke code" sap2010:WorkflowViewState.IdRef="InvokeCode_1">
+            <ui:InvokeCode.Arguments>
+              <InArgument x:TypeArguments="x:String" x:Key="QueueName">[in_Config("DispatchQueue")]</InArgument>
+              <InArgument x:TypeArguments="x:String" x:Key="Reference">[in_TransactionReference]</InArgument>
+              <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)" x:Key="SpecificContent">[specificContent]</InArgument>
+              <OutArgument x:TypeArguments="ui:QueueItem" x:Key="Transaction">[out_SentTransaction]</OutArgument>
+            </ui:InvokeCode.Arguments>
+          </ui:InvokeCode>
+        </Sequence>
+      </ui:CommentOut.Body>
+    </ui:CommentOut>
+    <sads:DebugSymbol.Symbol>d0lDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQmlsbGluZ01pbGVzdG9uZVxOZXdBcHByb3ZhbC54YW1sTVID9AEOAgEBVE5UcwIBA1Y6VmACAQJZBVnoAQIBcVoFYQ4CAW1iBZEBEgIBV5IBBZ0BCgIBUJ4BBaUBDgIBTKYBBa0BDgIBRa4BBa4B0wECAUKvAQW2AR0CATi3AQXHARUCATfIAQXSAR0CASzTAQXTAeEBAgEo1AEF1AGsAgIBJNUBBeQBHQIBBeUBBfIBFQIBBFlzWeUBAgFyXzJfSwIBcFwzXDgCAW5inAFitwECAWxoC44BFgIBWJIBE5IBXAIBUZQBCZsBEgIBU6MBMKMBTAIBT6ABMaABUgIBTasBMKsBugECAUioATGoAVYCAUauAXKuAdABAgFDswFlswF2AgFAtAFTtAFjAgE+sQFcsQFnAgE8sgFQsgFpAgE6rwHCAa8B4wECATnNAUPNAVsCATXPAUfPAWICATPLAUbLAWcCATHMAUvMAWwCATDIAbwByAHXAQIBL84BR84BXAIBLdMBzAHTAd4BAgEq0wE70wGSAQIBKdQBOdQBagIBJtQB0gHUAakCAgEl1QHsAdUBhwICASLaAUbaAWgCASDVAbkB1QHhAQIBHt8BT98BegIBHNkBRtkBaAIBGuEBSuEBcAIBGNwBTtwBeAIBFtsBQNsBXAIBFNcBQdcBXgIBEt0BQd0BXgIBEOABReABZgIBDtUBmALVAa8CAgEM4gFJ4gFuAgEK3gFD3gFiAgEI2AFF2AFmAgEGaQ1pzgECAWpqDY0BFgIBWZkBNJkBSgIBVpYBNZYBWwIBVGl7acsBAgFralxqcQIBWnUPfBgCAWZ9D4QBGAIBYoUBD4wBGAIBXmwRcxoCAVt6OnqlAQIBaXc7d1oCAWeCATqCAWcCAWV/O39hAgFjigE6igGEAQIBYYcBO4cBWAIBX3E8cVICAV1uPW5hAgFc</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
-      <sap2010:ViewStateData Id="LogMessage_1" sap:VirtualizedContainerService.HintSize="653,91" />
+      <sap2010:ViewStateData Id="LogMessage_1" sap:VirtualizedContainerService.HintSize="515,91" />
+      <sap2010:ViewStateData Id="Assign_37" sap:VirtualizedContainerService.HintSize="515,60" />
       <sap2010:ViewStateData Id="LogMessage_4" sap:VirtualizedContainerService.HintSize="477,91" />
       <sap2010:ViewStateData Id="Assign_12" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="Assign_20" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="Assign_32" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="Assign_34" sap:VirtualizedContainerService.HintSize="242,60" />
-      <sap2010:ViewStateData Id="Switch`1_1" sap:VirtualizedContainerService.HintSize="477,182" />
-      <sap2010:ViewStateData Id="Sequence_5" sap:VirtualizedContainerService.HintSize="499,437">
+      <sap2010:ViewStateData Id="Switch`1_1" sap:VirtualizedContainerService.HintSize="477,286" />
+      <sap2010:ViewStateData Id="Sequence_5" sap:VirtualizedContainerService.HintSize="499,541">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="ForEach`1_1" sap:VirtualizedContainerService.HintSize="653,571" />
-      <sap2010:ViewStateData Id="Assign_35" sap:VirtualizedContainerService.HintSize="653,60" />
-      <sap2010:ViewStateData Id="Assign_33" sap:VirtualizedContainerService.HintSize="653,60" />
-      <sap2010:ViewStateData Id="LogMessage_3" sap:VirtualizedContainerService.HintSize="653,91" />
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_1" sap:VirtualizedContainerService.HintSize="653,87" />
+      <sap2010:ViewStateData Id="ForEach`1_1" sap:VirtualizedContainerService.HintSize="515,675" />
+      <sap2010:ViewStateData Id="Assign_36" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="515,208" />
+      <sap2010:ViewStateData Id="Assign_35" sap:VirtualizedContainerService.HintSize="515,60" />
+      <sap2010:ViewStateData Id="Assign_33" sap:VirtualizedContainerService.HintSize="515,60" />
+      <sap2010:ViewStateData Id="LogMessage_3" sap:VirtualizedContainerService.HintSize="515,91" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_1" sap:VirtualizedContainerService.HintSize="515,87" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_3" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_4" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="653,235" />
-      <sap2010:ViewStateData Id="SaveMail_1" sap:VirtualizedContainerService.HintSize="653,87" />
-      <sap2010:ViewStateData Id="AddTransactionItem_1" sap:VirtualizedContainerService.HintSize="653,22" />
-      <sap2010:ViewStateData Id="Assign_36" sap:VirtualizedContainerService.HintSize="653,60" />
-      <sap2010:ViewStateData Id="Sequence_4" sap:VirtualizedContainerService.HintSize="675,1848">
+      <sap2010:ViewStateData Id="Sequence_6" sap:VirtualizedContainerService.HintSize="336,211">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="NewApproval_1" sap:VirtualizedContainerService.HintSize="715,1928" />
+      <sap2010:ViewStateData Id="CommentOut_1" sap:VirtualizedContainerService.HintSize="515,289">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_4" sap:VirtualizedContainerService.HintSize="515,87" />
+      <sap2010:ViewStateData Id="SaveMail_1" sap:VirtualizedContainerService.HintSize="515,87" />
+      <sap2010:ViewStateData Id="MoveFile_1" sap:VirtualizedContainerService.HintSize="515,22" />
+      <sap2010:ViewStateData Id="AddTransactionItem_1" sap:VirtualizedContainerService.HintSize="515,22" />
+      <sap2010:ViewStateData Id="InvokeCode_1" sap:VirtualizedContainerService.HintSize="314,164" />
+      <sap2010:ViewStateData Id="Sequence_8" sap:VirtualizedContainerService.HintSize="336,288">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="CommentOut_3" sap:VirtualizedContainerService.HintSize="515,366">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Sequence_4" sap:VirtualizedContainerService.HintSize="537,3131">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsAnnotationDocked">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="NewApproval_1" sap:VirtualizedContainerService.HintSize="577,3251" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>

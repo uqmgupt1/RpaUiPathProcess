@@ -78,7 +78,7 @@
       <AssemblyReference>UiPath.Studio.Plugin.Workflow</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
-  <Sequence sap2010:Annotation.AnnotationText="Description: Get data from spreadsheets, databases, email, web API or UiPath server queues. If no new data, set out_TransactionItem to Nothing. &#xA;&#xA;For a linear process (not repetitive), set out_TransactionItem only for in_TransactionNumber 1 - first and only transaction. &#xA;&#xA;If the process is repeatable, set io_TransactionData once for in_TransactionNumber 1, then assign a new out_TransactionItem by using the in_TransactionNumber to index io_TransactionData. Be aware that, at the end of the io_TransactionData collection, it is your responsibility to set out_TransactionItem to Nothing, thus ending the process." DisplayName="GetTransactionData" sap2010:WorkflowViewState.IdRef="Sequence_1">
+  <Sequence sap2010:Annotation.AnnotationText="Description: Gets the next item from the mailbox folder named as Dev, Test, Staging or Prod.&#xA;&#xA;Inputs:&#xA;in_Config &lt;Dictionary&lt;String, String&gt;&gt;.&#xA;in_TransactionNumber &lt;Integer&gt;.&#xA;&#xA;Outputs:&#xA;out_TransactionMessage &lt;MailMessage&gt;.&#xA;out_TransactionSubject &lt;String&gt;.&#xA;out_TransactionReceived &lt;DateTime&gt;.&#xA;out_TransactionFilename &lt;String&gt;.&#xA;&#xA;Pre Condition:&#xA;Config settings OperatingEnvironment, Exchange_ServerName and Credentials_Exchange are set.&#xA;&#xA;Post Condition:&#xA;Sets out_TransactionMessage as the first received mail item or returns nothing.&#xA;Email saved to Temp folder and deleted from mailbox." DisplayName="GetTransactionData" sap2010:WorkflowViewState.IdRef="Sequence_1">
     <Sequence.Variables>
       <Variable x:TypeArguments="scg:List(snm:MailMessage)" Name="folderMessages" />
       <Variable x:TypeArguments="x:String" Name="username" />
@@ -95,11 +95,11 @@
     </Assign>
     <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke GetExchangeMail workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_2" UnSafe="False" WorkflowFileName="Mail\GetExchangeMail.xaml">
       <ui:InvokeWorkflowFile.Arguments>
-        <InArgument x:TypeArguments="x:String" x:Key="in_CredentialsAsset">[in_Config("Credentials_Exchange")]</InArgument>
         <InArgument x:TypeArguments="x:String" x:Key="in_ServerName">[in_Config("Exchange_ServerName")]</InArgument>
-        <OutArgument x:TypeArguments="scg:List(snm:MailMessage)" x:Key="out_Messages">[folderMessages]</OutArgument>
-        <InArgument x:TypeArguments="x:Int32" x:Key="in_Number">1</InArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="in_CredentialsAsset">[in_Config("Credentials_Exchange")]</InArgument>
         <InArgument x:TypeArguments="x:String" x:Key="in_MailboxPath">[mailbox]</InArgument>
+        <InArgument x:TypeArguments="x:Int32" x:Key="opt_Number">1</InArgument>
+        <OutArgument x:TypeArguments="scg:List(snm:MailMessage)" x:Key="out_Messages">[folderMessages]</OutArgument>
       </ui:InvokeWorkflowFile.Arguments>
     </ui:InvokeWorkflowFile>
     <If Condition="[folderMessages.Count &gt; 0]" DisplayName="If a new email is received create a transaction to update" sap2010:WorkflowViewState.IdRef="If_1">
@@ -138,18 +138,33 @@
               <OutArgument x:TypeArguments="x:String">[out_TransactionFilename]</OutArgument>
             </Assign.To>
             <Assign.Value>
-              <InArgument x:TypeArguments="x:String">[String.Format("Temp\response_{0}_{1}.eml", out_TransactionSubject.Split(":"c).Last, out_TransactionReceived.ToString("yyyy-MM-dd"))]</InArgument>
+              <InArgument x:TypeArguments="x:String">[String.Format("Temp\{0}_response_{1}.eml", out_TransactionSubject.Split(":"c).Last, out_TransactionReceived.ToString("yyyy-MM-dd"))]</InArgument>
             </Assign.Value>
           </Assign>
           <ui:SaveMail DisplayName="Save Response Mail Message" FilePath="[out_TransactionFilename]" sap2010:WorkflowViewState.IdRef="SaveMail_1" MailMessage="[out_TransactionMessage]" />
-          <ui:CommentOut DisplayName="Comment Out" sap2010:WorkflowViewState.IdRef="CommentOut_1">
-            <ui:CommentOut.Body>
-              <Sequence DisplayName="Don't remove from mailbox while developing" sap2010:WorkflowViewState.IdRef="Sequence_3">
+          <If Condition="True" sap2010:WorkflowViewState.IdRef="If_2">
+            <If.Then>
+              <Sequence DisplayName="Move to inbox while developing" sap2010:WorkflowViewState.IdRef="Sequence_4">
+                <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke GetAppCredentials workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_4" UnSafe="False" WorkflowFileName="Framework\GetAppCredentials.xaml">
+                  <ui:InvokeWorkflowFile.Arguments>
+                    <InArgument x:TypeArguments="x:String" x:Key="opt_Domain" />
+                    <InArgument x:TypeArguments="x:String" x:Key="in_Credential">[in_Config("Credentials_Exchange")]</InArgument>
+                    <InArgument x:TypeArguments="x:String" x:Key="opt_Host">uq.edu.au</InArgument>
+                    <OutArgument x:TypeArguments="x:String" x:Key="out_Username">[username]</OutArgument>
+                    <OutArgument x:TypeArguments="ss:SecureString" x:Key="out_Password" />
+                    <OutArgument x:TypeArguments="x:String" x:Key="out_Plaintext">[password]</OutArgument>
+                  </ui:InvokeWorkflowFile.Arguments>
+                </ui:InvokeWorkflowFile>
+                <ui:MoveMessageToFolder Domain="{x:Null}" EmailAutodiscover="{x:Null}" SharedMailbox="{x:Null}" TimeoutMS="{x:Null}" DisplayName="Move Exchange Mail Message" ExchangeVersion="Exchange2007_SP1" sap2010:WorkflowViewState.IdRef="MoveMessageToFolder_1" MailFolder="Other" MailMessage="[out_TransactionMessage]" Password="[password]" Server="[in_Config(&quot;Exchange_ServerName&quot;)]" User="[username]" />
+              </Sequence>
+            </If.Then>
+            <If.Else>
+              <Sequence DisplayName="Sequence" sap2010:WorkflowViewState.IdRef="Sequence_3">
                 <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke GetAppCredentials workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_3" UnSafe="False" WorkflowFileName="Framework\GetAppCredentials.xaml">
                   <ui:InvokeWorkflowFile.Arguments>
-                    <InArgument x:TypeArguments="x:String" x:Key="in_Domain" />
-                    <InArgument x:TypeArguments="x:String" x:Key="in_Host">uq.edu.au</InArgument>
+                    <InArgument x:TypeArguments="x:String" x:Key="opt_Domain" />
                     <InArgument x:TypeArguments="x:String" x:Key="in_Credential">[in_Config("Credentials_Exchange")]</InArgument>
+                    <InArgument x:TypeArguments="x:String" x:Key="opt_Host">uq.edu.au</InArgument>
                     <OutArgument x:TypeArguments="x:String" x:Key="out_Username">[username]</OutArgument>
                     <OutArgument x:TypeArguments="ss:SecureString" x:Key="out_Password" />
                     <OutArgument x:TypeArguments="x:String" x:Key="out_Plaintext">[password]</OutArgument>
@@ -157,22 +172,31 @@
                 </ui:InvokeWorkflowFile>
                 <ui:DeleteMail Domain="{x:Null}" EmailAutodiscover="{x:Null}" TimeoutMS="{x:Null}" DeleteMode="MoveToDeletedItems" DisplayName="Delete Exchange Mail Message" ExchangeVersion="Exchange2007_SP1" sap2010:WorkflowViewState.IdRef="DeleteMail_1" MailMessage="[out_TransactionMessage]" Password="[password]" Server="[in_Config(&quot;Exchange_ServerName&quot;)]" User="[username]" />
               </Sequence>
-            </ui:CommentOut.Body>
-          </ui:CommentOut>
+            </If.Else>
+          </If>
         </Sequence>
       </If.Then>
     </If>
-    <sads:DebugSymbol.Symbol>d3JDOlxVc2Vyc1xzcGFtaXNoXERvY3VtZW50c1xVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQmlsbGluZ01pbGVzdG9uZVxGcmFtZXdvcmtcR2V0VHJhbnNhY3Rpb25EYXRhLnhhbWweUQOmAQ4CAQFYBV8OAgEoYAVoHQIBHWkFpAEKAgECXTBdcgIBK1oxWjoCASljRmNoAgEmZFdkZwIBJGZHZlACASJlQWVCAgEhYkxibwIBH2C8AWDXAQIBHmkTaTICAQNrCaIBFAIBBXALdxQCARl4C38UAgEUgAELhwEUAgEQiAELjwEUAgEMkAELkAG8AQIBB5EBC6EBGwIBBnU9dVMCARxyPnJWAgEafTZ9VgIBF3o3ek8CARWFATiFAYIBAgETggE5ggFSAgERjQE2jQG7AQIBD4oBN4oBUAIBDZABnwGQAbkBAgEKkAFKkAFlAgEI</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d1pDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQmlsbGluZ01pbGVzdG9uZVxGcmFtZXdvcmtcR2V0VHJhbnNhY3Rpb25EYXRhLnhhbWw4UQO1AQ4CAQFYBV8OAgFQYAVoHQIBRWkFswEKAgECXTBdcgIBU1oxWjoCAVFiRmJoAgFOZldmZwIBTGRHZFACAUpjTGNvAgFIZUJlQwIBR2C8AWDXAQIBRmkTaTICAQNrCbEBFAIBBXALdxQCAUF4C38UAgE8gAELhwEUAgE4iAELjwEUAgE0kAELkAG8AQIBL5EBC7ABEAIBBnU9dVMCAURyPnJWAgFCfTZ9VgIBP3o3ek8CAT2FATiFAYIBAgE7ggE5ggFSAgE5jQE2jQG7AQIBN4oBN4oBUAIBNZABnwGQAbkBAgEykAFKkAFlAgEwkQEZkQEfAgEHkwEPnwEaAgEbogEPrgEaAgEIlAERnQEpAgEmngERngGkAwIBHKMBEawBKQIBEq0BEa0BiAMCAQmXAVKXAXUCAS2ZAVKZAVwCASubAVObAV0CASmYAU2YAVYCASiUAcoBlAHsAQIBJ54BlQOeAaEDAgEkngHhAp4BjwMCASKeAc0CngHZAgIBIJ4BqQKeAcMCAgEengGVAp4BnAICAR2mAVKmAXUCARmoAVKoAVwCAReqAVOqAV0CARWnAU2nAVYCARSjAcoBowHsAQIBE60B+QKtAYUDAgEQrQHFAq0B8wICAQ6tAbECrQG9AgIBDK0BjQKtAacCAgEK</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
-      <sap2010:ViewStateData Id="Assign_8" sap:VirtualizedContainerService.HintSize="563,60" />
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_2" sap:VirtualizedContainerService.HintSize="563,87" />
-      <sap2010:ViewStateData Id="Assign_5" sap:VirtualizedContainerService.HintSize="416,60" />
-      <sap2010:ViewStateData Id="Assign_6" sap:VirtualizedContainerService.HintSize="416,60" />
-      <sap2010:ViewStateData Id="Assign_7" sap:VirtualizedContainerService.HintSize="416,60" />
-      <sap2010:ViewStateData Id="Assign_9" sap:VirtualizedContainerService.HintSize="416,60" />
-      <sap2010:ViewStateData Id="SaveMail_1" sap:VirtualizedContainerService.HintSize="416,87" />
+      <sap2010:ViewStateData Id="Assign_8" sap:VirtualizedContainerService.HintSize="844,60" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_2" sap:VirtualizedContainerService.HintSize="844,87" />
+      <sap2010:ViewStateData Id="Assign_5" sap:VirtualizedContainerService.HintSize="697,60" />
+      <sap2010:ViewStateData Id="Assign_6" sap:VirtualizedContainerService.HintSize="697,60" />
+      <sap2010:ViewStateData Id="Assign_7" sap:VirtualizedContainerService.HintSize="697,60" />
+      <sap2010:ViewStateData Id="Assign_9" sap:VirtualizedContainerService.HintSize="697,60" />
+      <sap2010:ViewStateData Id="SaveMail_1" sap:VirtualizedContainerService.HintSize="697,87" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_4" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="MoveMessageToFolder_1" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="Sequence_4" sap:VirtualizedContainerService.HintSize="336,338">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="InvokeWorkflowFile_3" sap:VirtualizedContainerService.HintSize="314,87" />
       <sap2010:ViewStateData Id="DeleteMail_1" sap:VirtualizedContainerService.HintSize="314,59" />
       <sap2010:ViewStateData Id="Sequence_3" sap:VirtualizedContainerService.HintSize="336,310">
@@ -182,16 +206,16 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="CommentOut_1" sap:VirtualizedContainerService.HintSize="416,388" />
-      <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="438,1039">
+      <sap2010:ViewStateData Id="If_2" sap:VirtualizedContainerService.HintSize="697,486" />
+      <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="719,1137">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="563,1187" />
-      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="585,1700">
+      <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="844,1285" />
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="866,1918">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -199,7 +223,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="GetTransactionData_1" sap:VirtualizedContainerService.HintSize="625,1780" />
+      <sap2010:ViewStateData Id="GetTransactionData_1" sap:VirtualizedContainerService.HintSize="906,2038" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>

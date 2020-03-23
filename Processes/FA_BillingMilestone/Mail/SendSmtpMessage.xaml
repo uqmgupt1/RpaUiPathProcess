@@ -12,13 +12,13 @@
  xmlns:ui="http://schemas.uipath.com/workflow/activities"
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <x:Members>
+    <x:Property Name="in_CredentialsAsset" Type="InArgument(x:String)" />
+    <x:Property Name="in_SenderName" Type="InArgument(x:String)" />
     <x:Property Name="in_EmailRecipients" Type="InArgument(x:String)" />
     <x:Property Name="in_Subject" Type="InArgument(x:String)" />
     <x:Property Name="in_MessageBody" Type="InArgument(x:String)" />
     <x:Property Name="in_IsBodyHtml" Type="InArgument(x:Boolean)" />
     <x:Property Name="in_Attachments" Type="InArgument(scg:IEnumerable(x:String))" />
-    <x:Property Name="in_SenderName" Type="InArgument(x:String)" />
-    <x:Property Name="in_CredentialsAsset" Type="InArgument(x:String)" />
   </x:Members>
   <mva:VisualBasic.Settings>
     <x:Null />
@@ -71,41 +71,41 @@
       <AssemblyReference>System.ValueTuple</AssemblyReference>
       <AssemblyReference>System.ComponentModel.Composition</AssemblyReference>
       <AssemblyReference>Microsoft.VisualStudio.Services.Common</AssemblyReference>
-      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
+      <AssemblyReference>UiPath.Studio.Plugin.Workflow</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
-  <Sequence DisplayName="SendSmtpMessage" sap2010:WorkflowViewState.IdRef="Sequence_4">
+  <Sequence sap2010:Annotation.AnnotationText="Description: Sends an email over SMTP protocol. All emails are sent from noreply@uq.edu.au.&#xA;&#xA;Inputs:&#xA;in_CredentialsAsset &lt;String&gt;.&#xA;in_SenderName &lt;String&gt;.&#xA;in_EmailRecipients &lt;String&gt;.&#xA;in_Subject &lt;String&gt;.&#xA;in_MessageBody &lt;String&gt;.&#xA;in_IsBodyHtml &lt;String&gt;.&#xA;in_Attachments &lt;String&gt;.&#xA;&#xA;Outputs: NA&#xA;&#xA;Pre Condition:&#xA;Server 'smtp.uq.edu.au' and port '587' is usable.&#xA;&#xA;Post Condition:&#xA;Throw error if no email recipients specified&#xA;Throw error if email not send after three tries" DisplayName="Send Email Message via SMTP" sap2010:WorkflowViewState.IdRef="Sequence_4">
     <Sequence.Variables>
       <Variable x:TypeArguments="x:Int32" Default="120000" Name="EMAIL_TIMEOUT" />
       <Variable x:TypeArguments="x:String" Name="username" />
       <Variable x:TypeArguments="x:String" Name="password" />
+      <Variable x:TypeArguments="s:Exception" Default="[Nothing]" Name="mailError" />
+      <Variable x:TypeArguments="x:Boolean" Default="True" Name="stillSending" />
     </Sequence.Variables>
     <If Condition="[in_EmailRecipients = &quot;;&quot;]" DisplayName="If no recipients" sap2010:WorkflowViewState.IdRef="If_1">
       <If.Then>
         <Throw DisplayName="Throw no recipients" Exception="[New System.Exception(&quot;No recipients to email report to.&quot;)]" sap2010:WorkflowViewState.IdRef="Throw_1" />
       </If.Then>
     </If>
-    <If Condition="[in_CredentialsAsset IsNot Nothing]" DisplayName="If credentials specified">
+    <If Condition="[in_CredentialsAsset IsNot Nothing]" DisplayName="If credentials specified" sap2010:WorkflowViewState.IdRef="If_4">
       <If.Then>
         <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke GetAppCredentials workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_1" UnSafe="False" WorkflowFileName="Framework\GetAppCredentials.xaml">
           <ui:InvokeWorkflowFile.Arguments>
-            <InArgument x:TypeArguments="x:String" x:Key="in_Domain" />
-            <InArgument x:TypeArguments="x:String" x:Key="in_Host">uq.edu.au</InArgument>
+            <InArgument x:TypeArguments="x:String" x:Key="opt_Domain" />
             <InArgument x:TypeArguments="x:String" x:Key="in_Credential">[in_CredentialsAsset]</InArgument>
+            <InArgument x:TypeArguments="x:String" x:Key="opt_Host">uq.edu.au</InArgument>
             <OutArgument x:TypeArguments="x:String" x:Key="out_Username">[username]</OutArgument>
             <OutArgument x:TypeArguments="ss:SecureString" x:Key="out_Password" />
             <OutArgument x:TypeArguments="x:String" x:Key="out_Plaintext">[password]</OutArgument>
           </ui:InvokeWorkflowFile.Arguments>
         </ui:InvokeWorkflowFile>
       </If.Then>
-      <sap2010:WorkflowViewState.IdRef>If_4</sap2010:WorkflowViewState.IdRef>
     </If>
     <While DisplayName="While sending hasn't reached max timespan" sap2010:WorkflowViewState.IdRef="While_1">
       <While.Variables>
-        <Variable x:TypeArguments="x:Boolean" Default="True" Name="sending" />
         <Variable x:TypeArguments="x:Int32" Default="60000" Name="timeout" />
       </While.Variables>
-      <While.Condition>[sending]</While.Condition>
+      <While.Condition>[stillSending And timeout &lt; EMAIL_TIMEOUT]</While.Condition>
       <TryCatch DisplayName="Try Catch" sap2010:WorkflowViewState.IdRef="TryCatch_1">
         <TryCatch.Try>
           <Sequence sap2010:WorkflowViewState.IdRef="Sequence_1">
@@ -128,7 +128,7 @@
             </If>
             <Assign DisplayName="Assign sent" sap2010:WorkflowViewState.IdRef="Assign_1">
               <Assign.To>
-                <OutArgument x:TypeArguments="x:Boolean">[sending]</OutArgument>
+                <OutArgument x:TypeArguments="x:Boolean">[stillSending]</OutArgument>
               </Assign.To>
               <Assign.Value>
                 <InArgument x:TypeArguments="x:Boolean">False</InArgument>
@@ -143,7 +143,19 @@
                 <DelegateInArgument x:TypeArguments="s:Exception" Name="exception" />
               </ActivityAction.Argument>
               <Sequence sap2010:WorkflowViewState.IdRef="Sequence_2">
-                <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Error" Message="[exception.Message]" />
+                <If Condition="[mailError Is Nothing]" DisplayName="If mail error is not set" sap2010:WorkflowViewState.IdRef="If_5">
+                  <If.Then>
+                    <Assign DisplayName="Assign mail error" sap2010:WorkflowViewState.IdRef="Assign_5">
+                      <Assign.To>
+                        <OutArgument x:TypeArguments="s:Exception">[mailError]</OutArgument>
+                      </Assign.To>
+                      <Assign.Value>
+                        <InArgument x:TypeArguments="s:Exception">[exception]</InArgument>
+                      </Assign.Value>
+                    </Assign>
+                  </If.Then>
+                </If>
+                <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Error" Message="[mailError.Message]" />
                 <Delay DisplayName="Delay 3s" Duration="00:00:03" sap2010:WorkflowViewState.IdRef="Delay_1" />
                 <Assign DisplayName="Increment timeout" sap2010:WorkflowViewState.IdRef="Assign_2">
                   <Assign.To>
@@ -157,26 +169,14 @@
             </ActivityAction>
           </Catch>
         </TryCatch.Catches>
-        <TryCatch.Finally>
-          <If Condition="[timeout &gt; EMAIL_TIMEOUT And sending]" DisplayName="If not sent after timeout" sap2010:WorkflowViewState.IdRef="If_3">
-            <If.Then>
-              <Sequence sap2010:WorkflowViewState.IdRef="Sequence_3">
-                <Assign DisplayName="Assign exit" sap2010:WorkflowViewState.IdRef="Assign_3">
-                  <Assign.To>
-                    <OutArgument x:TypeArguments="x:Boolean">[sending]</OutArgument>
-                  </Assign.To>
-                  <Assign.Value>
-                    <InArgument x:TypeArguments="x:Boolean">False</InArgument>
-                  </Assign.Value>
-                </Assign>
-                <Throw DisplayName="Throw email error" Exception="[New SystemException(&quot;Email was not sent  to &quot; + in_EmailRecipients + &quot;after 3 tries&quot;)]" sap2010:WorkflowViewState.IdRef="Throw_2" />
-              </Sequence>
-            </If.Then>
-          </If>
-        </TryCatch.Finally>
       </TryCatch>
     </While>
-    <sads:DebugSymbol.Symbol>d2pDOlxVc2Vyc1xzcGFtaXNoXERvY3VtZW50c1xVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQmlsbGluZ01pbGVzdG9uZVxNYWlsXFNlbmRTbXRwTWVzc2FnZS54YW1sQU0DtAEOAgEBTzNPOwIBAlMFVwoCAVxYBWYKAgFQZwWyAQ0CAQNTE1M5AgFdVQlVsAECAV9YE1g4AgFRWgljIQIBU2k3aT0CAQVqNWo8AgEEbQexARICAQhsGGwhAgEGVTxVgwECAWBeSl5fAgFaX0pfVAIBWF1EXU0CAVdhS2FVAgFVWsIBWuQBAgFUbwuJARYCASChAQuvARACARSRAQ+cARoCAQlwDXDLAQIBTHENgAESAgElgQENiAEWAgEhoQEZoQFDAgEVowEPrQEaAgEZkgERkgGXAQIBEZMBEZMBbwIBD5QBEZsBGgIBCnB7cMgBAgFNcRtxLAIBJnMRdx8CATp6EX4fAgEohgE5hgE+AgEkgwE6gwFDAgEipAERqwEaAgEcrAERrAHcAQIBGpIBf5IBlAECARKTATiTAUICARCZATuZAU0CAQ2WATyWAUUCAQtzywNz4QMCAUpzfXOPAQIBSHOVAXOnAQIBRnO5A3PHAwIBRHP2AXOJAgIBQ3PTAXPfAQIBQXP7AnOAAwIBQHOgA3OwAwIBP3PpAnP1AgIBPXPOAnPfAgIBO3rMA3riAwIBOHp9eo8BAgE2epUBeqcBAgE0eroDesgDAgEyevYBeokCAgExetMBet8BAgEvevwCeoEDAgEueqEDerEDAgEteuoCevYCAgEres8CeuACAgEpqQE9qQFCAgEfpgE+pgFHAgEdrAFCrAGvAQIBGw==</sads:DebugSymbol.Symbol>
+    <If Condition="[stillSending]" DisplayName="If not sent after timeout" sap2010:WorkflowViewState.IdRef="If_3">
+      <If.Then>
+        <Throw DisplayName="Throw email error" Exception="[New ApplicationException(&quot;Email was not sent  to &quot; + in_EmailRecipients + &quot;after 3 tries&quot;, mailError)]" sap2010:WorkflowViewState.IdRef="Throw_2" />
+      </If.Then>
+    </If>
+    <sads:DebugSymbol.Symbol>d1JDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQmlsbGluZ01pbGVzdG9uZVxNYWlsXFNlbmRTbXRwTWVzc2FnZS54YW1sQ00DtAEOAgEBTzNPOwIBBFI3UkICAQNTNVM7AgECVQVZCgIBYFoFZwoCAVRoBa0BDQIBCq4BBbIBCgIBBVUTVTkCAWFXCVewAQIBY1oTWjgCAVVcCWUhAgFXajVqPAIBC20HrAESAgEQbBhsRQIBDK4BE64BIwIBBrABCbAB5AECAQhXPFeDAQIBZF9KX18CAV5hSmFUAgFcY0tjVQIBWmBFYE4CAVlcwgFc5AECAVhvC4kBFgIBJJEBD6gBGgIBEbABOrABtwECAQlwDXDLAQIBUHENgAESAgEpgQENiAEWAgElkgERnQEWAgEcngERngGXAQIBGZ8BEZ8BbwIBF6ABEacBGgIBEnB7cMgBAgFRcRtxLAIBKnMRdx8CAT56EX4fAgEshgE5hgE+AgEogwE6gwFIAgEmkgEfkgE3AgEdlAEVmwEeAgEfngF/ngGUAQIBGp8BOJ8BQgIBGKUBO6UBTQIBFaIBPKIBRQIBE3PLA3PhAwIBTnN9c48BAgFMc5UBc6cBAgFKc7kDc8cDAgFIc/YBc4kCAgFHc9MBc98BAgFFc/sCc4ADAgFEc6ADc7ADAgFDc+kCc/UCAgFBc84Cc98CAgE/eswDeuIDAgE8en16jwECATp6lQF6pwECATh6ugN6yAMCATZ69gF6iQICATV60wF63wECATN6/AJ6gQMCATJ6oQN6sQMCATF66gJ69gICAS96zwJ64AICAS2ZAUOZAU4CASKWAUSWAU8CASA=</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -196,10 +196,12 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="LogMessage_2" sap:VirtualizedContainerService.HintSize="314,91" />
-      <sap2010:ViewStateData Id="Delay_1" sap:VirtualizedContainerService.HintSize="314,22" />
-      <sap2010:ViewStateData Id="Assign_2" sap:VirtualizedContainerService.HintSize="314,60" />
-      <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="336,377">
+      <sap2010:ViewStateData Id="Assign_5" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="If_5" sap:VirtualizedContainerService.HintSize="464,208" />
+      <sap2010:ViewStateData Id="LogMessage_2" sap:VirtualizedContainerService.HintSize="464,91" />
+      <sap2010:ViewStateData Id="Delay_1" sap:VirtualizedContainerService.HintSize="464,22" />
+      <sap2010:ViewStateData Id="Assign_2" sap:VirtualizedContainerService.HintSize="464,60" />
+      <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="486,625">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -214,17 +216,14 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Assign_3" sap:VirtualizedContainerService.HintSize="242,60" />
-      <sap2010:ViewStateData Id="Throw_2" sap:VirtualizedContainerService.HintSize="242,22" />
-      <sap2010:ViewStateData Id="Sequence_3" sap:VirtualizedContainerService.HintSize="264,246">
+      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="693,875">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_3" sap:VirtualizedContainerService.HintSize="464,394" />
-      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="693,875" />
       <sap2010:ViewStateData Id="While_1" sap:VirtualizedContainerService.HintSize="719,1033">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
@@ -233,14 +232,17 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_4" sap:VirtualizedContainerService.HintSize="741,1680">
+      <sap2010:ViewStateData Id="Throw_2" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="If_3" sap:VirtualizedContainerService.HintSize="719,208" />
+      <sap2010:ViewStateData Id="Sequence_4" sap:VirtualizedContainerService.HintSize="741,2225">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsAnnotationDocked">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="SendSmtpMessage_1" sap:VirtualizedContainerService.HintSize="781,1760" />
+      <sap2010:ViewStateData Id="SendSmtpMessage_1" sap:VirtualizedContainerService.HintSize="781,2345" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>

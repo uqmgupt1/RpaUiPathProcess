@@ -1,4 +1,4 @@
-<Activity mc:Ignorable="sap sap2010 sads" x:Class="ExceptionQueueItem"
+﻿<Activity mc:Ignorable="sap sap2010 sads" x:Class="ExceptionQueueItem"
  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
  xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities"
@@ -12,8 +12,8 @@
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <x:Members>
     <x:Property Name="in_SystemError" Type="InArgument(s:Exception)" />
-    <x:Property Name="out_FailedItem" Type="OutArgument(ui:QueueItem)" />
     <x:Property Name="in_StageReference" Type="InArgument(x:String)" />
+    <x:Property Name="out_FailedItem" Type="OutArgument(ui:QueueItem)" />
   </x:Members>
   <mva:VisualBasic.Settings>
     <x:Null />
@@ -66,9 +66,10 @@
       <AssemblyReference>System.ValueTuple</AssemblyReference>
       <AssemblyReference>System.ComponentModel.Composition</AssemblyReference>
       <AssemblyReference>UiPath.Studio.Plugin.Workflow</AssemblyReference>
+      <AssemblyReference>Microsoft.VisualStudio.Services.Common</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
-  <Sequence DisplayName="Create a queue item for exception" sap2010:WorkflowViewState.IdRef="Sequence_1">
+  <Sequence sap2010:Annotation.AnnotationText="Description: Creates a simulated queue item to record any exception at the stage that is passed in.&#xA;&#xA;Inputs:&#xA;in_SystemError &lt;Exception&gt;.&#xA;in_StageReference &lt;String&gt;: Reference of the section where failure occurred.&#xA;&#xA;Outputs:&#xD;&#xA;out_FailedItem &lt;QueueItem&gt;.&#xD;&#xA;&#xA;Pre Condition: NA&#xA;Post Condition: NA" DisplayName="Create a queue item for exception" sap2010:WorkflowViewState.IdRef="Sequence_1">
     <Assign DisplayName="Init Transaction" sap2010:WorkflowViewState.IdRef="Assign_1">
       <Assign.To>
         <OutArgument x:TypeArguments="ui:QueueItem">[out_FailedItem]</OutArgument>
@@ -77,12 +78,28 @@
         <InArgument x:TypeArguments="ui:QueueItem">[New QueueItem]</InArgument>
       </Assign.Value>
     </Assign>
-    <Assign DisplayName="Assign Reference" sap2010:WorkflowViewState.IdRef="Assign_2">
+    <Assign DisplayName="Init specific content" sap2010:WorkflowViewState.IdRef="Assign_10">
       <Assign.To>
-        <OutArgument x:TypeArguments="x:String">[out_FailedItem.Reference]</OutArgument>
+        <OutArgument x:TypeArguments="scg:Dictionary(x:String, x:Object)">[out_FailedItem.SpecificContent]</OutArgument>
       </Assign.To>
       <Assign.Value>
-        <InArgument x:TypeArguments="x:String">[in_StageReference]</InArgument>
+        <InArgument x:TypeArguments="scg:Dictionary(x:String, x:Object)">[New Dictionary(Of String, Object)]</InArgument>
+      </Assign.Value>
+    </Assign>
+    <Assign DisplayName="Assign Stage Reference" sap2010:WorkflowViewState.IdRef="Assign_2">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:Object">[out_FailedItem.SpecificContent("Contract")]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:Object">[in_StageReference]</InArgument>
+      </Assign.Value>
+    </Assign>
+    <Assign DisplayName="Assign Blank Reference" sap2010:WorkflowViewState.IdRef="Assign_11">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:Object">[out_FailedItem.SpecificContent("Milestone ID")]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:Object">[""]</InArgument>
       </Assign.Value>
     </Assign>
     <Assign DisplayName="Assign Failed" sap2010:WorkflowViewState.IdRef="Assign_3">
@@ -93,7 +110,7 @@
         <InArgument x:TypeArguments="ui:QueueItemStatus">[QueueItemStatus.Failed]</InArgument>
       </Assign.Value>
     </Assign>
-    <Assign DisplayName="Assign proc exception" sap2010:WorkflowViewState.IdRef="Assign_4">
+    <Assign DisplayName="Init proc exception" sap2010:WorkflowViewState.IdRef="Assign_4">
       <Assign.To>
         <OutArgument x:TypeArguments="ui:ProcessingException">[out_FailedItem.ProcessingException]</OutArgument>
       </Assign.To>
@@ -117,33 +134,52 @@
         <InArgument x:TypeArguments="x:String">[in_SystemError.Message]</InArgument>
       </Assign.Value>
     </Assign>
-    <Assign DisplayName="Assign Exception Details" sap2010:WorkflowViewState.IdRef="Assign_7">
-      <Assign.To>
-        <OutArgument x:TypeArguments="x:String">[out_FailedItem.ProcessingException.Details]</OutArgument>
-      </Assign.To>
-      <Assign.Value>
-        <InArgument x:TypeArguments="x:String">[in_SystemError.ToString]</InArgument>
-      </Assign.Value>
-    </Assign>
-    <sads:DebugSymbol.Symbol>d2hDOlxVc2Vyc1xzcGFtaXNoXERvY3VtZW50c1xVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQmlsbGluZ01pbGVzdG9uZVxFeGNlcHRpb25RdWV1ZUl0ZW0ueGFtbBZHA4EBDgIBAUgFTw4CARpQBVcOAgEWWAVfDgIBEmAFZw4CAQ5oBW8OAgEKcAV3DgIBBngFfw4CAQJNNE1DAgEdSjVKRQIBG1UwVUMCARhSMVJLAgEXXTpdUgIBFVo7WlICARNlPmVXAgERYj9iYwIBD21CbXACAQ1qQ2psAgELdTB1SAIBCHIxclwCAQd9MH1JAgEEejF6XQIBAw==</sads:DebugSymbol.Symbol>
+    <If Condition="[in_SystemError.InnerException Is Nothing]" DisplayName="If inner exception or no" sap2010:WorkflowViewState.IdRef="If_1">
+      <If.Then>
+        <Assign DisplayName="Assign Exception Details" sap2010:WorkflowViewState.IdRef="Assign_8">
+          <Assign.To>
+            <OutArgument x:TypeArguments="x:String">[out_FailedItem.ProcessingException.Details]</OutArgument>
+          </Assign.To>
+          <Assign.Value>
+            <InArgument x:TypeArguments="x:String">[in_SystemError.ToString]</InArgument>
+          </Assign.Value>
+        </Assign>
+      </If.Then>
+      <If.Else>
+        <Assign DisplayName="Assign Exception Details" sap2010:WorkflowViewState.IdRef="Assign_9">
+          <Assign.To>
+            <OutArgument x:TypeArguments="x:String">[out_FailedItem.ProcessingException.Details]</OutArgument>
+          </Assign.To>
+          <Assign.Value>
+            <InArgument x:TypeArguments="x:String">[in_SystemError.InnerException.ToString]</InArgument>
+          </Assign.Value>
+        </Assign>
+      </If.Else>
+    </If>
+    <sads:DebugSymbol.Symbol>d1BDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQmlsbGluZ01pbGVzdG9uZVxFeGNlcHRpb25RdWV1ZUl0ZW0ueGFtbCFIA6ABDgIBAUkFUA4CASdRBVgOAgEkWQVgDgIBIGEFaA4CAR1pBXAOAgEZcQV4DgIBFXkFgAEOAgERgQEFiAEOAgENiQEFngEKAgECTjROQwIBKks1S0UCAShWSlZtAgEmU0tTawIBJV4wXkMCASJbMVtdAgEhZjBmNAIBH2MxY2ECAR5uOm5SAgEcaztrUgIBGnY+dlcCARhzP3NjAgEWfkJ+cAIBFHtDe2wCARKGATCGAUgCAQ+DATGDAVwCAQ6JAROJAT8CAQOLAQmSARICAQmVAQmcARICAQWQATSQAU0CAQuNATWNAWECAQqaATSaAVwCAQeXATWXAWECAQY=</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
-      <sap2010:ViewStateData Id="Assign_1" sap:VirtualizedContainerService.HintSize="242,60" />
-      <sap2010:ViewStateData Id="Assign_2" sap:VirtualizedContainerService.HintSize="242,60" />
-      <sap2010:ViewStateData Id="Assign_3" sap:VirtualizedContainerService.HintSize="242,60" />
-      <sap2010:ViewStateData Id="Assign_4" sap:VirtualizedContainerService.HintSize="242,60" />
-      <sap2010:ViewStateData Id="Assign_5" sap:VirtualizedContainerService.HintSize="242,60" />
-      <sap2010:ViewStateData Id="Assign_6" sap:VirtualizedContainerService.HintSize="242,60" />
-      <sap2010:ViewStateData Id="Assign_7" sap:VirtualizedContainerService.HintSize="242,60" />
-      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="264,784">
+      <sap2010:ViewStateData Id="Assign_1" sap:VirtualizedContainerService.HintSize="509,60" />
+      <sap2010:ViewStateData Id="Assign_10" sap:VirtualizedContainerService.HintSize="509,60" />
+      <sap2010:ViewStateData Id="Assign_2" sap:VirtualizedContainerService.HintSize="509,60" />
+      <sap2010:ViewStateData Id="Assign_11" sap:VirtualizedContainerService.HintSize="509,60" />
+      <sap2010:ViewStateData Id="Assign_3" sap:VirtualizedContainerService.HintSize="509,60" />
+      <sap2010:ViewStateData Id="Assign_4" sap:VirtualizedContainerService.HintSize="509,60" />
+      <sap2010:ViewStateData Id="Assign_5" sap:VirtualizedContainerService.HintSize="509,60" />
+      <sap2010:ViewStateData Id="Assign_6" sap:VirtualizedContainerService.HintSize="509,60" />
+      <sap2010:ViewStateData Id="Assign_8" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="Assign_9" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="509,208" />
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="531,1324">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsAnnotationDocked">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="InitException_1" sap:VirtualizedContainerService.HintSize="304,864" />
+      <sap2010:ViewStateData Id="InitException_1" sap:VirtualizedContainerService.HintSize="571,1404" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>

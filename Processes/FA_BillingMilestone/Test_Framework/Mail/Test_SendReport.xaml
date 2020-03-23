@@ -70,13 +70,14 @@
       <AssemblyReference>UiPath.Studio.Plugin.Workflow</AssemblyReference>
       <AssemblyReference>System.Collections.Immutable</AssemblyReference>
       <AssemblyReference>Microsoft.VisualStudio.Services.Common</AssemblyReference>
+      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence DisplayName="Test_EmailReport" sap2010:WorkflowViewState.IdRef="Sequence_1">
     <Sequence.Variables>
       <Variable x:TypeArguments="x:String" Name="opMode" />
       <Variable x:TypeArguments="scg:Dictionary(x:String, x:String)" Name="in_Config" />
-      <Variable x:TypeArguments="scg:IEnumerable(ui:QueueItem)" Name="TransactionData" />
+      <Variable x:TypeArguments="scg:IEnumerable(ui:QueueItem)" Name="TransactionsProcessed" />
     </Sequence.Variables>
     <If Condition="[in_TestingRow IsNot Nothing]" sap2010:WorkflowViewState.IdRef="If_1">
       <If.Then>
@@ -109,29 +110,37 @@
         <InArgument x:TypeArguments="s:DateTime" x:Key="in_StartTime">[Now]</InArgument>
       </ui:InvokeWorkflowFile.Arguments>
     </ui:InvokeWorkflowFile>
-    <ui:GetQueueItems Duration="{x:Null}" From="{x:Null}" Priority="{x:Null}" Reference="{x:Null}" Skip="{x:Null}" TimeoutMS="{x:Null}" To="{x:Null}" Top="{x:Null}" DisplayName="Get Queue Items" FilterStrategy="StartsWith" sap2010:WorkflowViewState.IdRef="GetQueueItems_1" QueueItemStates="Failed, Successful" QueueName="[in_Config(&quot;UpdateQueue&quot;)]" Result="[TransactionData]" />
-    <Assign sap2010:WorkflowViewState.IdRef="Assign_21">
-      <Assign.To>
-        <OutArgument x:TypeArguments="scg:IEnumerable(ui:QueueItem)">[TransactionData]</OutArgument>
-      </Assign.To>
-      <Assign.Value>
-        <InArgument x:TypeArguments="scg:IEnumerable(ui:QueueItem)">[New List(Of QueueItem)]</InArgument>
-      </Assign.Value>
-    </Assign>
-    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_3" Level="Info" Message="[&quot;Got &quot; &amp; TransactionData.Count &amp; &quot; transactions&quot;]" />
-    <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke SendJobReport workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_5" UnSafe="False" WorkflowFileName="Mail\SendReport.xaml">
-      <ui:InvokeWorkflowFile.Arguments>
-        <InArgument x:TypeArguments="scg:List(ui:QueueItem)" x:Key="in_TransactionData">[TransactionData.ToList]</InArgument>
-        <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)" x:Key="in_Config">[in_Config]</InArgument>
-        <InArgument x:TypeArguments="x:String" x:Key="in_ProcessName" />
-        <InArgument x:TypeArguments="x:String" x:Key="in_HtmlReport" />
-        <InArgument x:TypeArguments="x:String" x:Key="in_HtmlLogo" />
-        <InArgument x:TypeArguments="x:String" x:Key="in_EmailRecipients" />
-        <InArgument x:TypeArguments="x:String" x:Key="in_TransactionItem" />
-        <InArgument x:TypeArguments="x:String" x:Key="in_SendEmailOn" />
-      </ui:InvokeWorkflowFile.Arguments>
-    </ui:InvokeWorkflowFile>
-    <sads:DebugSymbol.Symbol>d3lDOlxVc2Vyc1xzcGFtaXNoXERvY3VtZW50c1xVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQmlsbGluZ01pbGVzdG9uZVxUZXN0X0ZyYW1ld29ya1xNYWlsXFRlc3RfU2VuZFJlcG9ydC54YW1sHEsDhwEOAgEBUQVmCgIBGWcFbx0CARBwBXCFAwIBDHEFeA4CAQl5BXnFAQIBB3oFhQEdAgECURNRMgIBGlMJWhICAR9dCWQSAgEbbUdtTAIBGGxQbFgCARZrXmtpAgEUZ7wBZ9wBAgETakpqcAIBEmlGaVYCARFwwQJw5wICAQ5w7wJwggMCAQ12RXZdAgELc0ZzVwIBCnlyecIBAgEIfFl8cQIBBn1cfWcCAQR6ugF60AECAQNYNFhZAgEiVTVVPQIBIGI0YjcCAR5fNV89AgEc</sads:DebugSymbol.Symbol>
+    <ui:GetQueueItems Duration="{x:Null}" From="{x:Null}" Priority="{x:Null}" Reference="{x:Null}" Skip="{x:Null}" TimeoutMS="{x:Null}" To="{x:Null}" Top="{x:Null}" DisplayName="Get Queue Items" FilterStrategy="StartsWith" sap2010:WorkflowViewState.IdRef="GetQueueItems_1" QueueItemStates="Failed, Successful" QueueName="[in_Config(&quot;UpdateQueue&quot;)]" Result="[TransactionsProcessed]" />
+    <Sequence sap2010:WorkflowViewState.IdRef="Sequence_2">
+      <Assign sap2010:WorkflowViewState.IdRef="Assign_21">
+        <Assign.To>
+          <OutArgument x:TypeArguments="scg:IEnumerable(ui:QueueItem)">[TransactionsProcessed]</OutArgument>
+        </Assign.To>
+        <Assign.Value>
+          <InArgument x:TypeArguments="scg:IEnumerable(ui:QueueItem)">[New List(Of QueueItem)]</InArgument>
+        </Assign.Value>
+      </Assign>
+      <ui:InvokeCode ContinueOnError="{x:Null}" Code="Dim dict As Dictionary(Of String, Object)&#xD;&#xA;Dim proc As ProcessingException&#xD;&#xA;&#xD;&#xA;'--------------------------------------------------------------&#xD;&#xA;&#xD;&#xA;Dim successful1 As New QueueItem&#xD;&#xA;successful1.Status = QueueItemStatus.Successful&#xD;&#xA;successful1.Reference = &quot;Success Dispatch 1&quot;&#xD;&#xA;successful1.QueueName = &quot;FA_BillingMilestone_Dispatch&quot;&#xD;&#xA;successful1.Output = New Dictionary(Of String, Object)&#xD;&#xA;&#xD;&#xA;dict = New Dictionary(Of String, Object)&#xD;&#xA;dict(&quot;Contract&quot;) = &quot;CON01&quot;&#xD;&#xA;dict(&quot;Milestone ID&quot;) = &quot;B13&quot;&#xD;&#xA;successful1.SpecificContent = dict&#xD;&#xA;&#xD;&#xA;Dim successful2 As New QueueItem&#xD;&#xA;successful2.Status = QueueItemStatus.Successful&#xD;&#xA;successful2.Reference = &quot;Success Dispatch 2&quot;&#xD;&#xA;successful2.QueueName = &quot;FA_BillingMilestone_Dispatch&quot;&#xD;&#xA;successful2.Output = New Dictionary(Of String, Object)&#xD;&#xA;&#xD;&#xA;dict = New Dictionary(Of String, Object)&#xD;&#xA;dict(&quot;Contract&quot;) = &quot;CON02&quot;&#xD;&#xA;dict(&quot;Milestone ID&quot;) = &quot;B14&quot;&#xD;&#xA;successful2.SpecificContent = dict&#xD;&#xA;&#xD;&#xA;Dim successful3 As New QueueItem&#xD;&#xA;successful3.Status = QueueItemStatus.Successful&#xD;&#xA;successful3.Reference = &quot;Success Update 1&quot;&#xD;&#xA;successful3.QueueName = &quot;FA_BillingMilestone_Update&quot;&#xD;&#xA;&#xD;&#xA;dict = New Dictionary(Of String, Object)&#xD;&#xA;dict(&quot;Contract&quot;) = &quot;CON03&quot;&#xD;&#xA;dict(&quot;Milestone ID&quot;) = &quot;B15&quot;&#xD;&#xA;successful3.SpecificContent = dict&#xD;&#xA;&#xD;&#xA;dict = New Dictionary(Of String, Object)&#xD;&#xA;dict(&quot;Projects Updated&quot;) = 1&#xD;&#xA;dict(&quot;Grantors Updated&quot;) = 3&#xD;&#xA;dict(&quot;Lines Updated&quot;) = 5&#xD;&#xA;dict(&quot;Events Updated&quot;) = 7&#xD;&#xA;dict(&quot;Projects Total&quot;) = 9&#xD;&#xA;dict(&quot;Grantors Total&quot;) = 11&#xD;&#xA;dict(&quot;Lines Total&quot;) = 13&#xD;&#xA;dict(&quot;Events Total&quot;) = 15&#xD;&#xA;successful3.Output = dict&#xD;&#xA;&#xD;&#xA;Dim successful4 As New QueueItem&#xD;&#xA;successful4.Status = QueueItemStatus.Successful&#xD;&#xA;successful4.Reference = &quot;Success Update 2&quot;&#xD;&#xA;successful4.QueueName = &quot;FA_BillingMilestone_Update&quot;&#xD;&#xA;&#xD;&#xA;dict = New Dictionary(Of String, Object)&#xD;&#xA;dict(&quot;Contract&quot;) = &quot;CON04&quot;&#xD;&#xA;dict(&quot;Milestone ID&quot;) = &quot;B16&quot;&#xD;&#xA;successful4.SpecificContent = dict&#xD;&#xA;&#xD;&#xA;dict = New Dictionary(Of String, Object)&#xD;&#xA;dict(&quot;Projects Updated&quot;) = 2&#xD;&#xA;dict(&quot;Grantors Updated&quot;) = 4&#xD;&#xA;dict(&quot;Lines Updated&quot;) = 6&#xD;&#xA;dict(&quot;Events Updated&quot;) = 8&#xD;&#xA;dict(&quot;Projects Total&quot;) = 10&#xD;&#xA;dict(&quot;Grantors Total&quot;) = 12&#xD;&#xA;dict(&quot;Lines Total&quot;) = 14&#xD;&#xA;dict(&quot;Events Total&quot;) = 16&#xD;&#xA;successful4.Output = dict&#xD;&#xA;&#xD;&#xA;'--------------------------------------------------------------&#xD;&#xA;&#xD;&#xA;Dim ruleException1 As New QueueItem&#xD;&#xA;ruleException1.Status = QueueItemStatus.Failed&#xD;&#xA;ruleException1.Reference = &quot;Rule Ex Dispatch 1&quot;&#xD;&#xA;ruleException1.QueueName = &quot;FA_BillingMilestone_Dispatch&quot;&#xD;&#xA;&#xD;&#xA;dict = New Dictionary(Of String, Object)&#xD;&#xA;dict(&quot;Contract&quot;) = &quot;CON05&quot;&#xD;&#xA;dict(&quot;Milestone ID&quot;) = &quot;B17&quot;&#xD;&#xA;ruleException1.SpecificContent = dict&#xD;&#xA;&#xD;&#xA;proc = New ProcessingException&#xD;&#xA;proc.Type = ProcessingExceptionType.BusinessException&#xD;&#xA;proc.Reason = &quot;1&quot; + vbTab + &quot;Rule Exception&quot; + vbNewLine + &quot;Further details of the first dispatch rule exception&quot;&#xD;&#xA;ruleException1.ProcessingException = proc&#xD;&#xA;&#xD;&#xA;Dim ruleException2 As New QueueItem&#xD;&#xA;ruleException2.Status = QueueItemStatus.Failed&#xD;&#xA;ruleException2.Reference = &quot;Rule Ex Dispatch 2&quot;&#xD;&#xA;ruleException2.QueueName = &quot;FA_BillingMilestone_Dispatch&quot;&#xD;&#xA;&#xD;&#xA;dict = New Dictionary(Of String, Object)&#xD;&#xA;dict(&quot;Contract&quot;) = &quot;CON06&quot;&#xD;&#xA;dict(&quot;Milestone ID&quot;) = &quot;B18&quot;&#xD;&#xA;ruleException2.SpecificContent = dict&#xD;&#xA;&#xD;&#xA;proc = New ProcessingException&#xD;&#xA;proc.Type = ProcessingExceptionType.BusinessException&#xD;&#xA;proc.Reason = &quot;3&quot; + vbTab + &quot;Rule Exception&quot; + vbNewLine + &quot;Further details of the second dispatch rule exception&quot;&#xD;&#xA;ruleException2.ProcessingException = proc&#xD;&#xA;&#xD;&#xA;Dim ruleException3 As New QueueItem&#xD;&#xA;ruleException3.Status = QueueItemStatus.Failed&#xD;&#xA;ruleException3.Reference = &quot;Rule Ex Update 1&quot;&#xD;&#xA;ruleException3.QueueName = &quot;FA_BillingMilestone_Update&quot;&#xD;&#xA;&#xD;&#xA;dict = New Dictionary(Of String, Object)&#xD;&#xA;dict(&quot;Contract&quot;) = &quot;CON07&quot;&#xD;&#xA;dict(&quot;Milestone ID&quot;) = &quot;B19&quot;&#xD;&#xA;ruleException3.SpecificContent = dict&#xD;&#xA;&#xD;&#xA;proc = New ProcessingException&#xD;&#xA;proc.Type = ProcessingExceptionType.BusinessException&#xD;&#xA;proc.Reason = &quot;5&quot; + vbTab + &quot;Rule Exception&quot; + vbNewLine + &quot;Further details of the first update rule exception&quot;&#xD;&#xA;ruleException3.ProcessingException = proc&#xD;&#xA;&#xD;&#xA;Dim ruleException4 As New QueueItem&#xD;&#xA;ruleException4.Status = QueueItemStatus.Failed&#xD;&#xA;ruleException4.Reference = &quot;Rule Ex Update 2&quot;&#xD;&#xA;ruleException4.QueueName = &quot;FA_BillingMilestone_Update&quot;&#xD;&#xA;&#xD;&#xA;dict = New Dictionary(Of String, Object)&#xD;&#xA;dict(&quot;Contract&quot;) = &quot;CON08&quot;&#xD;&#xA;dict(&quot;Milestone ID&quot;) = &quot;B20&quot;&#xD;&#xA;ruleException4.SpecificContent = dict&#xD;&#xA;&#xD;&#xA;proc = New ProcessingException&#xD;&#xA;proc.Type = ProcessingExceptionType.BusinessException&#xD;&#xA;proc.Reason = &quot;7&quot; + vbTab + &quot;Rule Exception&quot; + vbNewLine + &quot;Further details of the second update rule exception&quot;&#xD;&#xA;ruleException4.ProcessingException = proc&#xD;&#xA;&#xD;&#xA;'--------------------------------------------------------------&#xD;&#xA;&#xD;&#xA;Dim systemError1 As New QueueItem&#xD;&#xA;systemError1.Status = QueueItemStatus.Failed&#xD;&#xA;systemError1.Reference = &quot;Sys Err Dispatch 1&quot;&#xD;&#xA;systemError1.QueueName = &quot;FA_BillingMilestone_Dispatch&quot;&#xD;&#xA;&#xD;&#xA;dict = New Dictionary(Of String, Object)&#xD;&#xA;dict(&quot;Contract&quot;) = &quot;CON09&quot;&#xD;&#xA;dict(&quot;Milestone ID&quot;) = &quot;B21&quot;&#xD;&#xA;systemError1.SpecificContent = dict&#xD;&#xA;&#xD;&#xA;proc = New ProcessingException&#xD;&#xA;proc.Type = ProcessingExceptionType.ApplicationException&#xD;&#xA;proc.Reason = &quot;2&quot; + vbTab + &quot;System Error&quot; + vbNewLine + &quot;Further details of the first dispatch system error&quot;&#xD;&#xA;systemError1.ProcessingException = proc&#xD;&#xA;&#xD;&#xA;Dim systemError2 As New QueueItem&#xD;&#xA;systemError2.Status = QueueItemStatus.Failed&#xD;&#xA;systemError2.Reference = &quot;Sys Err Dispatch 2&quot;&#xD;&#xA;systemError2.QueueName = &quot;FA_BillingMilestone_Dispatch&quot;&#xD;&#xA;&#xD;&#xA;dict = New Dictionary(Of String, Object)&#xD;&#xA;dict(&quot;Contract&quot;) = &quot;CON10&quot;&#xD;&#xA;dict(&quot;Milestone ID&quot;) = &quot;B22&quot;&#xD;&#xA;systemError2.SpecificContent = dict&#xD;&#xA;&#xD;&#xA;proc = New ProcessingException&#xD;&#xA;proc.Type = ProcessingExceptionType.ApplicationException&#xD;&#xA;proc.Reason = &quot;4&quot; + vbTab + &quot;System Error&quot; + vbNewLine + &quot;Further details of the second dispatch system error&quot;&#xD;&#xA;systemError2.ProcessingException = proc&#xD;&#xA;&#xD;&#xA;Dim systemError3 As New QueueItem&#xD;&#xA;systemError3.Status = QueueItemStatus.Failed&#xD;&#xA;systemError3.Reference = &quot;Sys Err Update 1&quot;&#xD;&#xA;systemError3.QueueName = &quot;FA_BillingMilestone_Update&quot;&#xD;&#xA;&#xD;&#xA;dict = New Dictionary(Of String, Object)&#xD;&#xA;dict(&quot;Contract&quot;) = &quot;CON11&quot;&#xD;&#xA;dict(&quot;Milestone ID&quot;) = &quot;B23&quot;&#xD;&#xA;systemError3.SpecificContent = dict&#xD;&#xA;&#xD;&#xA;proc = New ProcessingException&#xD;&#xA;proc.Type = ProcessingExceptionType.ApplicationException&#xD;&#xA;proc.Reason = &quot;6&quot; + vbTab + &quot;System Error&quot; + vbNewLine + &quot;Further details of the first update system error&quot;&#xD;&#xA;systemError3.ProcessingException = proc&#xD;&#xA;&#xD;&#xA;Dim systemError4 As New QueueItem&#xD;&#xA;systemError4.Status = QueueItemStatus.Failed&#xD;&#xA;systemError4.Reference = &quot;Sys Err Update 2&quot;&#xD;&#xA;systemError4.QueueName = &quot;FA_BillingMilestone_Update&quot;&#xD;&#xA;&#xD;&#xA;dict = New Dictionary(Of String, Object)&#xD;&#xA;dict(&quot;Contract&quot;) = &quot;CON12&quot;&#xD;&#xA;dict(&quot;Milestone ID&quot;) = &quot;B24&quot;&#xD;&#xA;systemError4.SpecificContent = dict&#xD;&#xA;&#xD;&#xA;proc = New ProcessingException&#xD;&#xA;proc.Type = ProcessingExceptionType.ApplicationException&#xD;&#xA;proc.Reason = &quot;8&quot; + vbTab + &quot;System Error&quot; + vbNewLine + &quot;Further details of the second update system error&quot;&#xD;&#xA;systemError4.ProcessingException = proc&#xD;&#xA;&#xD;&#xA;'--------------------------------------------------------------&#xD;&#xA;&#xD;&#xA;Dim transactions As New List(Of QueueItem)&#xD;&#xA;If Index &lt; 0 Then&#xD;&#xA;	transactions.Add(successful1)&#xD;&#xA;	transactions.Add(successful2)&#xD;&#xA;	transactions.Add(successful3)&#xD;&#xA;	transactions.Add(successful4)&#xD;&#xA;	transactions.Add(ruleException1)&#xD;&#xA;	transactions.Add(ruleException2)&#xD;&#xA;	transactions.Add(ruleException3)&#xD;&#xA;	transactions.Add(ruleException4)&#xD;&#xA;	transactions.Add(systemError1)&#xD;&#xA;	transactions.Add(systemError2)&#xD;&#xA;	transactions.Add(systemError3)&#xD;&#xA;	transactions.Add(systemError4)&#xD;&#xA;Else&#xD;&#xA;	If Index Mod 2 &gt; 0 Then transactions.Add(successful1)&#xD;&#xA;	If Index Mod 4 &gt; 1 Then transactions.Add(successful2)&#xD;&#xA;	If Index Mod 6 &gt; 2 Then transactions.Add(successful3)&#xD;&#xA;	If Index Mod 8 &gt; 3 Then transactions.Add(successful4)&#xD;&#xA;	If Index Mod 10 &gt; 4 Then transactions.Add(ruleException1)&#xD;&#xA;	If Index Mod 12 &gt; 5 Then transactions.Add(ruleException2)&#xD;&#xA;	If Index Mod 14 &gt; 6 Then transactions.Add(ruleException3)&#xD;&#xA;	If Index Mod 16 &gt; 7 Then transactions.Add(ruleException4)&#xD;&#xA;	If Index Mod 18 &gt; 8 Then transactions.Add(systemError1)&#xD;&#xA;	If Index Mod 20 &gt; 9 Then transactions.Add(systemError2)&#xD;&#xA;	If Index Mod 22 &gt; 10 Then transactions.Add(systemError3)&#xD;&#xA;	If Index Mod 24 &gt; 11 Then transactions.Add(systemError4)&#xD;&#xA;End If&#xD;&#xA;TransactionsProcessed = transactions" DisplayName="Invoke code" sap2010:WorkflowViewState.IdRef="InvokeCode_1">
+        <ui:InvokeCode.Arguments>
+          <OutArgument x:TypeArguments="scg:IEnumerable(ui:QueueItem)" x:Key="TransactionsProcessed">[TransactionsProcessed]</OutArgument>
+          <InArgument x:TypeArguments="x:Int32" x:Key="Index">-1</InArgument>
+        </ui:InvokeCode.Arguments>
+      </ui:InvokeCode>
+      <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_3" Level="Info" Message="[&quot;Got &quot; &amp; TransactionsProcessed.Count &amp; &quot; transactions&quot;]" />
+      <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke SendJobReport workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_5" UnSafe="False" WorkflowFileName="Mail\SendReport.xaml">
+        <ui:InvokeWorkflowFile.Arguments>
+          <InArgument x:TypeArguments="scg:List(ui:QueueItem)" x:Key="in_TransactionItems">[TransactionsProcessed.ToList]</InArgument>
+          <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)" x:Key="in_Config">[in_Config]</InArgument>
+          <InArgument x:TypeArguments="x:String" x:Key="in_ProcessName" />
+          <InArgument x:TypeArguments="x:String" x:Key="in_HtmlReport" />
+          <InArgument x:TypeArguments="x:String" x:Key="in_HtmlLogo" />
+          <InArgument x:TypeArguments="x:String" x:Key="in_EmailRecipients" />
+          <InArgument x:TypeArguments="x:String" x:Key="in_TransactionItem" />
+          <InArgument x:TypeArguments="x:String" x:Key="in_SendEmailOn" />
+        </ui:InvokeWorkflowFile.Arguments>
+      </ui:InvokeWorkflowFile>
+    </Sequence>
+    <sads:DebugSymbol.Symbol>d3lDOlxVc2Vyc1xzcGFtaXNoXERvY3VtZW50c1xVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQmlsbGluZ01pbGVzdG9uZVxUZXN0X0ZyYW1ld29ya1xNYWlsXFRlc3RfU2VuZFJlcG9ydC54YW1sIEwDkAEOAgEBUgVnCgIBHWgFcB0CARRxBXGLAwIBEHIFjgEQAgECUhNSMgIBHlQJWxICASNeCWUSAgEfbkduTAIBHG1QbVgCARpsXmxpAgEYaLwBaNwBAgEXa0prcAIBFmpGalYCARVxwQJx5wICARJx7wJxiAMCARFzB3oQAgENeweAARcCAQqBAQeBAc0BAgEIggEHjQEfAgEDWTRZWQIBJlY1Vj0CASRjNGM3AgEiYDVgPQIBIHhHeF8CAQ91SHVfAgEOfWZ9fQIBDH4/fkECAQuBAXSBAcoBAgEJhQFehQFpAgEGhAFchAF6AgEFggG8AYIB0gECAQQ=</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -140,17 +149,25 @@
       <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="509,208" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_2" sap:VirtualizedContainerService.HintSize="509,87" />
       <sap2010:ViewStateData Id="GetQueueItems_1" sap:VirtualizedContainerService.HintSize="509,22" />
-      <sap2010:ViewStateData Id="Assign_21" sap:VirtualizedContainerService.HintSize="509,60" />
-      <sap2010:ViewStateData Id="LogMessage_3" sap:VirtualizedContainerService.HintSize="509,91" />
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_5" sap:VirtualizedContainerService.HintSize="509,87" />
-      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="531,879">
+      <sap2010:ViewStateData Id="Assign_21" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="InvokeCode_1" sap:VirtualizedContainerService.HintSize="314,164" />
+      <sap2010:ViewStateData Id="LogMessage_3" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_5" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="509,646">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Test_EmailReport_1" sap:VirtualizedContainerService.HintSize="571,959" />
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="531,1207">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Test_EmailReport_1" sap:VirtualizedContainerService.HintSize="571,1287" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
