@@ -8,7 +8,6 @@
  xmlns:scg="clr-namespace:System.Collections.Generic;assembly=mscorlib"
  xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=mscorlib"
  xmlns:sd="clr-namespace:System.Data;assembly=System.Data"
- xmlns:sg="clr-namespace:System.Globalization;assembly=mscorlib"
  xmlns:snm="clr-namespace:System.Net.Mail;assembly=System"
  xmlns:ui="http://schemas.uipath.com/workflow/activities"
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
@@ -77,13 +76,13 @@
       <AssemblyReference>Newtonsoft.Json</AssemblyReference>
       <AssemblyReference>System.Collections.Immutable</AssemblyReference>
       <AssemblyReference>UiPath.Studio.Plugin.Workflow</AssemblyReference>
+      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence sap2010:Annotation.AnnotationText="Description:&#xA;Compiles all transaction item details, generates an approval form from the template, sends this off to the business and saves the email in the Bot Files folder, then starts a transaction in the Dispatch orchestrator queue.&#xA;&#xA;Inputs:&#xA;in_Config &lt;Dictionary&lt;String, String&gt;&gt;.&#xA;in_TransactionReference &lt;String&gt;: The unique combo of Contract ID and Milestone ID.&#xA;in_ApprovalRows &lt;DataTable&gt;: All billing milestones for the Transaction Reference.&#xA;&#xA;Outputs:&#xA;out_SentTransaction &lt;QueueItem&gt;.&#xA;&#xA;Pre Condition:&#xA;Network Share Bot Files, HtmlTemplate and DispatchQueue are all set in the Config.&#xA;&#xA;Post Condition:&#xA;out_SentTransaction is In Progress and email is saved to Bot Files." DisplayName="NewApproval" sap2010:WorkflowViewState.IdRef="Sequence_4">
     <Sequence.Variables>
       <Variable x:TypeArguments="scg:Dictionary(x:String, x:String)" Default="[New Dictionary(Of String, String)]" Name="specificContent" />
       <Variable x:TypeArguments="snm:MailMessage" Name="requestMessage" />
-      <Variable x:TypeArguments="sg:CultureInfo" Default="[New CultureInfo(&quot;en-AU&quot;)]" Name="CULTURE" />
       <Variable x:TypeArguments="sd:DataRow" Name="row" />
     </Sequence.Variables>
     <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Trace" Message="[&quot;Building &quot; &amp; in_ApprovalRows.Rows.Count &amp; &quot; items for &quot; + in_TransactionReference]" />
@@ -135,7 +134,7 @@
                   <OutArgument x:TypeArguments="x:String">[specificContent("Due Date")]</OutArgument>
                 </Assign.To>
                 <Assign.Value>
-                  <InArgument x:TypeArguments="x:String">[Convert.ToDateTime(row(column).ToString, CULTURE).ToString("yyyy-MM-dd")]</InArgument>
+                  <InArgument x:TypeArguments="x:String">[Convert.ToDateTime(row(column).ToString).ToString("yyyy-MM-dd")]</InArgument>
                 </Assign.Value>
               </Assign>
             </Switch>
@@ -226,9 +225,9 @@
         <InArgument x:TypeArguments="x:String" x:Key="Request Filename">[specificContent("Request Filename")]</InArgument>
       </ui:AddTransactionItem.TransactionInformation>
     </ui:AddTransactionItem>
-    <ui:CommentOut DisplayName="Comment Out">
+    <ui:CommentOut DisplayName="Comment Out" sap2010:WorkflowViewState.IdRef="CommentOut_6">
       <ui:CommentOut.Body>
-        <Sequence DisplayName="Ignored Activities">
+        <Sequence DisplayName="Ignored Activities" sap2010:WorkflowViewState.IdRef="Sequence_11">
           <ui:InvokeCode ContinueOnError="{x:Null}" Code="Transaction = New QueueItem&#xA;Transaction.QueueName = QueueName&#xA;Transaction.Reference = Reference&#xA;Transaction.SpecificContent = SpecificContent.ToDictionary(Function(k) k.Key, Function(v) CObj(v.Value))&#xA;Transaction.Status = QueueItemStatus.InProgress" DisplayName="Invoke code" sap2010:WorkflowViewState.IdRef="InvokeCode_1">
             <ui:InvokeCode.Arguments>
               <InArgument x:TypeArguments="x:String" x:Key="QueueName">[in_Config("DispatchQueue")]</InArgument>
@@ -237,12 +236,10 @@
               <OutArgument x:TypeArguments="ui:QueueItem" x:Key="Transaction">[out_SentTransaction]</OutArgument>
             </ui:InvokeCode.Arguments>
           </ui:InvokeCode>
-          <sap2010:WorkflowViewState.IdRef>Sequence_11</sap2010:WorkflowViewState.IdRef>
         </Sequence>
       </ui:CommentOut.Body>
-      <sap2010:WorkflowViewState.IdRef>CommentOut_6</sap2010:WorkflowViewState.IdRef>
     </ui:CommentOut>
-    <sads:DebugSymbol.Symbol>d0lDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQmlsbGluZ01pbGVzdG9uZVxOZXdBcHByb3ZhbC54YW1sTVID9gEOAgEBVE5UcwIBA1Y6VmACAQJZBVnoAQIBcVoFYQ4CAW1iBZEBEgIBV5IBBZ0BCgIBUJ4BBaUBDgIBTKYBBa0BDgIBRa4BBa4B0wECAUKvAQW2AR0CATi3AQXHARUCATfIAQXSAR0CASzTAQXTAeEBAgEo1AEF1AGsAgIBJNUBBeQBHQIBBeUBBfQBFQIBBFlzWeUBAgFyXzJfSwIBcFwzXDgCAW5inAFitwECAWxoC44BFgIBWJIBE5IBXAIBUZQBCZsBEgIBU6MBMKMBTAIBT6ABMaABUgIBTasBMKsBugECAUioATGoAVYCAUauAXKuAdABAgFDswFlswF2AgFAtAFTtAFjAgE+sQFcsQFnAgE8sgFQsgFpAgE6rwHCAa8B4wECATnNAUPNAVsCATXPAUfPAWICATPLAUbLAWcCATHMAUvMAWwCATDIAbwByAHXAQIBL84BR84BXAIBLdMBzAHTAd4BAgEq0wE70wGSAQIBKdQBOdQBagIBJtQB0gHUAakCAgEl1QHsAdUBhwICASLaAUbaAWgCASDVAbkB1QHhAQIBHt8BT98BegIBHNkBRtkBaAIBGuEBSuEBcAIBGNwBTtwBeAIBFtsBQNsBXAIBFNcBQdcBXgIBEt0BQd0BXgIBEOABReABZgIBDtUBmALVAa8CAgEM4gFJ4gFuAgEK3gFD3gFiAgEI2AFF2AFmAgEGaQ1pzgECAWpqDY0BFgIBWZkBNJkBSgIBVpYBNZYBWwIBVGl7acsBAgFralxqcQIBWnUPfBgCAWZ9D4QBGAIBYoUBD4wBGAIBXmwRcxoCAVt6OnqlAQIBaXc7d1oCAWeCATqCAWcCAWV/O39hAgFjigE6igGEAQIBYYcBO4cBWAIBX3E8cVICAV1uPW5hAgFc</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d0lDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQmlsbGluZ01pbGVzdG9uZVxOZXdBcHByb3ZhbC54YW1sTFID8wEOAgEBVE5UcwIBAlgFWOgBAgFwWQVgDgIBbGEFkAESAgFWkQEFnAEKAgFPnQEFpAEOAgFLpQEFrAEOAgFErQEFrQHTAQIBQa4BBbUBHQIBN7YBBcYBFQIBNscBBdEBHQIBK9IBBdIB4QECASfTAQXTAawCAgEj1AEF4wEdAgEE5AEF8QEVAgEDWHNY5QECAXFeMl5LAgFvWzNbOAIBbWGcAWG3AQIBa2cLjQEWAgFXkQETkQFcAgFQkwEJmgESAgFSogEwogFMAgFOnwExnwFSAgFMqgEwqgG6AQIBR6cBMacBVgIBRa0Bcq0B0AECAUKyAWWyAXYCAT+zAVOzAWMCAT2wAVywAWcCATuxAVCxAWkCATmuAcIBrgHjAQIBOMwBQ8wBWwIBNM4BR84BYgIBMsoBRsoBZwIBMMsBS8sBbAIBL8cBvAHHAdcBAgEuzQFHzQFcAgEs0gHMAdIB3gECASnSATvSAZIBAgEo0wE50wFqAgEl0wHSAdMBqQICASTUAewB1AGHAgIBIdkBRtkBaAIBH9QBuQHUAeEBAgEd3gFP3gF6AgEb2AFG2AFoAgEZ4AFK4AFwAgEX2wFO2wF4AgEV2gFA2gFcAgET1gFB1gFeAgER3AFB3AFeAgEP3wFF3wFmAgEN1AGYAtQBrwICAQvhAUnhAW4CAQndAUPdAWICAQfXAUXXAWYCAQVoDWjOAQIBaWkNjAEWAgFYmAE0mAFKAgFVlQE1lQFbAgFTaHtoywECAWppXGlxAgFZdA97GAIBZXwPgwEYAgFhhAEPiwEYAgFdaxFyGgIBWnk6eaUBAgFodjt2WgIBZoEBOoEBZwIBZH47fmECAWKJATqJAXsCAWCGATuGAVgCAV5wPHBSAgFcbT1tYQIBWw==</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -253,15 +250,15 @@
       <sap2010:ViewStateData Id="Assign_20" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="Assign_32" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="Assign_34" sap:VirtualizedContainerService.HintSize="242,60" />
-      <sap2010:ViewStateData Id="Switch`1_1" sap:VirtualizedContainerService.HintSize="477,182" />
-      <sap2010:ViewStateData Id="Sequence_5" sap:VirtualizedContainerService.HintSize="499,437">
+      <sap2010:ViewStateData Id="Switch`1_1" sap:VirtualizedContainerService.HintSize="477,288" />
+      <sap2010:ViewStateData Id="Sequence_5" sap:VirtualizedContainerService.HintSize="499,543">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="ForEach`1_1" sap:VirtualizedContainerService.HintSize="515,571" />
+      <sap2010:ViewStateData Id="ForEach`1_1" sap:VirtualizedContainerService.HintSize="515,677" />
       <sap2010:ViewStateData Id="Assign_36" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="515,208" />
       <sap2010:ViewStateData Id="Assign_35" sap:VirtualizedContainerService.HintSize="515,60" />
@@ -297,7 +294,7 @@
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="CommentOut_6" sap:VirtualizedContainerService.HintSize="515,366" />
-      <sap2010:ViewStateData Id="Sequence_4" sap:VirtualizedContainerService.HintSize="537,3027">
+      <sap2010:ViewStateData Id="Sequence_4" sap:VirtualizedContainerService.HintSize="537,3133">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -305,7 +302,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="NewApproval_1" sap:VirtualizedContainerService.HintSize="577,3107" />
+      <sap2010:ViewStateData Id="NewApproval_1" sap:VirtualizedContainerService.HintSize="577,3213" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
