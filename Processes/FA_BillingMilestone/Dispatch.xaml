@@ -78,6 +78,7 @@
       <AssemblyReference>UiPath.Studio.Plugin.Workflow</AssemblyReference>
       <AssemblyReference>System.Collections.Immutable</AssemblyReference>
       <AssemblyReference>Newtonsoft.Json</AssemblyReference>
+      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence sap2010:Annotation.AnnotationText="Description: Navigates to the Query Viewer in UniFi, downloads the report, then for each distinct combo of Contract and Milestone, generate a new approval email and send out to the business. If dispatch is older than 6 months, then add transaction to stale items to notify contract and grants of the issue.&#xA;&#xA;Inputs:&#xA;in_Config &lt;Dictionary&lt;String, String&gt;&gt;.&#xA;io_DispatchedItems &lt;List&lt;QueueItem&gt;&gt;: All active transactions in the Dispatch queue.&#xA;&#xA;Outputs:&#xA;io_DispatchedItems &lt;List&lt;QueueItem&gt;&gt;: Refreshed transactions in the Dispatch queue.&#xA;out_SentTransactions &lt;List&lt;QueueItem&gt;&gt;: All transactions that have been created.&#xA;out_StaleTransactions &lt;List&lt;QueueItem&gt;&gt;: All transactions that are 6 months or older.&#xA;&#xA;Pre Condition: NA&#xA;Post Condition: NA" DisplayName="Dispatch" sap2010:WorkflowViewState.IdRef="Sequence_6">
@@ -146,41 +147,18 @@
         <Variable x:TypeArguments="s:DateTime" Default="[Now]" Name="timer" />
       </TryCatch.Variables>
       <TryCatch.Try>
-        <ui:ReadRange AddHeaders="True" DataTable="[queryReport]" DisplayName="Read Query Range Workbook" sap2010:WorkflowViewState.IdRef="ReadRange_2" PreserveFormat="True" Range="A2" SheetName="sheet1" WorkbookPath="[reportFile]" />
+        <ui:ReadCsvFile Encoding="{x:Null}" DataTable="[queryReport]" Delimitator="Comma" DisplayName="Read Query CSV" FilePath="[reportFile]" sap2010:WorkflowViewState.IdRef="ReadCsvFile_1" />
       </TryCatch.Try>
       <TryCatch.Catches>
         <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch`1_4">
           <ActivityAction x:TypeArguments="s:Exception">
             <ActivityAction.Argument>
-              <DelegateInArgument x:TypeArguments="s:Exception" Name="exception1" />
+              <DelegateInArgument x:TypeArguments="s:Exception" Name="exception" />
             </ActivityAction.Argument>
-            <TryCatch DisplayName="Try Catch excel worksheet" sap2010:WorkflowViewState.IdRef="TryCatch_3">
-              <TryCatch.Try>
-                <ui:ExcelApplicationScope Password="{x:Null}" CreateNewFile="False" DisplayName="Excel Application Scope" sap2010:WorkflowViewState.IdRef="ExcelApplicationScope_2" MacroSetting="DisableAll" ReadOnly="True" Visible="False" WorkbookPath="[reportFile]">
-                  <ui:ExcelApplicationScope.Body>
-                    <ActivityAction x:TypeArguments="ui:WorkbookApplication">
-                      <ActivityAction.Argument>
-                        <DelegateInArgument x:TypeArguments="ui:WorkbookApplication" Name="ExcelWorkbookScope" />
-                      </ActivityAction.Argument>
-                      <ui:ExcelReadRange AddHeaders="True" DataTable="[queryReport]" DisplayName="Read Query Range Worksheet" sap2010:WorkflowViewState.IdRef="ExcelReadRange_3" PreserveFormat="True" Range="A2" SheetName="sheet1" />
-                    </ActivityAction>
-                  </ui:ExcelApplicationScope.Body>
-                </ui:ExcelApplicationScope>
-              </TryCatch.Try>
-              <TryCatch.Catches>
-                <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch`1_3">
-                  <ActivityAction x:TypeArguments="s:Exception">
-                    <ActivityAction.Argument>
-                      <DelegateInArgument x:TypeArguments="s:Exception" Name="exception2" />
-                    </ActivityAction.Argument>
-                    <Sequence sap2010:WorkflowViewState.IdRef="Sequence_48">
-                      <ui:Delete ContinueOnError="{x:Null}" DisplayName="Delete report file" sap2010:WorkflowViewState.IdRef="Delete_1" Path="[reportFile]" />
-                      <Throw DisplayName="Throw workbook error" Exception="[New ExcelException(String.Format(in_Config(&quot;SystemError ExcelReport&quot;), reportFile, exception1.Message, exception2.Message, exception1.Source), exception1)]" sap2010:WorkflowViewState.IdRef="Throw_3" />
-                    </Sequence>
-                  </ActivityAction>
-                </Catch>
-              </TryCatch.Catches>
-            </TryCatch>
+            <Sequence sap2010:WorkflowViewState.IdRef="Sequence_48">
+              <ui:Delete ContinueOnError="{x:Null}" DisplayName="Delete report file" sap2010:WorkflowViewState.IdRef="Delete_1" Path="[reportFile]" />
+              <Throw DisplayName="Throw workbook error" Exception="[New ExcelException(String.Format(in_Config(&quot;SystemError ExcelReport&quot;), reportFile, exception.Message, exception.Source), exception)]" sap2010:WorkflowViewState.IdRef="Throw_3" />
+            </Sequence>
           </ActivityAction>
         </Catch>
       </TryCatch.Catches>
@@ -384,7 +362,7 @@
         </Catch>
       </TryCatch.Catches>
     </TryCatch>
-    <sads:DebugSymbol.Symbol>d0ZDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQmlsbGluZ01pbGVzdG9uZVxEaXNwYXRjaC54YW1sjgFTA4QDDgIBAVgFXw4DAa0BYAVnDgMBqgFoBY8BEAMBkwGQAQXBARACAXXCAQXCAdQBAgFzwwEFggMQAgECXT5dVgMBrwFaP1pWAwGuAWU+ZVYDAawBYj9iVQMBqwFqCYMBFAMBlgGLAQ2LAfcBAwGUAZIBOJIBPwMBhQGVAQmVAesBAwGMAbwBCb8BFAMBhgGdAQ23ARgCAXbCAXPCAdEBAgF0xQEJ9gIRAgEF/gIN/gLvAQIBA24LciADAaUBcwt7EAMBnwF8C4IBIwMBlwGLAT+LAcoBAwGVAZUBM5UBQgMBkQGVAbUBlQG5AQMBkAGVAcQBlQHMAQMBjwGVAdoBlQHoAQMBjQG9AQu9AcYBAwGKAb4BC74BkwEDAYcBnwERqAEsAgF9sAEVswEgAgF3xgEL9QIWAgEHxQF7xQGcAQIBBv4CQf4CwgECAQRwUHDeAQMBqQFw6QFw7wEDAagBbkhuWwMBpgFzGXMwAwGgAXUPeScDAaIBgAFMgAFYAwGdAX9Mf2wDAZsBfmJ+bQMBmQF8vgF81gEDAZgBvQF5vQHDAQMBiwG+AYIBvgGQAQMBiAGfAfwBnwGKAgMBgwGlARelAegBAgF+sQEXsQGfAQIBerIBF7IBoAICAXjNAT7NAUUCAQjPAQ3WARYCAW/XAQ3xASICAWbyAQ35ARYCAWL6AQ36AcICAgFg+wENiQISAgFVigINigL/AgIBT4sCDYsC3AECAU2MAg3YAhICARXZAg3zAiICAQz0Ag30AvQBAgEJd193kwEDAaQBdcgBdeYBAwGjAaUBRqUBVQMBgQGlAc4BpQHSAQMBgAGlAd0BpQHlAQIBf7EBjgGxAZwBAgF7sgFLsgHzAQIBedQBOtQBTwIBctEBO9EBQAIBcOQBPuQBTgIBbucBPucBXAIBbdwBPtwBSgIBbN8BPt8BWAIBa9cBxAHXAdQBAgFp1wEr1wE6AgFn9wE49wF3AgFl9AE59AFEAgFj+gF7+gG/AgIBYfsBG/sBXAIBVv0BEYcCHAIBV4oC2AKKAuUCAgFTigKlAooCzQICAVGKAu0CigL8AgIBUIsCfIsC2QECAU6MAhuMAjcCARaOAhGsAhwCATSvAhHWAhwCARfmAj7mAk4CARTpAj7pAlwCARPeAj7eAkoCARLhAj7hAlgCARHZAsQB2QLTAQIBD9kCK9kCOgIBDfQC1wH0AvEBAgEL9AI/9AKiAQIBCv4BE4UCHAIBXIYCE4YC5wECAViSAhOaAhgCAUebAhOiAisCAT2jAhOqAhwCATmrAhOrAtgBAgE1sAITuAIYAgEuuQITuQKKAwIBKLoCE9QCIAIBG9UCE9UC3AECARiDAkKDAoMBAgFfgAJDgAJWAgFdhgJThgJpAgFbhgLPAYYC5AECAVmSAiGSAkQCAUiUAheYAjECAUmgAl+gAnACAUWfAlqfAmgCAUOdAmqdAnUCAUGeAl6eAmkCAT+bAsYBmwLYAQIBPqgCSKgCZAIBPKUCSaUCYQIBOqsCTqsCZgIBOKsCwgGrAtUBAgE2sAIhsAJEAgEvsgIXtgIxAgEwuQLjArkC8AICASy5ArACuQLYAgIBKrkC+AK5AocDAgEpugKtAboCvAECASfAAhnRAiQCARzVAk7VAmcCARrVAsQB1QLZAQIBGZQC+AGUAuICAgFMlAKDA5QCmAMCAUqyAvkBsgLoAgIBM7ICiQOyAp4DAgExxAIbywIkAgEjzAIb0AIgAgEdyQJGyQJ7AgEmxgJHxgJYAgEkzAIpzAJJAgEezgIfzgK7AgIBH84CU84CuwECASLOAqUCzgK4AgIBIA==</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d0ZDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQmlsbGluZ01pbGVzdG9uZVxEaXNwYXRjaC54YW1shQFUA+4CDgIBAVkFYA4DAaIBYQVoDgMBnwFpBZABEAMBiAGRAQWrARACAXWsAQWsAdQBAgFzrQEF7AIQAgECXj5eVgMBpAFbP1tWAwGjAWY+ZlYDAaEBYz9jVQMBoAFrCYQBFAMBiwGMAQ2MAfcBAwGJAZMBOJMBPwIBfJYBCZYBwgEDAYMBpgEJqQEUAgF9ngENoQEYAgF2rAFzrAHRAQIBdK8BCeACEQIBBegCDegC7wECAQNvC3MgAwGaAXQLfBADAZQBfQuDASMDAYwBjAE/jAHKAQMBigGWATeWAUYDAYYBlgGBAZYBjwEDAYQBpwELpwHGAQMBgQGoAQuoAZMBAgF+nwEPnwGXAQIBeaABD6ABgQICAXewAQvfAhYCAQevAXuvAZwBAgEG6AJB6ALCAQIBBHFQcd4BAwGeAXHpAXHvAQMBnQFvSG9bAwGbAXQZdDADAZUBdg96JwMBlwGBAUyBAVgDAZIBgAFMgAFsAwGQAX9if20DAY4Bfb4BfdYBAwGNAacBeacBwwEDAYIBqAGCAagBkAECAX+fAYYBnwGUAQIBeqABQ6AB1AECAXi3AT63AUUCAQi5AQ3AARYCAW/BAQ3bASICAWbcAQ3jARYCAWLkAQ3kAcICAgFg5QEN8wESAgFV9AEN9AH/AgIBT/UBDfUB3AECAU32AQ3CAhICARXDAg3dAiICAQzeAg3eAvQBAgEJeF94kwEDAZkBdsgBduYBAwGYAb4BOr4BTwIBcrsBO7sBQAIBcM4BPs4BTgIBbtEBPtEBXAIBbcYBPsYBSgIBbMkBPskBWAIBa8EBxAHBAdQBAgFpwQErwQE6AgFn4QE44QF3AgFl3gE53gFEAgFj5AF75AG/AgIBYeUBG+UBXAIBVucBEfEBHAIBV/QB2AL0AeUCAgFT9AGlAvQBzQICAVH0Ae0C9AH8AgIBUPUBfPUB2QECAU72ARv2ATcCARb4ARGWAhwCATSZAhHAAhwCARfQAj7QAk4CARTTAj7TAlwCARPIAj7IAkoCARLLAj7LAlgCARHDAsQBwwLTAQIBD8MCK8MCOgIBDd4C1wHeAvEBAgEL3gI/3gKiAQIBCugBE+8BHAIBXPABE/AB5wECAVj8AROEAhgCAUeFAhOMAisCAT2NAhOUAhwCATmVAhOVAtgBAgE1mgITogIYAgEuowITowKKAwIBKKQCE74CIAIBG78CE78C3AECARjtAULtAYMBAgFf6gFD6gFWAgFd8AFT8AFpAgFb8AHPAfAB5AECAVn8ASH8AUQCAUj+AReCAjECAUmKAl+KAnACAUWJAlqJAmgCAUOHAmqHAnUCAUGIAl6IAmkCAT+FAsYBhQLYAQIBPpICSJICZAIBPI8CSY8CYQIBOpUCTpUCZgIBOJUCwgGVAtUBAgE2mgIhmgJEAgEvnAIXoAIxAgEwowLjAqMC8AICASyjArACowLYAgIBKqMC+AKjAocDAgEppAKtAaQCvAECASeqAhm7AiQCARy/Ak6/AmcCARq/AsQBvwLZAQIBGf4B+AH+AeICAgFM/gGDA/4BmAMCAUqcAvkBnALoAgIBM5wCiQOcAp4DAgExrgIbtQIkAgEjtgIbugIgAgEdswJGswJ7AgEmsAJHsAJYAgEktgIptgJJAgEeuAIfuAK7AgIBH7gCU7gCuwECASK4AqUCuAK4AgIBIA==</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -411,9 +389,7 @@
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="TryCatch_5" sap:VirtualizedContainerService.HintSize="1101,821" />
-      <sap2010:ViewStateData Id="ReadRange_2" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="ExcelReadRange_3" sap:VirtualizedContainerService.HintSize="314,59" />
-      <sap2010:ViewStateData Id="ExcelApplicationScope_2" sap:VirtualizedContainerService.HintSize="414,168" />
+      <sap2010:ViewStateData Id="ReadCsvFile_1" sap:VirtualizedContainerService.HintSize="314,152" />
       <sap2010:ViewStateData Id="Delete_1" sap:VirtualizedContainerService.HintSize="200,22" />
       <sap2010:ViewStateData Id="Throw_3" sap:VirtualizedContainerService.HintSize="200,22" />
       <sap2010:ViewStateData Id="Sequence_48" sap:VirtualizedContainerService.HintSize="222,208">
@@ -423,15 +399,6 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Catch`1_3" sap:VirtualizedContainerService.HintSize="400,277">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-            <x:Boolean x:Key="IsPinned">False</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_3" sap:VirtualizedContainerService.HintSize="414,439" />
       <sap2010:ViewStateData Id="Catch`1_4" sap:VirtualizedContainerService.HintSize="404,21">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
@@ -449,7 +416,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_4" sap:VirtualizedContainerService.HintSize="1101,314" />
+      <sap2010:ViewStateData Id="TryCatch_4" sap:VirtualizedContainerService.HintSize="1101,379" />
       <sap2010:ViewStateData Id="LogMessage_13" sap:VirtualizedContainerService.HintSize="1101,91" />
       <sap2010:ViewStateData Id="Assign_1" sap:VirtualizedContainerService.HintSize="1035,60" />
       <sap2010:ViewStateData Id="FilterDataTable_1" sap:VirtualizedContainerService.HintSize="1035,59" />
@@ -530,7 +497,7 @@
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="TryCatch_6" sap:VirtualizedContainerService.HintSize="1101,3002" />
-      <sap2010:ViewStateData Id="Sequence_6" sap:VirtualizedContainerService.HintSize="1123,4894">
+      <sap2010:ViewStateData Id="Sequence_6" sap:VirtualizedContainerService.HintSize="1123,4959">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -538,7 +505,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Dispatch_1" sap:VirtualizedContainerService.HintSize="1163,4974" />
+      <sap2010:ViewStateData Id="Dispatch_1" sap:VirtualizedContainerService.HintSize="1163,5039" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
