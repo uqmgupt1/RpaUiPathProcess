@@ -407,7 +407,7 @@ StrConv(environment, vbProperCase), environment)]</InArgument>
                 <OutArgument x:TypeArguments="scg:List(ui:QueueItem)">[successfulItems]</OutArgument>
               </Assign.To>
               <Assign.Value>
-                <InArgument x:TypeArguments="scg:List(ui:QueueItem)">[in_TransactionItems.Where(Function(qi) qi.Status = QueueItemStatus.Successful).ToList]</InArgument>
+                <InArgument x:TypeArguments="scg:List(ui:QueueItem)">[in_TransactionItems.Where(Function(qi) qi.Status = QueueItemStatus.Successful Or qi.Status = QueueItemStatus.InProgress).ToList]</InArgument>
               </Assign.Value>
             </Assign>
             <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_33" Level="Trace" Message="[&quot;Got &quot; &amp; successfulItems.Count &amp; &quot; successful items&quot;]" />
@@ -448,7 +448,7 @@ Replace("{S}", "s")]</InArgument>
             <OutArgument x:TypeArguments="scg:List(ui:QueueItem)">[dispatchedItems]</OutArgument>
           </Assign.To>
           <Assign.Value>
-            <InArgument x:TypeArguments="scg:List(ui:QueueItem)">[in_TransactionItems.Where(Function(qi) qi.Status = QueueItemStatus.Successful AndAlso qi.QueueName.EndsWith("Dispatch")).ToList]</InArgument>
+            <InArgument x:TypeArguments="scg:List(ui:QueueItem)">[in_TransactionItems.Where(Function(qi) qi.Status = QueueItemStatus.InProgress).ToList]</InArgument>
           </Assign.Value>
         </Assign>
         <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_34" Level="Trace" Message="[&quot;Got &quot; &amp; dispatchedItems.Count &amp; &quot; dispatched items&quot;]" />
@@ -473,7 +473,7 @@ Replace("{D}", If(dispatchedItems.Count &lt;&gt; 1, "s", ""))]</InArgument>
             <OutArgument x:TypeArguments="scg:List(ui:QueueItem)">[updatedItems]</OutArgument>
           </Assign.To>
           <Assign.Value>
-            <InArgument x:TypeArguments="scg:List(ui:QueueItem)">[in_TransactionItems.Where(Function(qi) qi.Status = QueueItemStatus.Successful AndAlso qi.QueueName.EndsWith("Update")).ToList]</InArgument>
+            <InArgument x:TypeArguments="scg:List(ui:QueueItem)">[in_TransactionItems.Where(Function(qi) qi.Status = QueueItemStatus.Successful).ToList]</InArgument>
           </Assign.Value>
         </Assign>
         <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_36" Level="Trace" Message="[&quot;Got &quot; &amp; updatedItems.Count &amp; &quot; updated items&quot;]" />
@@ -483,7 +483,7 @@ Replace("{D}", If(dispatchedItems.Count &lt;&gt; 1, "s", ""))]</InArgument>
               <ActivityAction.Argument>
                 <DelegateInArgument x:TypeArguments="ui:QueueItem" Name="updated" />
               </ActivityAction.Argument>
-              <AddToCollection x:TypeArguments="x:String" Collection="[tableRows]" DisplayName="Add To Updated Message" sap2010:WorkflowViewState.IdRef="AddToCollection`1_15" Item="[String.Format(templateSections(&quot;TableRefs&quot;),&#xA;updated.SpecificContent(&quot;Contract&quot;).ToString,&#xA;updated.SpecificContent(&quot;Milestone ID&quot;).ToString,&#xA;updated.Output(&quot;Projects Updated&quot;).ToString,&#xA;updated.Output(&quot;Projects Total&quot;).ToString,&#xA;updated.Output(&quot;Grantors Updated&quot;).ToString,&#xA;updated.Output(&quot;Grantors Total&quot;).ToString,&#xA;updated.Output(&quot;Lines Updated&quot;).ToString,&#xA;updated.Output(&quot;Lines Total&quot;).ToString,&#xA;updated.Output(&quot;Events Updated&quot;).ToString,&#xA;updated.Output(&quot;Events Total&quot;).ToString)]" />
+              <AddToCollection x:TypeArguments="x:String" Collection="[tableRows]" DisplayName="Add To Updated Message" sap2010:WorkflowViewState.IdRef="AddToCollection`1_15" Item="[String.Format(templateSections(&quot;TableRefs&quot;),&#xA;updated.Reference.Split(&quot;_&quot;c).FirstOrDefault,&#xA;updated.Reference.Split(&quot;_&quot;c).LastOrDefault,&#xA;updated.Output(&quot;Projects Updated&quot;).ToString,&#xA;updated.Output(&quot;Projects Total&quot;).ToString,&#xA;updated.Output(&quot;Grantors Updated&quot;).ToString,&#xA;updated.Output(&quot;Grantors Total&quot;).ToString,&#xA;updated.Output(&quot;Lines Updated&quot;).ToString,&#xA;updated.Output(&quot;Lines Total&quot;).ToString,&#xA;updated.Output(&quot;Events Updated&quot;).ToString,&#xA;updated.Output(&quot;Events Total&quot;).ToString)]" />
             </ActivityAction>
           </ui:ForEach.Body>
         </ui:ForEach>
@@ -566,20 +566,20 @@ Replace("{FailureMessage}", "")]</InArgument>
           <ui:ForEach.Body>
             <ActivityAction x:TypeArguments="ui:QueueItem">
               <ActivityAction.Argument>
-                <DelegateInArgument x:TypeArguments="ui:QueueItem" Name="item" />
+                <DelegateInArgument x:TypeArguments="ui:QueueItem" Name="exception" />
               </ActivityAction.Argument>
               <Sequence DisplayName="ProcessingException" sap2010:WorkflowViewState.IdRef="Sequence_46">
                 <Sequence.Variables>
                   <Variable x:TypeArguments="s:String[]" Name="formatted" />
                 </Sequence.Variables>
-                <If Condition="[item.ProcessingException.Reason.Contains(vbNewLine) And item.ProcessingException.Reason.Contains(vbTab)]" DisplayName="If processing exception contains dividers" sap2010:WorkflowViewState.IdRef="If_64">
+                <If Condition="[exception.ProcessingException.Reason.Contains(vbNewLine) And exception.ProcessingException.Reason.Contains(vbTab)]" DisplayName="If processing exception contains dividers" sap2010:WorkflowViewState.IdRef="If_64">
                   <If.Then>
                     <Assign DisplayName="Assign formatted" sap2010:WorkflowViewState.IdRef="Assign_100">
                       <Assign.To>
                         <OutArgument x:TypeArguments="s:String[]">[formatted]</OutArgument>
                       </Assign.To>
                       <Assign.Value>
-                        <InArgument x:TypeArguments="s:String[]">[item.ProcessingException.Reason.Split((vbNewLine + vbTab).ToCharArray)]</InArgument>
+                        <InArgument x:TypeArguments="s:String[]">[exception.ProcessingException.Reason.Split((vbNewLine + vbTab).ToCharArray)]</InArgument>
                       </Assign.Value>
                     </Assign>
                   </If.Then>
@@ -589,12 +589,12 @@ Replace("{FailureMessage}", "")]</InArgument>
                         <OutArgument x:TypeArguments="s:String[]">[formatted]</OutArgument>
                       </Assign.To>
                       <Assign.Value>
-                        <InArgument x:TypeArguments="s:String[]">[{"", item.ProcessingException.Reason, item.ProcessingException.Details}]</InArgument>
+                        <InArgument x:TypeArguments="s:String[]">[{"", exception.ProcessingException.Reason, exception.ProcessingException.Details}]</InArgument>
                       </Assign.Value>
                     </Assign>
                   </If.Else>
                 </If>
-                <AddToCollection x:TypeArguments="x:String" Collection="[tableRows]" DisplayName="Add To RuleException" sap2010:WorkflowViewState.IdRef="AddToCollection`1_10" Item="[String.Format(templateSections(&quot;TableRows&quot;),&#xA;item.SpecificContent(&quot;Contract&quot;).ToString,&#xA;item.SpecificContent(&quot;Milestone ID&quot;).ToString,&#xA;formatted(0),&#xA;formatted(1),&#xA;String.Join(vbNewLine, formatted.Skip(2)))]" />
+                <AddToCollection x:TypeArguments="x:String" Collection="[tableRows]" DisplayName="Add To RuleException" sap2010:WorkflowViewState.IdRef="AddToCollection`1_10" Item="[String.Format(templateSections(&quot;TableRows&quot;),&#xA;exception.Reference.Split(&quot;_&quot;c).FirstOrDefault,&#xA;exception.Reference.Split(&quot;_&quot;c).LastOrDefault,&#xA;formatted(0),&#xA;formatted(1),&#xA;String.Join(vbNewLine, formatted.Skip(2)))]" />
               </Sequence>
             </ActivityAction>
           </ui:ForEach.Body>
@@ -629,20 +629,20 @@ Replace("{B}", If(ruleExceptionItems.Count &lt;&gt; 1, "s", ""))]</InArgument>
           <ui:ForEach.Body>
             <ActivityAction x:TypeArguments="ui:QueueItem">
               <ActivityAction.Argument>
-                <DelegateInArgument x:TypeArguments="ui:QueueItem" Name="item" />
+                <DelegateInArgument x:TypeArguments="ui:QueueItem" Name="errors" />
               </ActivityAction.Argument>
               <Sequence DisplayName="ProcessingException" sap2010:WorkflowViewState.IdRef="Sequence_82">
                 <Sequence.Variables>
                   <Variable x:TypeArguments="s:String[]" Name="formatted" />
                 </Sequence.Variables>
-                <If Condition="[item.ProcessingException.Reason.Contains(vbNewLine) And item.ProcessingException.Reason.Contains(vbTab)]" DisplayName="If processing exception contains dividers" sap2010:WorkflowViewState.IdRef="If_65">
+                <If Condition="[errors.ProcessingException.Reason.Contains(vbNewLine) And errors.ProcessingException.Reason.Contains(vbTab)]" DisplayName="If processing exception contains dividers" sap2010:WorkflowViewState.IdRef="If_65">
                   <If.Then>
                     <Assign DisplayName="Assign formatted" sap2010:WorkflowViewState.IdRef="Assign_147">
                       <Assign.To>
                         <OutArgument x:TypeArguments="s:String[]">[formatted]</OutArgument>
                       </Assign.To>
                       <Assign.Value>
-                        <InArgument x:TypeArguments="s:String[]">[item.ProcessingException.Reason.Split((vbNewLine + vbTab).ToCharArray)]</InArgument>
+                        <InArgument x:TypeArguments="s:String[]">[errors.ProcessingException.Reason.Split((vbNewLine + vbTab).ToCharArray)]</InArgument>
                       </Assign.Value>
                     </Assign>
                   </If.Then>
@@ -652,12 +652,12 @@ Replace("{B}", If(ruleExceptionItems.Count &lt;&gt; 1, "s", ""))]</InArgument>
                         <OutArgument x:TypeArguments="s:String[]">[formatted]</OutArgument>
                       </Assign.To>
                       <Assign.Value>
-                        <InArgument x:TypeArguments="s:String[]">[{"", item.ProcessingException.Reason, item.ProcessingException.Details}]</InArgument>
+                        <InArgument x:TypeArguments="s:String[]">[{"", errors.ProcessingException.Reason, errors.ProcessingException.Details}]</InArgument>
                       </Assign.Value>
                     </Assign>
                   </If.Else>
                 </If>
-                <AddToCollection x:TypeArguments="x:String" Collection="[tableRows]" DisplayName="Add To RuleException" sap2010:WorkflowViewState.IdRef="AddToCollection`1_16" Item="[String.Format(templateSections(&quot;TableRows&quot;),&#xA;item.SpecificContent(&quot;Contract&quot;).ToString,&#xA;item.SpecificContent(&quot;Milestone ID&quot;).ToString,&#xA;formatted(0),&#xA;formatted(1),&#xA;String.Join(vbNewLine, formatted.Skip(2)))]" />
+                <AddToCollection x:TypeArguments="x:String" Collection="[tableRows]" DisplayName="Add To RuleException" sap2010:WorkflowViewState.IdRef="AddToCollection`1_16" Item="[String.Format(templateSections(&quot;TableRows&quot;),&#xA;errors.Reference.Split(&quot;_&quot;c).FirstOrDefault,&#xA;errors.Reference.Split(&quot;_&quot;c).LastOrDefault,&#xA;formatted(0),&#xA;formatted(1),&#xA;String.Join(vbNewLine, formatted.Skip(2)))]" />
               </Sequence>
             </ActivityAction>
           </ui:ForEach.Body>
@@ -884,18 +884,26 @@ Replace("{TransactionItem}", in_TransactionItem)]</InArgument>
           </Assign>
         </If.Then>
       </If>
-      <If Condition="[in_TransactionItems.Where(Function(qi) qi.Status = QueueItemStatus.Failed).&#xA;Any(Function(qi) qi.ProcessingException.Type = ProcessingExceptionType.ApplicationException)]" DisplayName="If any system exceptions" sap2010:WorkflowViewState.IdRef="If_47">
-        <If.Then>
-          <Assign DisplayName="Assign system errors" sap2010:WorkflowViewState.IdRef="Assign_116">
-            <Assign.To>
-              <OutArgument x:TypeArguments="x:String">[in_EmailRecipients]</OutArgument>
-            </Assign.To>
-            <Assign.Value>
-              <InArgument x:TypeArguments="x:String">[(in_EmailRecipients + ";rpa.ads@its.uq.edu.au").Trim(";"c)]</InArgument>
-            </Assign.Value>
-          </Assign>
-        </If.Then>
-      </If>
+      <ui:CommentOut DisplayName="Comment Out">
+        <ui:CommentOut.Body>
+          <Sequence DisplayName="Ignored Activities">
+            <If Condition="[in_TransactionItems.Where(Function(qi) qi.Status = QueueItemStatus.Failed).&#xA;Any(Function(qi) qi.ProcessingException.Type = ProcessingExceptionType.ApplicationException)]" DisplayName="If any system exceptions" sap2010:WorkflowViewState.IdRef="If_47">
+              <If.Then>
+                <Assign DisplayName="Assign system errors" sap2010:WorkflowViewState.IdRef="Assign_116">
+                  <Assign.To>
+                    <OutArgument x:TypeArguments="x:String">[in_EmailRecipients]</OutArgument>
+                  </Assign.To>
+                  <Assign.Value>
+                    <InArgument x:TypeArguments="x:String">[(in_EmailRecipients + ";rpa.ads@its.uq.edu.au").Trim(";"c)]</InArgument>
+                  </Assign.Value>
+                </Assign>
+              </If.Then>
+            </If>
+            <sap2010:WorkflowViewState.IdRef>Sequence_83</sap2010:WorkflowViewState.IdRef>
+          </Sequence>
+        </ui:CommentOut.Body>
+        <sap2010:WorkflowViewState.IdRef>CommentOut_3</sap2010:WorkflowViewState.IdRef>
+      </ui:CommentOut>
       <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_30" Level="Trace" Message="[in_SendEmailOn.ToUpper + &quot; send to &quot; + in_EmailRecipients + &quot; from &quot; + in_ProcessName]" />
       <Switch x:TypeArguments="x:String" DisplayName="Switch sending email check" Expression="[in_SendEmailOn.ToUpper]" sap2010:WorkflowViewState.IdRef="Switch`1_1">
         <If x:Key="SUCCESS" Condition="[in_TransactionItems.Count = 0]" DisplayName="If no transactions" sap2010:WorkflowViewState.IdRef="If_57">
@@ -965,7 +973,7 @@ Replace("{TransactionItem}", in_TransactionItem)]</InArgument>
         <Throw DisplayName="Throw reporting errors" Exception="[reportingErrors]" sap2010:WorkflowViewState.IdRef="Throw_6" />
       </If.Else>
     </If>
-    <sads:DebugSymbol.Symbol>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</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>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</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -1094,7 +1102,7 @@ Replace("{TransactionItem}", in_TransactionItem)]</InArgument>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="LogMessage_12" sap:VirtualizedContainerService.HintSize="547,91" />
       <sap2010:ViewStateData Id="Assign_92" sap:VirtualizedContainerService.HintSize="547,60" />
-      <sap2010:ViewStateData Id="Sequence_13" sap:VirtualizedContainerService.HintSize="200,51">
+      <sap2010:ViewStateData Id="Sequence_13" sap:VirtualizedContainerService.HintSize="569,51">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">False</x:Boolean>
@@ -1114,7 +1122,7 @@ Replace("{TransactionItem}", in_TransactionItem)]</InArgument>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="Assign_16" sap:VirtualizedContainerService.HintSize="242,64" />
-      <sap2010:ViewStateData Id="If_10" sap:VirtualizedContainerService.HintSize="200,51">
+      <sap2010:ViewStateData Id="If_10" sap:VirtualizedContainerService.HintSize="569,51">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">False</x:Boolean>
@@ -1125,7 +1133,7 @@ Replace("{TransactionItem}", in_TransactionItem)]</InArgument>
       <sap2010:ViewStateData Id="Assign_137" sap:VirtualizedContainerService.HintSize="314,60" />
       <sap2010:ViewStateData Id="LogMessage_34" sap:VirtualizedContainerService.HintSize="314,91" />
       <sap2010:ViewStateData Id="Assign_138" sap:VirtualizedContainerService.HintSize="314,64" />
-      <sap2010:ViewStateData Id="Sequence_79" sap:VirtualizedContainerService.HintSize="200,51">
+      <sap2010:ViewStateData Id="Sequence_79" sap:VirtualizedContainerService.HintSize="569,51">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">False</x:Boolean>
@@ -1138,7 +1146,7 @@ Replace("{TransactionItem}", in_TransactionItem)]</InArgument>
       <sap2010:ViewStateData Id="AddToCollection`1_15" sap:VirtualizedContainerService.HintSize="200,22" />
       <sap2010:ViewStateData Id="ForEach`1_16" sap:VirtualizedContainerService.HintSize="314,194" />
       <sap2010:ViewStateData Id="Assign_145" sap:VirtualizedContainerService.HintSize="314,64" />
-      <sap2010:ViewStateData Id="Sequence_81" sap:VirtualizedContainerService.HintSize="200,51">
+      <sap2010:ViewStateData Id="Sequence_81" sap:VirtualizedContainerService.HintSize="569,51">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">False</x:Boolean>
@@ -1157,7 +1165,7 @@ Replace("{TransactionItem}", in_TransactionItem)]</InArgument>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="Assign_28" sap:VirtualizedContainerService.HintSize="242,64" />
-      <sap2010:ViewStateData Id="If_12" sap:VirtualizedContainerService.HintSize="200,51">
+      <sap2010:ViewStateData Id="If_12" sap:VirtualizedContainerService.HintSize="569,51">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">False</x:Boolean>
@@ -1181,7 +1189,7 @@ Replace("{TransactionItem}", in_TransactionItem)]</InArgument>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="ForEach`1_17" sap:VirtualizedContainerService.HintSize="547,528" />
       <sap2010:ViewStateData Id="Assign_96" sap:VirtualizedContainerService.HintSize="547,64" />
-      <sap2010:ViewStateData Id="Sequence_45" sap:VirtualizedContainerService.HintSize="200,51">
+      <sap2010:ViewStateData Id="Sequence_45" sap:VirtualizedContainerService.HintSize="569,51">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">False</x:Boolean>
@@ -1204,10 +1212,10 @@ Replace("{TransactionItem}", in_TransactionItem)]</InArgument>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="ForEach`1_11" sap:VirtualizedContainerService.HintSize="547,528" />
       <sap2010:ViewStateData Id="Assign_105" sap:VirtualizedContainerService.HintSize="547,64" />
-      <sap2010:ViewStateData Id="Sequence_48" sap:VirtualizedContainerService.HintSize="200,51">
+      <sap2010:ViewStateData Id="Sequence_48" sap:VirtualizedContainerService.HintSize="569,987">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
             <x:Boolean x:Key="IsPinned">False</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
@@ -1269,7 +1277,7 @@ Replace("{TransactionItem}", in_TransactionItem)]</InArgument>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="If_32" sap:VirtualizedContainerService.HintSize="561,455" />
       <sap2010:ViewStateData Id="Assign_48" sap:VirtualizedContainerService.HintSize="561,64" />
-      <sap2010:ViewStateData Id="Sequence_22" sap:VirtualizedContainerService.HintSize="200,51">
+      <sap2010:ViewStateData Id="Sequence_22" sap:VirtualizedContainerService.HintSize="569,51">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">False</x:Boolean>
@@ -1277,7 +1285,7 @@ Replace("{TransactionItem}", in_TransactionItem)]</InArgument>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_53" sap:VirtualizedContainerService.HintSize="885,812">
+      <sap2010:ViewStateData Id="Sequence_53" sap:VirtualizedContainerService.HintSize="885,1748">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -1326,10 +1334,10 @@ Replace("{TransactionItem}", in_TransactionItem)]</InArgument>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="LogMessage_8" sap:VirtualizedContainerService.HintSize="314,91" />
-      <sap2010:ViewStateData Id="If_6" sap:VirtualizedContainerService.HintSize="863,1689">
+      <sap2010:ViewStateData Id="If_6" sap:VirtualizedContainerService.HintSize="863,51">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
             <x:Boolean x:Key="IsPinned">False</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
@@ -1362,7 +1370,15 @@ Replace("{TransactionItem}", in_TransactionItem)]</InArgument>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="Assign_116" sap:VirtualizedContainerService.HintSize="242,60" />
-      <sap2010:ViewStateData Id="If_47" sap:VirtualizedContainerService.HintSize="863,212" />
+      <sap2010:ViewStateData Id="If_47" sap:VirtualizedContainerService.HintSize="464,207" />
+      <sap2010:ViewStateData Id="Sequence_83" sap:VirtualizedContainerService.HintSize="486,331">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="CommentOut_3" sap:VirtualizedContainerService.HintSize="863,409" />
       <sap2010:ViewStateData Id="LogMessage_30" sap:VirtualizedContainerService.HintSize="863,91" />
       <sap2010:ViewStateData Id="Throw_3" sap:VirtualizedContainerService.HintSize="200,22" />
       <sap2010:ViewStateData Id="If_57" sap:VirtualizedContainerService.HintSize="464,208" />
@@ -1370,7 +1386,7 @@ Replace("{TransactionItem}", in_TransactionItem)]</InArgument>
       <sap2010:ViewStateData Id="If_61" sap:VirtualizedContainerService.HintSize="464,208" />
       <sap2010:ViewStateData Id="Throw_4" sap:VirtualizedContainerService.HintSize="200,22" />
       <sap2010:ViewStateData Id="If_60" sap:VirtualizedContainerService.HintSize="464,208" />
-      <sap2010:ViewStateData Id="Switch`1_1" sap:VirtualizedContainerService.HintSize="863,182" />
+      <sap2010:ViewStateData Id="Switch`1_1" sap:VirtualizedContainerService.HintSize="863,179" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_1" sap:VirtualizedContainerService.HintSize="314,87" />
       <sap2010:ViewStateData Id="Assign_134" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="Catch`1_10" sap:VirtualizedContainerService.HintSize="404,21">
@@ -1384,7 +1400,7 @@ Replace("{TransactionItem}", in_TransactionItem)]</InArgument>
       <sap2010:ViewStateData Id="TryCatch_10" sap:VirtualizedContainerService.HintSize="863,314" />
       <sap2010:ViewStateData Id="Delete_3" sap:VirtualizedContainerService.HintSize="200,22" />
       <sap2010:ViewStateData Id="ForEach`1_12" sap:VirtualizedContainerService.HintSize="863,194" />
-      <sap2010:ViewStateData Id="Sequence_49" sap:VirtualizedContainerService.HintSize="885,3626">
+      <sap2010:ViewStateData Id="Sequence_49" sap:VirtualizedContainerService.HintSize="885,2182">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -1395,7 +1411,7 @@ Replace("{TransactionItem}", in_TransactionItem)]</InArgument>
       <sap2010:ViewStateData Id="LogMessage_2" sap:VirtualizedContainerService.HintSize="314,91" />
       <sap2010:ViewStateData Id="Throw_6" sap:VirtualizedContainerService.HintSize="200,22" />
       <sap2010:ViewStateData Id="If_63" sap:VirtualizedContainerService.HintSize="885,239" />
-      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="907,6051">
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="907,5543">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -1403,7 +1419,7 @@ Replace("{TransactionItem}", in_TransactionItem)]</InArgument>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="SendJobReport_1" sap:VirtualizedContainerService.HintSize="947,6171" />
+      <sap2010:ViewStateData Id="SendJobReport_1" sap:VirtualizedContainerService.HintSize="947,5623" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>

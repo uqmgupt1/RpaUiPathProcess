@@ -9,6 +9,7 @@
  xmlns:scg="clr-namespace:System.Collections.Generic;assembly=mscorlib"
  xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=mscorlib"
  xmlns:sd="clr-namespace:System.Data;assembly=System.Data"
+ xmlns:sg="clr-namespace:System.Globalization;assembly=mscorlib"
  xmlns:this="clr-namespace:"
  xmlns:ui="http://schemas.uipath.com/workflow/activities"
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
@@ -49,6 +50,7 @@
       <x:String>System.Xml.Serialization</x:String>
       <x:String>UiPath.Core.Activities</x:String>
       <x:String>Microsoft.VisualBasic.CompilerServices</x:String>
+      <x:String>System.Globalization</x:String>
     </sco:Collection>
   </TextExpression.NamespacesForImplementation>
   <TextExpression.ReferencesForImplementation>
@@ -78,6 +80,7 @@
       <AssemblyReference>Microsoft.VisualStudio.Services.Common</AssemblyReference>
       <AssemblyReference>System.Collections.Immutable</AssemblyReference>
       <AssemblyReference>System.Data.Entity</AssemblyReference>
+      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence sap2010:Annotation.AnnotationText="Description: This workflow outputs a settings Dictionary with key/value pairs to be used in the project. Settings are read from local config file then fetched from Orchestrator assets. &#xA;&#xA;Inputs:&#xA;in_StartTime &lt;DateTime&gt;.&#xA;in_OperatingEnvironment &lt;String&gt;.&#xA;in_ConfigFile &lt;String&gt;.&#xA;in_ConfigSheets &lt;String[]&gt;. &#xA;&#xA;Outputs:&#xA;out_Config &lt;Dictionary&lt;String, String&gt;&gt;: &#xA;&#xA;Pre Condition: NA&#xA;If duplicate keys are set, will use the last value.&#xA;Settings ending in DEV, TEST, STAGING or PROD will be removed and only used if matching in_OperatingEnvironment.&#xA;&#xA;Post Condition: NA" DisplayName="Get All Settings" sap2010:WorkflowViewState.IdRef="Sequence_2">
@@ -89,12 +92,20 @@
         <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)">[new Dictionary(of String, String)]</InArgument>
       </Assign.Value>
     </Assign>
+    <Assign DisplayName="Assign Australian English Current Culture" sap2010:WorkflowViewState.IdRef="Assign_37">
+      <Assign.To>
+        <OutArgument x:TypeArguments="sg:CultureInfo">[CultureInfo.CurrentCulture]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="sg:CultureInfo">[New CultureInfo("en-AU")]</InArgument>
+      </Assign.Value>
+    </Assign>
     <Assign DisplayName="Assign start time" sap2010:WorkflowViewState.IdRef="Assign_26">
       <Assign.To>
         <OutArgument x:TypeArguments="x:String">[out_Config("Job Start Time")]</OutArgument>
       </Assign.To>
       <Assign.Value>
-        <InArgument x:TypeArguments="x:String">[in_StartTime.ToString("u")]</InArgument>
+        <InArgument x:TypeArguments="x:String">[in_StartTime.ToUniversalTime.ToString("u")]</InArgument>
       </Assign.Value>
     </Assign>
     <Assign DisplayName="Assign Operating Environment" sap2010:WorkflowViewState.IdRef="Assign_24">
@@ -338,11 +349,12 @@
         </ui:ForEachRow.Body>
       </ui:ForEachRow>
     </Sequence>
-    <sads:DebugSymbol.Symbol>d1dDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQmlsbGluZ01pbGVzdG9uZVxGcmFtZXdvcmtcSW5pdEFsbFNldHRpbmdzLnhhbWxsAaMBAegBAQMBagF7AQJTA9YCDgIBAVQFWw4DAYYBXAVjDgMBgQFkBWsOAgF8bAVzDgIBeHQF2wESAgFE3AEF1AIQAgECWUpZbQMBiQFWS1ZXAwGHAWEwYUwDAYQBXjFeTwMBggFpMGlJAgF/ZjFmVQIBfXEwcZ8BAgF7bjFuTwIBeXSlAXS4AQIBdnoL2AEWAgFF4AEH4AHPAQIBPuEBB9MCFwIBA34Nft0BAgFvfw3XAR0CAUbgAULgAUwCAULgAaUB4AGtAQIBQeABuwHgAcwBAgE/4QE44QFCAgE85wEN0AIYAgEEfkh+VwIBdH6yAX67AQIBcn7JAX7aAQIBcH8+f00CAW2FARPUAR4CAUfrAUvrAWUCAQXtAQ/xARQCATnyAQ/yAcEBAgE38wEPjwIaAgEokAIPsgIaAgEWswIPzwIUAgEGiQEVjQEaAgFqjgEVoAEaAgFioQEVoQHEAQIBYKIBFasBHgIBXKwBFbcBGgIBVrgBFb8BHgIBUsABFcsBGgIBTMwBFdMBHgIBSO0BHe0BWgIBOu8BE+8BaAIBO/IBffIBvgECATj1ARP5ASYCATOBAheLAiICASmSAhOcAh4CASGkAheuAiICARezAh2zAjkCAQe1AhO8AhwCARK/AhPNAhgCAQmJASOJAWACAWuLARmLAXACAWyOASOOAZkCAgFjkAEZngEeAgFkoQGDAaEBwQECAWGoARuoAUoCAV+kAUGkAUoCAV2sASOsAZcBAgFXrgEZtQEiAgFYvQFAvQFhAgFVugFBugFKAgFTwAEjwAGbAQIBTcIBGckBIgIBTtEBQNEBSQIBSs4BQc4BaAIBSfcBP/cBSwIBNfUBRPUBZwIBNIICGYICzQECAS6DAhmKAiICASqTAhWTAvIBAgEmlAIVmwIeAgEipQIZpQLNAQIBHKYCGa0CIgIBGLoCProCSgIBFLcCP7cCYQIBE78CIb8CQQIBCsECF8gCIAIBDssCF8sC6gECAQyQASeQAW8CAWWSAR2SAXQCAWmVAR2cASYCAWazAUSzAWwCAVuwAUWwAU4CAVnHAUTHAXICAVHEAUXEAU4CAU+CAlOCAmECATGCAr0BggLKAQIBL4gCRIgCTQIBLYUCRYUCUQIBK5MCc5MClgECASeZAkCZAlcCASWWAkGWAlECASOlAlOlAmECAR+lAr0BpQLKAQIBHasCRKsCTQIBG6gCRagCVQIBGcYCQsYCUgIBEMMCQ8MCZQIBD8sCU8sCvQECAQ2aAUiaAZEBAgFolwFJlwFWAgFn</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d29DOlxVc2Vyc1xzcGFtaXNoXERvY3VtZW50c1xVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQmlsbGluZ01pbGVzdG9uZVxGcmFtZXdvcmtcSW5pdEFsbFNldHRpbmdzLnhhbWxvAaMBAegBAQMBagF7AQJWA+ECDgIBAVcFXg4DAYkBXwVmDgMBhgFnBW4OAwGBAW8Fdg4CAXx3BX4OAgF4fwXmARICAUTnAQXfAhACAQJcSlxtAwGMAVlLWVcDAYoBZDZkUAMBiAFhN2FTAwGHAWwwbFwDAYQBaTFpTwMBggF0MHRJAgF/cTFxVQIBfXwwfJ8BAgF7eTF5TwIBeX+lAX+4AQIBdoUBC+MBFgIBResBB+sBzwECAT7sAQfeAhcCAQOJAQ2JAd0BAgFvigEN4gEdAgFG6wFC6wFMAgFC6wGlAesBrQECAUHrAbsB6wHMAQIBP+wBOOwBQgIBPPIBDdsCGAIBBIkBSIkBVwIBdIkBsgGJAbsBAgFyiQHJAYkB2gECAXCKAT6KAU0CAW2QARPfAR4CAUf2AUv2AWUCAQX4AQ/8ARQCATn9AQ/9AcEBAgE3/gEPmgIaAgEomwIPvQIaAgEWvgIP2gIUAgEGlAEVmAEaAgFqmQEVqwEaAgFirAEVrAHEAQIBYK0BFbYBHgIBXLcBFcIBGgIBVsMBFcoBHgIBUssBFdYBGgIBTNcBFd4BHgIBSPgBHfgBWgIBOvoBE/oBaAIBO/0Bff0BvgECATiAAhOEAiYCATOMAheWAiICASmdAhOnAh4CASGvAhe5AiICARe+Ah2+AjkCAQfAAhPHAhwCARLKAhPYAhgCAQmUASOUAWACAWuWARmWAXACAWyZASOZAZkCAgFjmwEZqQEeAgFkrAGDAawBwQECAWGzARuzAUoCAV+vAUGvAUoCAV23ASO3AZcBAgFXuQEZwAEiAgFYyAFAyAFhAgFVxQFBxQFKAgFTywEjywGbAQIBTc0BGdQBIgIBTtwBQNwBSQIBStkBQdkBaAIBSYICP4ICSwIBNYACRIACZwIBNI0CGY0CzQECAS6OAhmVAiICASqeAhWeAvIBAgEmnwIVpgIeAgEisAIZsALNAQIBHLECGbgCIgIBGMUCPsUCSgIBFMICP8ICYQIBE8oCIcoCQQIBCswCF9MCIAIBDtYCF9YC6gECAQybASebAW8CAWWdAR2dAXQCAWmgAR2nASYCAWa+AUS+AWwCAVu7AUW7AU4CAVnSAUTSAXICAVHPAUXPAU4CAU+NAlONAmECATGNAr0BjQLKAQIBL5MCRJMCTQIBLZACRZACUQIBK54Cc54ClgECASekAkCkAlcCASWhAkGhAlECASOwAlOwAmECAR+wAr0BsALKAQIBHbYCRLYCTQIBG7MCRbMCVQIBGdECQtECUgIBEM4CQ84CZQIBD9YCU9YCvQECAQ2lAUilAZEBAgFoogFJogFWAgFn</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
       <sap2010:ViewStateData Id="Assign_1" sap:VirtualizedContainerService.HintSize="808,60" />
+      <sap2010:ViewStateData Id="Assign_37" sap:VirtualizedContainerService.HintSize="808,60" />
       <sap2010:ViewStateData Id="Assign_26" sap:VirtualizedContainerService.HintSize="808,60" />
       <sap2010:ViewStateData Id="Assign_24" sap:VirtualizedContainerService.HintSize="808,60" />
       <sap2010:ViewStateData Id="Assign_25" sap:VirtualizedContainerService.HintSize="808,60" />
@@ -505,7 +517,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="830,5117">
+      <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="830,5217">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -513,7 +525,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="GetAllSettings_1" sap:VirtualizedContainerService.HintSize="870,5197" />
+      <sap2010:ViewStateData Id="GetAllSettings_1" sap:VirtualizedContainerService.HintSize="870,5297" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
