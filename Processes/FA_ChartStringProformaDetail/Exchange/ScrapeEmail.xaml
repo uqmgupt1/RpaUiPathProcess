@@ -56,6 +56,7 @@
       <x:String>System.Text.RegularExpressions</x:String>
       <x:String>UiPath</x:String>
       <x:String>Microsoft.VisualBasic.CompilerServices</x:String>
+      <x:String>System.Net</x:String>
     </sco:Collection>
   </TextExpression.NamespacesForImplementation>
   <TextExpression.ReferencesForImplementation>
@@ -191,7 +192,7 @@
         <OutArgument x:TypeArguments="x:String">[filename]</OutArgument>
       </Assign.To>
       <Assign.Value>
-        <InArgument x:TypeArguments="x:String">["temp_" + String.Join(String.Empty, in_ProformaMessage.Subject.Where(Function(c) Not Path.GetInvalidFileNameChars.Contains(c))) + ".html"]</InArgument>
+        <InArgument x:TypeArguments="x:String">["temp_" + String.Join(String.Empty, in_ProformaMessage.Subject.Where(Function(c) Char.IsLetterOrDigit(c))) + ".html"]</InArgument>
       </Assign.Value>
     </Assign>
     <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_71" Level="Trace" Message="[&quot;Saving &quot; + Path.GetFileName(filename)]" />
@@ -222,12 +223,13 @@
                               <Variable x:TypeArguments="ui:UiElement" Name="rmField" />
                             </Sequence.Variables>
                             <ui:MaximizeWindow Window="{x:Null}" DisplayName="Maximize Window" sap2010:WorkflowViewState.IdRef="MaximizeWindow_1" />
-                            <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_60" Level="Trace" Message="[&quot;Getting RM number at PRIMARY GRANT DETAILS &gt; ResearchMaster (RM) Number&quot;]" />
+                            <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_60" Level="Trace" Message="[&quot;Getting PRIMARY GRANT DETAILS&quot;]" />
                             <ui:WaitUiElementAppear FoundElement="{x:Null}" DisplayName="Find Primary Grant Details" sap2010:WorkflowViewState.IdRef="WaitUiElementAppear_7" WaitActive="False" WaitVisible="False">
                               <ui:WaitUiElementAppear.Target>
                                 <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Selector="&lt;webctrl tag='THEAD' innertext='*Primary Grant*' /&gt;" TimeoutMS="3000" WaitForReady="INTERACTIVE" />
                               </ui:WaitUiElementAppear.Target>
                             </ui:WaitUiElementAppear>
+                            <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_73" Level="Trace" Message="[&quot;Getting ResearchMaster (RM) Number&quot;]" />
                             <ui:WaitUiElementAppear DisplayName="Find ResearchMaster" FoundElement="[rmField]" sap2010:WorkflowViewState.IdRef="WaitUiElementAppear_8" WaitActive="False" WaitVisible="False">
                               <ui:WaitUiElementAppear.Target>
                                 <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Selector="&lt;webctrl tag='THEAD' innertext='*Primary Grant*' /&gt;&lt;nav up='1' /&gt;&lt;webctrl tag='TD' rowName='*ResearchMaster (RM)*' tableCol='2' /&gt;" TimeoutMS="3000" WaitForReady="INTERACTIVE" />
@@ -256,6 +258,7 @@
                                 <OutArgument x:TypeArguments="x:String">[out_RMNumber]</OutArgument>
                               </ui:GetValue.Value>
                             </ui:GetValue>
+                            <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_74" Level="Trace" Message="[&quot;Got &quot; + out_RMNumber]" />
                             <Assign DisplayName="Assign only letters and digits" sap2010:WorkflowViewState.IdRef="Assign_12">
                               <Assign.To>
                                 <OutArgument x:TypeArguments="x:String">[out_RMNumber]</OutArgument>
@@ -336,6 +339,14 @@
                                     <OutArgument x:TypeArguments="x:String">[out_ShortDescription]</OutArgument>
                                   </ui:GetValue.Value>
                                 </ui:GetValue>
+                                <Assign DisplayName="Assign single line description" sap2010:WorkflowViewState.IdRef="Assign_18">
+                                  <Assign.To>
+                                    <OutArgument x:TypeArguments="x:String">[out_ShortDescription]</OutArgument>
+                                  </Assign.To>
+                                  <Assign.Value>
+                                    <InArgument x:TypeArguments="x:String">[String.Join(" ", out_ShortDescription.Split(vbCrLf.ToCharArray, StringSplitOptions.RemoveEmptyEntries))]</InArgument>
+                                  </Assign.Value>
+                                </Assign>
                                 <Assign DisplayName="Assign trimmed short desc" sap2010:WorkflowViewState.IdRef="Assign_13">
                                   <Assign.To>
                                     <OutArgument x:TypeArguments="x:String">[out_ShortDescription]</OutArgument>
@@ -626,13 +637,13 @@
     </ui:RetryScope>
     <If Condition="[scrapeError Is Nothing]" sap2010:WorkflowViewState.IdRef="If_1">
       <If.Then>
-        <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_5" Level="Info" Message="[String.Format(&quot;End ScrapeEmail.xaml, got RM Number: {1}, Descripton: {2}{0}&quot; +&#xD;&#xA;&quot;Operational Unit Code =&gt; Faculty: {3}, School: {4}, Section: {5}, Site: {6}{0}&quot; +&#xD;&#xA;&quot;Underwriting Account =&gt; Op Unit: {7}, Site: {8}, Fund: {9}, Function: {10}, Project: {11}.&quot;,&#xD;&#xA;vbNewLine, out_RMNumber, out_ShortDescription,&#xD;&#xA;out_OUCFaculty, out_OUCSchool, out_OUCSection, out_OUCSiteCode,&#xD;&#xA;out_UAOpUnitCode, out_UASiteCode, out_UAFundCode, out_UAFunctionCode, out_UAProject)]" />
+        <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_5" Level="Info" Message="[String.Format(&quot;End ScrapeEmail.xaml, got RM Number: {1}, Descripton: {2}{0}&quot; +&#xA;&quot;Operational Unit Code =&gt; Faculty: {3}, School: {4}, Section: {5}, Site: {6}{0}&quot; +&#xA;&quot;Underwriting Account =&gt; Op Unit: {7}, Site: {8}, Fund: {9}, Function: {10}, Project: {11}.&quot;,&#xA;vbNewLine, out_RMNumber, out_ShortDescription,&#xA;out_OUCFaculty, out_OUCSchool, out_OUCSection, out_OUCSiteCode,&#xA;out_UAOpUnitCode, out_UASiteCode, out_UAFundCode, out_UAFunctionCode, out_UAProject)]" />
       </If.Then>
       <If.Else>
         <Throw DisplayName="Throw scrape error" Exception="[scrapeError]" sap2010:WorkflowViewState.IdRef="Throw_1" />
       </If.Else>
     </If>
-    <sads:DebugSymbol.Symbol>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</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>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</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -660,12 +671,14 @@
       <sap2010:ViewStateData Id="MaximizeWindow_1" sap:VirtualizedContainerService.HintSize="314,22" />
       <sap2010:ViewStateData Id="LogMessage_60" sap:VirtualizedContainerService.HintSize="314,91" />
       <sap2010:ViewStateData Id="WaitUiElementAppear_7" sap:VirtualizedContainerService.HintSize="314,68" />
+      <sap2010:ViewStateData Id="LogMessage_73" sap:VirtualizedContainerService.HintSize="314,91" />
       <sap2010:ViewStateData Id="WaitUiElementAppear_8" sap:VirtualizedContainerService.HintSize="314,68" />
       <sap2010:ViewStateData Id="Click_6" sap:VirtualizedContainerService.HintSize="314,68" />
       <sap2010:ViewStateData Id="GetValue_53" sap:VirtualizedContainerService.HintSize="314,68" />
+      <sap2010:ViewStateData Id="LogMessage_74" sap:VirtualizedContainerService.HintSize="314,91" />
       <sap2010:ViewStateData Id="Assign_12" sap:VirtualizedContainerService.HintSize="314,60" />
       <sap2010:ViewStateData Id="CheckTrue_1" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="Sequence_64" sap:VirtualizedContainerService.HintSize="336,936">
+      <sap2010:ViewStateData Id="Sequence_64" sap:VirtualizedContainerService.HintSize="336,1198">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -681,7 +694,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_11" sap:VirtualizedContainerService.HintSize="522,1163">
+      <sap2010:ViewStateData Id="TryCatch_11" sap:VirtualizedContainerService.HintSize="522,1425">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -701,15 +714,15 @@
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="Throw_3" sap:VirtualizedContainerService.HintSize="200,22" />
-      <sap2010:ViewStateData Id="Catch`1_12" sap:VirtualizedContainerService.HintSize="404,21">
+      <sap2010:ViewStateData Id="Catch`1_12" sap:VirtualizedContainerService.HintSize="400,104">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
             <x:Boolean x:Key="IsPinned">False</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_12" sap:VirtualizedContainerService.HintSize="522,766">
+      <sap2010:ViewStateData Id="TryCatch_12" sap:VirtualizedContainerService.HintSize="522,266">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -718,8 +731,9 @@
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="GetValue_54" sap:VirtualizedContainerService.HintSize="314,106" />
+      <sap2010:ViewStateData Id="Assign_18" sap:VirtualizedContainerService.HintSize="314,60" />
       <sap2010:ViewStateData Id="Assign_13" sap:VirtualizedContainerService.HintSize="314,60" />
-      <sap2010:ViewStateData Id="Sequence_66" sap:VirtualizedContainerService.HintSize="486,330">
+      <sap2010:ViewStateData Id="Sequence_66" sap:VirtualizedContainerService.HintSize="486,430">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -885,7 +899,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_67" sap:VirtualizedContainerService.HintSize="508,4154">
+      <sap2010:ViewStateData Id="Sequence_67" sap:VirtualizedContainerService.HintSize="508,4254">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -893,7 +907,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="ElementScope_2" sap:VirtualizedContainerService.HintSize="522,4262">
+      <sap2010:ViewStateData Id="ElementScope_2" sap:VirtualizedContainerService.HintSize="522,4362">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -901,7 +915,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_68" sap:VirtualizedContainerService.HintSize="544,6422">
+      <sap2010:ViewStateData Id="Sequence_68" sap:VirtualizedContainerService.HintSize="544,6284">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -910,7 +924,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="WindowScope_1" sap:VirtualizedContainerService.HintSize="558,6530">
+      <sap2010:ViewStateData Id="WindowScope_1" sap:VirtualizedContainerService.HintSize="558,6392">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -927,8 +941,8 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_21" sap:VirtualizedContainerService.HintSize="576,6757" />
-      <sap2010:ViewStateData Id="OpenBrowser_2" sap:VirtualizedContainerService.HintSize="590,6856" />
+      <sap2010:ViewStateData Id="TryCatch_21" sap:VirtualizedContainerService.HintSize="576,6619" />
+      <sap2010:ViewStateData Id="OpenBrowser_2" sap:VirtualizedContainerService.HintSize="590,6718" />
       <sap2010:ViewStateData Id="CloseWindow_1" sap:VirtualizedContainerService.HintSize="314,68" />
       <sap2010:ViewStateData Id="Delete_1" sap:VirtualizedContainerService.HintSize="314,22" />
       <sap2010:ViewStateData Id="Sequence_72" sap:VirtualizedContainerService.HintSize="336,254">
@@ -942,7 +956,7 @@
       <sap2010:ViewStateData Id="LogMessage_5" sap:VirtualizedContainerService.HintSize="314,91" />
       <sap2010:ViewStateData Id="Throw_1" sap:VirtualizedContainerService.HintSize="200,22" />
       <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="590,239" />
-      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="612,8694">
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="612,8556">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -950,7 +964,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="ScrapeEmail_1" sap:VirtualizedContainerService.HintSize="652,8774" />
+      <sap2010:ViewStateData Id="ScrapeEmail_1" sap:VirtualizedContainerService.HintSize="652,8636" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
