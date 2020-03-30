@@ -89,12 +89,14 @@
       <AssemblyReference>System.Data.DataSetExtensions</AssemblyReference>
       <AssemblyReference>System.Data.Entity</AssemblyReference>
       <AssemblyReference>Newtonsoft.Json</AssemblyReference>
+      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence sap2010:Annotation.AnnotationText="Description: In this file all other process specific files will be invoked. If an application exception occurs, the current transaction can be retried. If a BRE is thrown, the transaction will be skipped. Can be a flowchart or sequence. " DisplayName="ProcessTransaction" sap2010:WorkflowViewState.IdRef="Sequence_1">
     <Sequence.Variables>
       <Variable x:TypeArguments="ui:Browser" Name="UnitaskWorklistBrowser" />
       <Variable x:TypeArguments="sd:DataTable" Default="[New System.Data.DataTable]" Name="reportDT" />
+      <Variable x:TypeArguments="x:Boolean" Name="TaskIsFTAE" />
     </Sequence.Variables>
     <ui:CommentOut DisplayName="Comment Out" sap2010:WorkflowViewState.IdRef="CommentOut_3">
       <ui:CommentOut.Body>
@@ -201,7 +203,19 @@
       </ui:InvokeWorkflowFile>
       <ui:WriteTextFile DisplayName="Write Text File" FileName="Data\Report.html" sap2010:WorkflowViewState.IdRef="WriteTextFile_1" Text="[io_DTasHTML]" />
     </Sequence>
-    <Assign sap2010:WorkflowViewState.IdRef="Assign_2">
+    <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke Unitask_VerifyTaskIsFTAE workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_16" UnSafe="False" WorkflowFileName="Unitask\Unitask_VerifyTaskIsFTAE.xaml">
+      <ui:InvokeWorkflowFile.Arguments>
+        <InArgument x:TypeArguments="ui:QueueItem" x:Key="in_TransactionItem">[in_TransactionItem]</InArgument>
+        <OutArgument x:TypeArguments="x:Boolean" x:Key="out_TaskIsFTAE">[TaskIsFTAE]</OutArgument>
+        <InArgument x:TypeArguments="ui:Browser" x:Key="in_uqCustomWorklistBrowser">[in_uqCustomWorklistBrowser]</InArgument>
+      </ui:InvokeWorkflowFile.Arguments>
+    </ui:InvokeWorkflowFile>
+    <If Condition="[TaskIsFTAE]" DisplayName="If TaskIsFTAE, continue else BRE" sap2010:WorkflowViewState.IdRef="If_1">
+      <If.Else>
+        <Throw DisplayName="Throw Invalid FTAE task" Exception="[New BusinessRuleException(in_TransactionItem.Reference + &quot; may not be a valid FTAE task&quot;)]" sap2010:WorkflowViewState.IdRef="Throw_1" />
+      </If.Else>
+    </If>
+    <Assign sap2010:Annotation.AnnotationText="For DEV or troubleshooting" DisplayName="Assign reportDT" sap2010:WorkflowViewState.IdRef="Assign_2">
       <Assign.To>
         <OutArgument x:TypeArguments="sd:DataTable">[reportDT]</OutArgument>
       </Assign.To>
@@ -318,7 +332,7 @@
         <InArgument x:TypeArguments="njl:JObject" x:Key="in_pstEmailAddresses">[in_pstEmailAddresses]</InArgument>
       </ui:InvokeWorkflowFile.Arguments>
     </ui:InvokeWorkflowFile>
-    <sads:DebugSymbol.Symbol>d2FDOlxVc2Vyc1x1cXNkZWJiZVxEb2N1bWVudHNcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcSFJfRml4ZWRUZXJtQXBwb2ludG1lbnRFeHBpcnlcUHJvY2Vzcy54YW1saF4DwgIOAgEBYThhVQIBAmMFaRUDAa8BagW9ARUDAa4BvgEFvgH3AQMBqgG/AQXLARADAZsBzAEF0wEOAwGWAdQBBeABHQMBggHhAQXvAR0CAWrwAQX/AR0CAVCAAgWHAg4CAUyIAgWRAg4CAUiSAgWgAh0CATChAgWoAh0CASapAgWxAh0CARuyAgXAAh0CAQO+AZsBvgGqAQMBrAG+AW6+AZABAwGrAcABB8AB2wEDAaYBwQEHyQEfAwGgAcoBB8oBnAEDAZwB0QE00QFBAwGZAc4BNc4BPwMBlwHaAVfaAXMDAZQB3gFV3gFxAwGSAdcBStcBWwMBkAHZAVnZAXcDAY4B2wFO2wFjAwGMAd0BRd0BUQMBigHcAVzcAWcDAYgB1gFP1gFjAwGGAdQB4AHUAY0CAwGFAdgBTNgBXwMBgwHtAUPtAU8DAYAB6AFX6AF1AgF+6QFV6QFxAgF86gFM6gFhAgF65gFI5gFZAgF45QFL5QFYAgF27AFU7AFvAgF04wFc4wFnAgFy5wFK5wFdAgFw5AFP5AFjAgFu4QG6AeEB1AECAW3rAU3rAWMCAWv9AUP9AU8CAWj1AVf1AXUCAWb2AVX2AXECAWT6AUz6AWECAWL5AUj5AVkCAWD7AU/7AWUCAV74AUv4AVgCAVz3AVz3AWcCAVr0AUr0AV0CAVjyAU/yAWMCAVb8AVb8AXECAVTzAUnzAVoCAVLwAcUB8AHrAQIBUYUCMIUCNwIBT4ICMYICRwIBTY4CC44COgIBS4oCMYoCRgIBSZ4CQ54CTwIBRpkCV5kCdQIBRJoCVZoCcQIBQpsCTJsCYQIBQJcCSJcCWQIBPpYCS5YCWAIBPJ0CVJ0CbwIBOpQCXJQCZwIBOJgCSpgCXQIBNpUCT5UCYwIBNJICuQGSAtMBAgEznAJNnAJjAgExpQJVpQJxAgEuowJcowJnAgEspAJPpAJjAgEqpgJRpgJpAgEooQLBAaEC4wECASeuAkSuAkgCASWvAlWvAnECASOrAkyrAmECASGsAlysAmcCAR+tAk+tAmMCAR2pAsMBqQLnAQIBHLkCTbkCaQIBGb0CQ70CTwIBF74CUL4CZgIBFbgCT7gCbQIBE7cCTLcCZwIBEbsCQbsCVgIBD7YCSLYCWQIBDbwCSrwCXQIBC7QCXLQCZwIBCbUCT7UCYwIBB7ICuwGyAtUBAgEGugJCugJYAgEEwAFIwAFXAwGoAcABjQHAAacBAwGnAcQBSMQBVQMBpAHDAVDDAV0DAaIBwQHCAcEB5gEDAaEBygGKAcoBmQEDAZ4BygFAygFSAwGdAQ==</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d2FDOlxVc2Vyc1x1cXNkZWJiZVxEb2N1bWVudHNcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcSFJfRml4ZWRUZXJtQXBwb2ludG1lbnRFeHBpcnlcUHJvY2Vzcy54YW1scV8D0AIOAgEBYjhiVQIBAmUFaxUDAbwBbAW/ARUDAbsBwAEFwAH3AQMBtwHBAQXNARADAagBzgEF1AEdAwGgAdUBBdkBCgMBmwHaAQXhAQ4DAZYB4gEF7gEdAwGCAe8BBf0BHQIBav4BBY0CHQIBUI4CBZUCDgIBTJYCBZ8CDgIBSKACBa4CHQIBMK8CBbYCHQIBJrcCBb8CHQIBG8ACBc4CHQIBA8ABmwHAAaoBAwG5AcABbsABkAEDAbgBwgEHwgHbAQMBswHDAQfLAR8DAa0BzAEHzAGcAQMBqQHRAUnRAVUDAaYB0gFV0gFxAwGkAdABT9ABYwMBogHOAcYBzgHtAQMBoQHVARPVASEDAZwB1wEJ1wHUAQMBngHfATTfAUEDAZkB3AE13AE/AwGXAegBV+gBcwMBlAHsAVXsAXEDAZIB5QFK5QFbAwGQAecBWecBdwMBjgHpAU7pAWMDAYwB6wFF6wFRAwGKAeoBXOoBZwMBiAHkAU/kAWMDAYYB4gHgAeIBjQIDAYUB5gFM5gFfAwGDAfsBQ/sBTwMBgAH2AVf2AXUCAX73AVX3AXECAXz4AUz4AWECAXr0AUj0AVkCAXjzAUvzAVgCAXb6AVT6AW8CAXTxAVzxAWcCAXL1AUr1AV0CAXDyAU/yAWMCAW7vAboB7wHUAQIBbfkBTfkBYwIBa4sCQ4sCTwIBaIMCV4MCdQIBZoQCVYQCcQIBZIgCTIgCYQIBYocCSIcCWQIBYIkCT4kCZQIBXoYCS4YCWAIBXIUCXIUCZwIBWoICSoICXQIBWIACT4ACYwIBVooCVooCcQIBVIECSYECWgIBUv4BxQH+AesBAgFRkwIwkwI3AgFPkAIxkAJHAgFNnAILnAI6AgFLmAIxmAJGAgFJrAJDrAJPAgFGpwJXpwJ1AgFEqAJVqAJxAgFCqQJMqQJhAgFApQJIpQJZAgE+pAJLpAJYAgE8qwJUqwJvAgE6ogJcogJnAgE4pgJKpgJdAgE2owJPowJjAgE0oAK5AaAC0wECATOqAk2qAmMCATGzAlWzAnECAS6xAlyxAmcCASyyAk+yAmMCASq0AlG0AmkCASivAsEBrwLjAQIBJ7wCRLwCSAIBJb0CVb0CcQIBI7kCTLkCYQIBIboCXLoCZwIBH7sCT7sCYwIBHbcCwwG3AucBAgEcxwJNxwJpAgEZywJDywJPAgEXzAJQzAJmAgEVxgJPxgJtAgETxQJMxQJnAgERyQJByQJWAgEPxAJIxAJZAgENygJKygJdAgELwgJcwgJnAgEJwwJPwwJjAgEHwAK7AcAC1QECAQbIAkLIAlgCAQTCAUjCAVcDAbUBwgGNAcIBpwEDAbQBxgFIxgFVAwGxAcUBUMUBXQMBrwHDAcIBwwHmAQMBrgHMAYoBzAGZAQMBqwHMAUDMAVIDAaoB1wFA1wGnAQMBnwE=</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -330,7 +344,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="CommentOut_3" sap:VirtualizedContainerService.HintSize="416,261" />
+      <sap2010:ViewStateData Id="CommentOut_3" sap:VirtualizedContainerService.HintSize="464,261" />
       <sap2010:ViewStateData Id="WriteLine_1" sap:VirtualizedContainerService.HintSize="210,61" />
       <sap2010:ViewStateData Id="Assign_8" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="Assign_9" sap:VirtualizedContainerService.HintSize="242,60" />
@@ -356,7 +370,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="CommentOut_1" sap:VirtualizedContainerService.HintSize="416,51">
+      <sap2010:ViewStateData Id="CommentOut_1" sap:VirtualizedContainerService.HintSize="464,51">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">False</x:Boolean>
@@ -364,7 +378,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="AddDataRow_1" sap:VirtualizedContainerService.HintSize="416,49">
+      <sap2010:ViewStateData Id="AddDataRow_1" sap:VirtualizedContainerService.HintSize="464,49">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsAnnotationDocked">True</x:Boolean>
@@ -394,7 +408,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_3" sap:VirtualizedContainerService.HintSize="416,51">
+      <sap2010:ViewStateData Id="Sequence_3" sap:VirtualizedContainerService.HintSize="464,51">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">False</x:Boolean>
@@ -402,10 +416,19 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Assign_2" sap:VirtualizedContainerService.HintSize="416,60" />
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_4" sap:VirtualizedContainerService.HintSize="416,87" />
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_10" sap:VirtualizedContainerService.HintSize="416,87" />
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_8" sap:VirtualizedContainerService.HintSize="416,87" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_16" sap:VirtualizedContainerService.HintSize="464,87" />
+      <sap2010:ViewStateData Id="Throw_1" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="464,208" />
+      <sap2010:ViewStateData Id="Assign_2" sap:VirtualizedContainerService.HintSize="464,87">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsAnnotationDocked">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_4" sap:VirtualizedContainerService.HintSize="464,87" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_10" sap:VirtualizedContainerService.HintSize="464,87" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_8" sap:VirtualizedContainerService.HintSize="464,87" />
       <sap2010:ViewStateData Id="Assign_5" sap:VirtualizedContainerService.HintSize="416,87">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
@@ -418,7 +441,7 @@
       <sap2010:ViewStateData Id="InvokeWorkflowFile_14" sap:VirtualizedContainerService.HintSize="416,87" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_15" sap:VirtualizedContainerService.HintSize="416,87" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_13" sap:VirtualizedContainerService.HintSize="416,87" />
-      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="438,1944">
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="486,2331">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -426,7 +449,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="ProcessTransaction_1" sap:VirtualizedContainerService.HintSize="478,2024" />
+      <sap2010:ViewStateData Id="ProcessTransaction_1" sap:VirtualizedContainerService.HintSize="526,2411" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
