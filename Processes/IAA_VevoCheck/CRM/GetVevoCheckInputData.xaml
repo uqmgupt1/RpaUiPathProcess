@@ -198,7 +198,7 @@
                                   <OutArgument x:TypeArguments="x:String">[textData]</OutArgument>
                                 </ui:GetFullText.Text>
                               </ui:GetFullText>
-                              <If Condition="[textData.Contains(&quot;Date of Birth&quot;) OR textData.Contains(&quot;Family Name&quot;) OR textData.Contains(&quot;Passport Number&quot;) OR textData.Contains(&quot;Country of Document:&quot;)]" DisplayName="Check if Vevo Input details available" sap2010:WorkflowViewState.IdRef="If_29">
+                              <If Condition="[textData.Contains(&quot;Family Name:&quot; ) OR textData.Contains(&quot;Date of Birth:&quot;) OR textData.Contains(&quot;Passport Number:&quot;) OR textData.Contains(&quot;Country of Document:&quot;)]" DisplayName="Check if Vevo Input details available" sap2010:WorkflowViewState.IdRef="If_29">
                                 <If.Then>
                                   <Sequence DisplayName="Get textData string to array " sap2010:WorkflowViewState.IdRef="Sequence_25">
                                     <Assign DisplayName="Replace &amp;nbsp to space" sap2010:WorkflowViewState.IdRef="Assign_96">
@@ -276,19 +276,23 @@
       </ui:InvokeCode.Arguments>
     </ui:InvokeCode>
     <ui:IsMatch DisplayName="Validate Date of Birth format" sap2010:WorkflowViewState.IdRef="IsMatch_4" Input="[out_DateOfBirth]" Pattern="^([0-2][0-9]|(3)[0-1])(\/)(((0)[0-9])|((1)[0-2]))(\/)\d{4}$" RegexOption="IgnoreCase, Compiled" Result="[isDoBValid]" />
-    <If Condition="[isDoBValid And errorCode isNot nothing]" DisplayName="Check if DoB format is dd/mm/yyyy and no previous error" sap2010:WorkflowViewState.IdRef="If_46">
+    <If Condition="[isDoBValid]" DisplayName="Check if DoB format is dd/mm/yyyy " sap2010:WorkflowViewState.IdRef="If_46">
       <If.Then>
         <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_24" Level="Trace" Message="[&quot;Date of Birth format is as expected, Case Ref : &quot; +in_caseReference]" />
       </If.Then>
       <If.Else>
-        <Assign sap2010:WorkflowViewState.IdRef="Assign_97">
-          <Assign.To>
-            <OutArgument x:TypeArguments="ui:BusinessRuleException">[errorCode]</OutArgument>
-          </Assign.To>
-          <Assign.Value>
-            <InArgument x:TypeArguments="ui:BusinessRuleException">[New BusinessRuleException("DoB_IncorrectFormat")]</InArgument>
-          </Assign.Value>
-        </Assign>
+        <If Condition="[isNothing(errorCode)]" DisplayName="If DoB is invalid and errorCode is null" sap2010:WorkflowViewState.IdRef="If_47">
+          <If.Then>
+            <Assign DisplayName="Assign errorCode to Invalid DoB" sap2010:WorkflowViewState.IdRef="Assign_97">
+              <Assign.To>
+                <OutArgument x:TypeArguments="ui:BusinessRuleException">[errorCode]</OutArgument>
+              </Assign.To>
+              <Assign.Value>
+                <InArgument x:TypeArguments="ui:BusinessRuleException">[New BusinessRuleException("DoB_IncorrectFormat")]</InArgument>
+              </Assign.Value>
+            </Assign>
+          </If.Then>
+        </If>
       </If.Else>
     </If>
     <If Condition="[errorCode isNot Nothing]" DisplayName="BRE if any value is missing or DoB format is invalid" sap2010:WorkflowViewState.IdRef="If_45">
@@ -299,11 +303,11 @@
         <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[&quot;End GetVevoCheckInputData.xaml for Case Ref : &quot; +in_caseReference]" />
       </If.Else>
     </If>
-    <sads:DebugSymbol.Symbol>d2pDOlxVc2Vyc1x1cW1ndXB0MVxEb2N1bWVudHNcVWlQYXRoXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXElBQV9WZXZvQ2hlY2tcQ1JNXEdldFZldm9DaGVja0lucHV0RGF0YS54YW1sX0wDrwIOAgEBUAtQOgIBAlcFV6UBAgF8WAXvARcCATjwAQWDAgoCASyEAgWLAgoCASaMAgWVAhUCARmWAgWWAoQCAgETlwIFpQIKAgEKpgIFrQIKAgEDV3JXogECAX1YmgJY2wICAXteC+wBFgIBOfABE/ABNwIBLfIBCfcBGQIBM/oBCYECEgIBL4QCE4QCLgIBJ4YCCYYCoQECASqJAgmJAqkBAgEokgJZkgJkAgEkkwI9kwJOAgEikQJBkQJYAgEgjgJCjgJRAgEejwJEjwJUAgEckAJIkAJcAgEalgJvlgKCAQIBF5YC8wGWAoECAgEVlgKLAZYCyAECARSXAhOXAj0CAQuZAgmZAs0BAgEQnAIJowISAgEMpgITpgIuAgEEqAIJqAKhAQIBCKsCCasCyQECAQVjDYIBHQIBcYMBDZEBGAIBbZIBDZkBGwIBaZoBDZoBtwECAWabAQ2iARICAV6jAQ2nAR8CAVqoAQ3rARgCATr1AV31AWgCATb0AUz0AVsCATT/AUT/AXMCATL8AUX8AVACATCGAkSGAnQCASuJAniJAqYBAgEpmQJ4mQLKAQIBEaECRKECdgIBD54CRZ4CUAIBDagCRKgCdAIBCasCdqsCxgECAQZjhwFjkQECAXpjdWN4AgF5ZhN2HgIBdXsTfygCAXKPAaABjwHSAQIBcIMBS4MBUQIBb4MBPIMBQgIBbpcBOZcBUQIBapQBoAGUAd8BAgFsmgF8mgG0AQIBZ5sBG5sBUwIBX50BEZ0B1AECAWSgARGgAfUCAgFipQGgAaUBlQICAV2jAWqjAX0CAVyjASejATkCAVupAQ/qARwCATtnFXUgAgF2fZEBfc0BAgF0fdgBfd8BAgFznQGAAZ0B0QECAWWgAUugAcgCAgFjqQGtAakBvwECAVmvARXnASACATxzb3OsAgIBd7ABF+YBKQIBPeQBceQBeQIBV7YBHeABKAIBPrcBH8ABKAIBU8EBH8gBMAIBUMkBH98BJAIBP70BJb0BVAIBVrkBS7kBVQIBVMYBS8YBVQIBUckBLckB9AECAUDLASPdAS4CAUXMASXTAS4CAUzUASXbAS4CAUfcASXcAVsCAUbRAVDRAZcBAgFPzgFRzgFbAgFN2QFQ2QGrAQIBStYBUdYBYAIBSA==</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d2pDOlxVc2Vyc1x1cW1ndXB0MVxEb2N1bWVudHNcVWlQYXRoXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXElBQV9WZXZvQ2hlY2tcQ1JNXEdldFZldm9DaGVja0lucHV0RGF0YS54YW1sYUwDswIOAgEBUAtQOgIBAlcFV6UBAgF/WAXvARcCATvwAQWDAgoCAS+EAgWLAgoCASmMAgWVAhUCARyWAgWWAoQCAgEWlwIFqQIKAgEKqgIFsQIKAgEDV3JXogEDAYABWJoCWNsCAgF+XgvsARYCATzwARPwATcCATDyAQn3ARkCATb6AQmBAhICATKEAhOEAi4CASqGAgmGAqEBAgEtiQIJiQKpAQIBK5ICWZICZAIBJ5MCPZMCTgIBJZECQZECWAIBI44CQo4CUQIBIY8CRI8CVAIBH5ACSJACXAIBHZYCb5YCggECARqWAvMBlgKBAgIBGJYCiwGWAsgBAgEXlwITlwIhAgELmQIJmQLNAQIBE5wCCacCDgIBDaoCE6oCLgIBBKwCCawCoQECAQivAgmvAskBAgEFYw2CAR0CAXSDAQ2RARgCAXCSAQ2ZARsCAWyaAQ2aAbcBAgFpmwENogESAgFhowENpwEfAgFdqAEN6wEYAgE99QFd9QFoAgE59AFM9AFbAgE3/wFE/wFzAgE1/AFF/AFQAgEzhgJEhgJ0AgEuiQJ4iQKmAQIBLJkCeJkCygECARScAhecAi8CAQ6eAg2lAhYCAQ+sAkSsAnQCAQmvAnavAsYBAgEGY4cBY5EBAgF9Y3VjeAIBfGYTdh4CAXh7E38oAgF1jwGgAY8B0gECAXODAUuDAVECAXKDATyDAUICAXGXATmXAVECAW2UAaABlAHfAQIBb5oBfJoBtAECAWqbARubAVMCAWKdARGdAdQBAgFnoAERoAH1AgIBZaUBoAGlAZUCAgFgowFqowF9AgFfowEnowE5AgFeqQEP6gEcAgE+owJIowJ6AgESoAJJoAJUAgEQZxV1IAIBeX2RAX3NAQIBd33YAX3fAQIBdp0BgAGdAdEBAgFooAFLoAHIAgIBZqkBrQGpAb8BAgFcrwEV5wEgAgE/c29zrAICAXqwARfmASkCAUDkAXHkAXkCAVq2AR3gASgCAUG3AR/AASgCAVbBAR/IATACAVPJAR/fASQCAUK9ASW9AVQCAVm5AUu5AVUCAVfGAUvGAVUCAVTJAS3JAfgBAgFDywEj3QEuAgFIzAEl0wEuAgFP1AEl2wEuAgFK3AEl3AFbAgFJ0QFQ0QGXAQIBUs4BUc4BWwIBUNkBUNkBqwECAU3WAVHWAWACAUs=</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
-      <sap2010:ViewStateData Id="LogMessage_1" sap:VirtualizedContainerService.HintSize="596,91" />
+      <sap2010:ViewStateData Id="LogMessage_1" sap:VirtualizedContainerService.HintSize="803,91" />
       <sap2010:ViewStateData Id="Click_1" sap:VirtualizedContainerService.HintSize="314,68" />
       <sap2010:ViewStateData Id="Sequence_23" sap:VirtualizedContainerService.HintSize="336,192">
         <sap:WorkflowViewStateService.ViewState>
@@ -395,7 +399,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="BrowserScope_1" sap:VirtualizedContainerService.HintSize="596,2928">
+      <sap2010:ViewStateData Id="BrowserScope_1" sap:VirtualizedContainerService.HintSize="803,2928">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -413,10 +417,10 @@
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="Assign_90" sap:VirtualizedContainerService.HintSize="242,60" />
-      <sap2010:ViewStateData Id="If_44" sap:VirtualizedContainerService.HintSize="596,384" />
+      <sap2010:ViewStateData Id="If_44" sap:VirtualizedContainerService.HintSize="803,384" />
       <sap2010:ViewStateData Id="Throw_5" sap:VirtualizedContainerService.HintSize="200,22" />
       <sap2010:ViewStateData Id="LogMessage_23" sap:VirtualizedContainerService.HintSize="314,91" />
-      <sap2010:ViewStateData Id="If_28" sap:VirtualizedContainerService.HintSize="596,239">
+      <sap2010:ViewStateData Id="If_28" sap:VirtualizedContainerService.HintSize="803,239">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -424,7 +428,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="InvokeCode_2" sap:VirtualizedContainerService.HintSize="596,251">
+      <sap2010:ViewStateData Id="InvokeCode_2" sap:VirtualizedContainerService.HintSize="803,251">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -433,10 +437,11 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="IsMatch_4" sap:VirtualizedContainerService.HintSize="596,22" />
+      <sap2010:ViewStateData Id="IsMatch_4" sap:VirtualizedContainerService.HintSize="803,22" />
       <sap2010:ViewStateData Id="LogMessage_24" sap:VirtualizedContainerService.HintSize="314,91" />
       <sap2010:ViewStateData Id="Assign_97" sap:VirtualizedContainerService.HintSize="242,60" />
-      <sap2010:ViewStateData Id="If_46" sap:VirtualizedContainerService.HintSize="596,239">
+      <sap2010:ViewStateData Id="If_47" sap:VirtualizedContainerService.HintSize="464,208" />
+      <sap2010:ViewStateData Id="If_46" sap:VirtualizedContainerService.HintSize="803,356">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -446,7 +451,7 @@
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="Throw_6" sap:VirtualizedContainerService.HintSize="200,22" />
       <sap2010:ViewStateData Id="LogMessage_2" sap:VirtualizedContainerService.HintSize="314,91" />
-      <sap2010:ViewStateData Id="If_45" sap:VirtualizedContainerService.HintSize="596,239">
+      <sap2010:ViewStateData Id="If_45" sap:VirtualizedContainerService.HintSize="803,239">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -454,7 +459,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="618,5094">
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="825,5211">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -462,7 +467,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="GetVevoCheckDetails_1" sap:VirtualizedContainerService.HintSize="658,5174" />
+      <sap2010:ViewStateData Id="GetVevoCheckDetails_1" sap:VirtualizedContainerService.HintSize="865,5291" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
