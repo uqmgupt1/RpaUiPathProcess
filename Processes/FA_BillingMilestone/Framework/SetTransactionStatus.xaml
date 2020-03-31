@@ -16,14 +16,6 @@
     <x:Property Name="in_SystemError" Type="InArgument(s:Exception)" />
     <x:Property Name="io_TransactionItem" Type="InOutArgument(ui:QueueItem)" />
     <x:Property Name="io_TransactionNumber" Type="InOutArgument(x:Int32)" />
-    <x:Property Name="in_ProjectsUpdated" Type="InArgument(x:Int32)" />
-    <x:Property Name="in_ProjectsTotal" Type="InArgument(x:Int32)" />
-    <x:Property Name="in_GrantorsUpdated" Type="InArgument(x:Int32)" />
-    <x:Property Name="in_GrantorsTotal" Type="InArgument(x:Int32)" />
-    <x:Property Name="in_LinesUpdated" Type="InArgument(x:Int32)" />
-    <x:Property Name="in_LinesTotal" Type="InArgument(x:Int32)" />
-    <x:Property Name="in_EventsUpdated" Type="InArgument(x:Int32)" />
-    <x:Property Name="in_EventsTotal" Type="InArgument(x:Int32)" />
   </x:Members>
   <mva:VisualBasic.Settings>
     <x:Null />
@@ -79,16 +71,80 @@
       <AssemblyReference>System.Collections.Immutable</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
-  <Sequence sap2010:Annotation.AnnotationText="Description:&#xA;The workflow moves the Response email to the Email Store directory and attempts to move the Request email and any attachment emails contained in the Specific Content.&#xA;&#xA;This workflow sets the TransactionStatus with the sequence one of three three possible Transaction Statuses: Success, Business Exception and System Error. If the System Error path is chosen then a screenshot is saved and all applications will be closed.&#xA;&#xA;Finally the TransactionItem is refreshed from orchestrator and the TransactionNumber is incremented for the next queue item. &#xA;&#xA;Inputs:&#xA;in_Config &lt;Dictionary&lt;String, String&gt;&gt;.&#xA;in_RuleException &lt;BusinessRuleException&gt;.&#xA;in_SystemError &lt;Exception&gt;.&#xA;io_TransactionItem &lt;QueueItem&gt;.&#xA;io_TransactionNumber &lt;Integer&gt;.&#xA;&#xA;The following arguments are used as metrics in successful transactions.&#xA;in_ProjectsUpdated &lt;Integer&gt;.&#xA;in_ProjectsTotal &lt;Integer&gt;.&#xA;in_GrantorsUpdated &lt;Integer&gt;.&#xA;in_GrantorsTotal &lt;Integer&gt;.&#xA;in_LinesUpdated &lt;Integer&gt;.&#xA;in_LinesTotal &lt;Integer&gt;.&#xA;in_EventsUpdated &lt;Integer&gt;.&#xA;in_EventsTotal &lt;Integer&gt;.&#xA;&#xA;Outputs:&#xA;io_TransactionItem &lt;QueueItem&gt;: Refreshed transaction.&#xA;io_TransactionNumber &lt;Integer&gt;: Incremented transaction number.&#xA;&#xA;Pre Condition:&#xA;io_TransactionItem is In Progress.&#xA;&#xA;Post Condition: NA" DisplayName="SetTransactionStatus" sap2010:WorkflowViewState.IdRef="Sequence_7">
+  <Sequence sap2010:Annotation.AnnotationText="Description:&#xA;The workflow moves the Response email to the Email Store directory and attempts to move the Request email and any attachment emails contained in the Specific Content.&#xA;&#xA;This workflow sets the TransactionStatus with the sequence one of three three possible Transaction Statuses: Success, Business Exception and System Error. If the System Error path is chosen then a screenshot is saved and all applications will be closed.&#xA;&#xA;Finally the TransactionItem is refreshed from orchestrator and the TransactionNumber is incremented for the next queue item. &#xA;&#xA;Inputs:&#xA;in_Config &lt;Dictionary&lt;String, String&gt;&gt;.&#xA;in_RuleException &lt;BusinessRuleException&gt;.&#xA;in_SystemError &lt;Exception&gt;.&#xA;io_TransactionItem &lt;QueueItem&gt;.&#xA;io_TransactionNumber &lt;Integer&gt;.&#xA;&#xA;Outputs:&#xA;io_TransactionItem &lt;QueueItem&gt;: Refreshed transaction.&#xA;io_TransactionNumber &lt;Integer&gt;: Incremented transaction number.&#xA;&#xA;Pre Condition:&#xA;io_TransactionItem is In Progress.&#xA;&#xA;Post Condition: NA" DisplayName="SetTransactionStatus" sap2010:WorkflowViewState.IdRef="Sequence_7">
     <Sequence.Variables>
       <Variable x:TypeArguments="scg:IEnumerable(ui:QueueItem)" Name="finishedItems" />
+      <Variable x:TypeArguments="x:String" Name="SaveDirectory" />
     </Sequence.Variables>
-    <ui:MoveFile ContinueOnError="{x:Null}" Destination="[in_Config(&quot;Network Share Email Store&quot;) + &quot;\&quot; + Path.GetFileName(io_TransactionItem.SpecificContent(&quot;Response Filename&quot;).ToString)]" DisplayName="Move Response Email File" sap2010:WorkflowViewState.IdRef="MoveFile_3" Overwrite="False" Path="[io_TransactionItem.SpecificContent(&quot;Response Filename&quot;).ToString]" />
-    <If Condition="[io_TransactionItem.SpecificContent.ContainsKey(&quot;Request Filename&quot;)]" DisplayName="If request is matched" sap2010:WorkflowViewState.IdRef="If_1">
+    <Assign DisplayName="Assign save directory" sap2010:WorkflowViewState.IdRef="Assign_4">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">[SaveDirectory]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">[in_Config("Network Share Email Store") + "\"]</InArgument>
+      </Assign.Value>
+    </Assign>
+    <If Condition="[io_TransactionItem.SpecificContent.ContainsKey(&quot;Contract&quot;) And io_TransactionItem.SpecificContent.ContainsKey(&quot;Milestone ID&quot;)]" DisplayName="If transaction item contains Contract and Milestone" sap2010:WorkflowViewState.IdRef="If_7">
       <If.Then>
-        <ui:MoveFile ContinueOnError="{x:Null}" Destination="[in_Config(&quot;Network Share Email Store&quot;) + &quot;\&quot; + Path.GetFileName(io_TransactionItem.SpecificContent(&quot;Request Filename&quot;).ToString)]" DisplayName="Move Request Email File" sap2010:WorkflowViewState.IdRef="MoveFile_4" Overwrite="False" Path="[io_TransactionItem.SpecificContent(&quot;Request Filename&quot;).ToString]" />
+        <Sequence sap2010:WorkflowViewState.IdRef="Sequence_9">
+          <Assign DisplayName="Assign contract folder" sap2010:WorkflowViewState.IdRef="Assign_3">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:String">[SaveDirectory]</OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:String">[SaveDirectory + io_TransactionItem.SpecificContent("Contract").ToString + "\"]</InArgument>
+            </Assign.Value>
+          </Assign>
+          <Assign DisplayName="Assign milestone folder" sap2010:WorkflowViewState.IdRef="Assign_7">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:String">[SaveDirectory]</OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:String">[SaveDirectory + io_TransactionItem.SpecificContent("Milestone ID").ToString + "\"]</InArgument>
+            </Assign.Value>
+          </Assign>
+        </Sequence>
       </If.Then>
+      <If.Else>
+        <Assign DisplayName="Assign error folder" sap2010:WorkflowViewState.IdRef="Assign_6">
+          <Assign.To>
+            <OutArgument x:TypeArguments="x:String">[SaveDirectory]</OutArgument>
+          </Assign.To>
+          <Assign.Value>
+            <InArgument x:TypeArguments="x:String">[SaveDirectory + "Error\"]</InArgument>
+          </Assign.Value>
+        </Assign>
+      </If.Else>
     </If>
+    <ui:ForEach x:TypeArguments="x:String" CurrentIndex="{x:Null}" DisplayName="For Each temporary file" sap2010:WorkflowViewState.IdRef="ForEach`1_1" Values="[Directory.GetFiles(&quot;Temp&quot;, io_TransactionItem.Reference + &quot;*&quot;)]">
+      <ui:ForEach.Body>
+        <ActivityAction x:TypeArguments="x:String">
+          <ActivityAction.Argument>
+            <DelegateInArgument x:TypeArguments="x:String" Name="temporary" />
+          </ActivityAction.Argument>
+          <Sequence sap2010:WorkflowViewState.IdRef="Sequence_8">
+            <Sequence.Variables>
+              <Variable x:TypeArguments="x:String" Name="filename" />
+            </Sequence.Variables>
+            <Assign DisplayName="Assign file name" sap2010:WorkflowViewState.IdRef="Assign_8">
+              <Assign.To>
+                <OutArgument x:TypeArguments="x:String">[filename]</OutArgument>
+              </Assign.To>
+              <Assign.Value>
+                <InArgument x:TypeArguments="x:String">[SaveDirectory + Path.GetFileName(temporary)]</InArgument>
+              </Assign.Value>
+            </Assign>
+            <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_10" Level="Trace" Message="[&quot;Moving '&quot; + temporary + &quot;' to '&quot; + filename + &quot;'&quot;]" />
+            <If Condition="[Not Directory.Exists(Path.GetDirectoryName(filename))]" DisplayName="If folder not created" sap2010:WorkflowViewState.IdRef="If_6">
+              <If.Then>
+                <ui:CreateDirectory ContinueOnError="{x:Null}" DisplayName="Create Directory" sap2010:WorkflowViewState.IdRef="CreateDirectory_1" Path="[Path.GetDirectoryName(filename)]" />
+              </If.Then>
+            </If>
+            <ui:MoveFile ContinueOnError="{x:Null}" Destination="[filename]" DisplayName="Move File To Email Store" sap2010:WorkflowViewState.IdRef="MoveFile_3" Overwrite="True" Path="[temporary]" />
+          </Sequence>
+        </ActivityAction>
+      </ui:ForEach.Body>
+    </ui:ForEach>
     <If Condition="[in_SystemError IsNot Nothing]" DisplayName="If system error thrown" sap2010:WorkflowViewState.IdRef="If_5">
       <If.Then>
         <Sequence DisplayName="Handle System Error" sap2010:WorkflowViewState.IdRef="Sequence_5">
@@ -174,14 +230,7 @@
           <If.Else>
             <ui:SetTransactionStatus ContinueOnError="{x:Null}" Reason="{x:Null}" ServiceBaseAddress="{x:Null}" TimeoutMS="{x:Null}" DisplayName="Set successful transaction status" ErrorType="Application" sap2010:WorkflowViewState.IdRef="SetTransactionStatus_4" Status="Successful" TransactionItem="[io_TransactionItem]">
               <ui:SetTransactionStatus.Output>
-                <InArgument x:TypeArguments="x:Int32" x:Key="Projects Updated">[in_ProjectsUpdated]</InArgument>
-                <InArgument x:TypeArguments="x:Int32" x:Key="Projects Total">[in_ProjectsTotal]</InArgument>
-                <InArgument x:TypeArguments="x:Int32" x:Key="Grantors Updated">[in_GrantorsUpdated]</InArgument>
-                <InArgument x:TypeArguments="x:Int32" x:Key="Grantors Total">[in_GrantorsTotal]</InArgument>
-                <InArgument x:TypeArguments="x:Int32" x:Key="Lines Updated">[in_LinesUpdated]</InArgument>
-                <InArgument x:TypeArguments="x:Int32" x:Key="Lines Total">[in_LinesTotal]</InArgument>
-                <InArgument x:TypeArguments="x:Int32" x:Key="Events Updated">[in_EventsUpdated]</InArgument>
-                <InArgument x:TypeArguments="x:Int32" x:Key="Events Total">[in_EventsTotal]</InArgument>
+                <InArgument x:TypeArguments="x:String" x:Key="Emails Saved">[SaveDirectory]</InArgument>
               </ui:SetTransactionStatus.Output>
             </ui:SetTransactionStatus>
           </If.Else>
@@ -205,13 +254,35 @@
         <InArgument x:TypeArguments="x:Int32">[io_TransactionNumber+1]</InArgument>
       </Assign.Value>
     </Assign>
-    <sads:DebugSymbol.Symbol>d1xDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQmlsbGluZ01pbGVzdG9uZVxGcmFtZXdvcmtcU2V0VHJhbnNhY3Rpb25TdGF0dXMueGFtbD1SA9EBDgIBAVYFVpkDAgFRVwVbCgIBTFwFvgEKAgEPvwEFvwGDAwIBC8ABBccBDgIBB8gBBc8BDgIBAlY5VtwBAgFTVsgCVpYDAgFSVxNXYwIBTVkJWZoDAgFOXBNcMwIBEF4JowEUAgEspgEJvAEOAgESvwHHAr8B5wICAQ6/AZwCvwG8AgIBDb8B7wK/AYADAgEMxQE0xQFJAgEKwgE1wgFJAgEIzQEvzQFHAgEFygEwygFGAgEDWT1Z3wECAVBZygJZlwMCAU9iC2YlAgFFZwt6FgIBPXsLogEWAgEtpgEXpgE5AgETqAENrAEnAgEnrwENugEnAgEUYqACYroCAgFKYnpilQECAUhi2wJi8QICAUZpD24nAgFAdhN2iQICAT59D4EBJwIBOokBE54BHgIBLqgBowKoAb8CAgErqAF8qAGZAQIBKqgB4AKoAfYCAgEotQFNtQFeAgEltgFLtgFaAgEjtwFOtwFgAgEhuAFMuAFcAgEftAFOtAFgAgEdrwGrAq8BwQICARuxAVCxAWQCARmzAVCzAWQCAReyAU6yAWACARVsT2xtAgFEa0xrewIBQmnFAWnkAQIBQXaAAXaGAgIBP32zAX29AQIBPH3eAX2DAgIBO4oBFYoB+gECATaLARWdASACAS+KAYIBigH3AQIBN40BGZEBMQIBNJkBHZkB9AECATCNAdEBjQHyAQIBNZkBigGZAfEBAgEx</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d3RDOlxVc2Vyc1xzcGFtaXNoXERvY3VtZW50c1xVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQmlsbGluZ01pbGVzdG9uZVxGcmFtZXdvcmtcU2V0VHJhbnNhY3Rpb25TdGF0dXMueGFtbExKA4ICDgIBAU8FVg4CAWJXBXYKAgFSdwWTARICAT6UAQXvAQoCAQ/wAQXwAYMDAgEL8QEF+AEOAgEH+QEFgAIOAgECVDBUXgIBZVExUUACAWNXE1eoAQIBU1kJahQCAVltCXQSAgFUd58Bd/UBAgFRfQuQARYCAT+UAROUATMCARCWAQnbARQCAR7eAQntAQ4CARLwAccC8AHnAgIBDvABnALwAbwCAgEN8AHvAvABgAMCAQz2ATT2AUkCAQrzATXzAUkCAQj+AS/+AUcCAQX7ATD7AUYCAQNaC2EUAgFeYgtpFAIBWnI0ck4CAVdvNW9EAgFVgQENiAEWAgFNiQENiQHTAQIBSYoBDY4BEgIBRY8BDY8ByAECAUCaAQueASUCATefAQuyARYCAS+zAQvaARYCAR/eARfeATkCARPgAQ3kAScCARnnAQ3rAScCARRfNl+FAQIBYVw3XEYCAV9nNmeJAQIBXWQ3ZEYCAVuGATiGAWUCAVCDATmDAUMCAU6JAXyJAdABAgFKigEbigFUAgFGjAERjAG+AQIBR48BQY8BTQIBQ48BuAGPAcUBAgFBmgGgApoBugICATyaAXqaAZUBAgE6mgHbApoB8QICATihAQ+mAScCATKuAROuAYkCAgEwtQEPuQEnAgEswQET1gEeAgEg4AGjAuABvwICAR3gAXzgAZkBAgEc4AHgAuAB9gICARrpAU3pAVwCARfnAasC5wHBAgIBFYwBmAGMAbsBAgFIpAFPpAFtAgE2owFMowF7AgE0oQHFAaEB5AECATOuAYABrgGGAgIBMbUBswG1Ab0BAgEutQHeAbUBgwICAS3CARXCAfoBAgEowwEV1QEgAgEhwgGCAcIB9wECASnFARnJATECASbRAR3RAfQBAgEixQHRAcUB8gECASfRAYoB0QHxAQIBIw==</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
-      <sap2010:ViewStateData Id="MoveFile_3" sap:VirtualizedContainerService.HintSize="929,22" />
-      <sap2010:ViewStateData Id="MoveFile_4" sap:VirtualizedContainerService.HintSize="200,22" />
-      <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="929,208" />
+      <sap2010:ViewStateData Id="Assign_4" sap:VirtualizedContainerService.HintSize="929,60" />
+      <sap2010:ViewStateData Id="Assign_3" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="Assign_7" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="Sequence_9" sap:VirtualizedContainerService.HintSize="264,284">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Assign_6" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="If_7" sap:VirtualizedContainerService.HintSize="929,432" />
+      <sap2010:ViewStateData Id="Assign_8" sap:VirtualizedContainerService.HintSize="464,60" />
+      <sap2010:ViewStateData Id="LogMessage_10" sap:VirtualizedContainerService.HintSize="464,91" />
+      <sap2010:ViewStateData Id="CreateDirectory_1" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="If_6" sap:VirtualizedContainerService.HintSize="464,208" />
+      <sap2010:ViewStateData Id="MoveFile_3" sap:VirtualizedContainerService.HintSize="464,22" />
+      <sap2010:ViewStateData Id="Sequence_8" sap:VirtualizedContainerService.HintSize="486,625">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="ForEach`1_1" sap:VirtualizedContainerService.HintSize="929,759" />
       <sap2010:ViewStateData Id="SetTransactionStatus_3" sap:VirtualizedContainerService.HintSize="418,22" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_1" sap:VirtualizedContainerService.HintSize="314,87" />
       <sap2010:ViewStateData Id="LogMessage_5" sap:VirtualizedContainerService.HintSize="314,91" />
@@ -296,7 +367,7 @@
       <sap2010:ViewStateData Id="GetQueueItems_1" sap:VirtualizedContainerService.HintSize="929,22" />
       <sap2010:ViewStateData Id="Assign_2" sap:VirtualizedContainerService.HintSize="929,60" />
       <sap2010:ViewStateData Id="Assign_1" sap:VirtualizedContainerService.HintSize="929,60" />
-      <sap2010:ViewStateData Id="Sequence_7" sap:VirtualizedContainerService.HintSize="951,1942">
+      <sap2010:ViewStateData Id="Sequence_7" sap:VirtualizedContainerService.HintSize="951,2853">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -304,7 +375,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="SetTransactionStatus_1" sap:VirtualizedContainerService.HintSize="991,2022" />
+      <sap2010:ViewStateData Id="SetTransactionStatus_1" sap:VirtualizedContainerService.HintSize="991,2933" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>

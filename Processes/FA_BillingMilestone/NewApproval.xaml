@@ -76,6 +76,7 @@
       <AssemblyReference>Newtonsoft.Json</AssemblyReference>
       <AssemblyReference>System.Collections.Immutable</AssemblyReference>
       <AssemblyReference>UiPath.Studio.Plugin.Workflow</AssemblyReference>
+      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence sap2010:Annotation.AnnotationText="Description:&#xA;Compiles all transaction item details, generates an approval form from the template, sends this off to the business and saves the email in the Bot Files folder, then starts a transaction in the Dispatch orchestrator queue.&#xA;&#xA;Inputs:&#xA;in_Config &lt;Dictionary&lt;String, String&gt;&gt;.&#xA;in_TransactionReference &lt;String&gt;: The unique combo of Contract ID and Milestone ID.&#xA;in_ApprovalRows &lt;DataTable&gt;: All billing milestones for the Transaction Reference.&#xA;&#xA;Outputs:&#xA;out_SentTransaction &lt;QueueItem&gt;.&#xA;&#xA;Pre Condition:&#xA;Network Share Bot Files, HtmlTemplate and DispatchQueue are all set in the Config.&#xA;&#xA;Post Condition:&#xA;out_SentTransaction is In Progress and email is saved to Bot Files." DisplayName="NewApproval" sap2010:WorkflowViewState.IdRef="Sequence_4">
@@ -141,14 +142,14 @@
         </ActivityAction>
       </ui:ForEach.Body>
     </ui:ForEach>
-    <If Condition="[in_Config(&quot;OperatingEnvironment&quot;) &lt;&gt; &quot;PROD&quot;]" DisplayName="DO NOT REMOVE AS THIS STOPS US SPAMMING THE BUSINESS" sap2010:WorkflowViewState.IdRef="If_1">
+    <If sap2010:Annotation.AnnotationText="Check out init all settings for where this is set" Condition="[in_Config.ContainsKey(&quot;Override Email Recipient&quot;)]" DisplayName="DO NOT REMOVE AS THIS STOPS US SPAMMING THE BUSINESS" sap2010:WorkflowViewState.IdRef="If_1">
       <If.Then>
         <Assign DisplayName="Assign request recipient specific content" sap2010:WorkflowViewState.IdRef="Assign_36">
           <Assign.To>
             <OutArgument x:TypeArguments="x:String">[specificContent("Request Recipient")]</OutArgument>
           </Assign.To>
           <Assign.Value>
-            <InArgument x:TypeArguments="x:String">["rpagrm01@uq.edu.au"]</InArgument>
+            <InArgument x:TypeArguments="x:String">[in_Config("Override Email Recipient")]</InArgument>
           </Assign.Value>
         </Assign>
       </If.Then>
@@ -189,6 +190,7 @@
         <InArgument x:TypeArguments="scg:IEnumerable(x:String)" x:Key="in_Attachments" />
       </ui:InvokeWorkflowFile.Arguments>
     </ui:InvokeWorkflowFile>
+    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_5" Level="Info" Message="[&quot;Saving dispatched approval to '&quot; + specificContent(&quot;Request Filename&quot;) + &quot;'&quot;]" />
     <ui:SaveMail DisplayName="Save Mail Message" FilePath="[&quot;Temp\&quot; + Path.GetFileName(specificContent(&quot;Request Filename&quot;))]" sap2010:WorkflowViewState.IdRef="SaveMail_1" MailMessage="[requestMessage]" />
     <ui:MoveFile ContinueOnError="{x:Null}" Destination="[specificContent(&quot;Request Filename&quot;)]" DisplayName="Move File to Network" sap2010:WorkflowViewState.IdRef="MoveFile_1" Overwrite="True" Path="[&quot;Temp\&quot; + Path.GetFileName(specificContent(&quot;Request Filename&quot;))]" />
     <ui:AddTransactionItem ContinueOnError="{x:Null}" TimeoutMS="{x:Null}" DisplayName="Add Dispatch Transaction Item" sap2010:WorkflowViewState.IdRef="AddTransactionItem_1" QueueType="[in_Config(&quot;DispatchQueue&quot;)]" Reference="[in_TransactionReference]" TransactionItem="[out_SentTransaction]">
@@ -207,7 +209,7 @@
         <InArgument x:TypeArguments="x:String" x:Key="Request Filename">[specificContent("Request Filename")]</InArgument>
       </ui:AddTransactionItem.TransactionInformation>
     </ui:AddTransactionItem>
-    <sads:DebugSymbol.Symbol>d2FDOlxVc2Vyc1xzcGFtaXNoXERvY3VtZW50c1xVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQmlsbGluZ01pbGVzdG9uZVxOZXdBcHByb3ZhbC54YW1sS1ED0wEOAgEBU05TcwIBAlcFV+gBAgFwWAVfDgIBbGAFjwESAgFWkAEFmwEKAgFPnAEFowEOAgFLpAEFqwEOAgFErAEFrAHTAQIBQa0BBbQBHQIBN7UBBb8BHQIBKsABBcAB4QECASbBAQXBAasCAgEiwgEF0QEdAgEDV3NX5QECAXFdMl1LAgFvWjNaOAIBbWCcAWC3AQIBa2YLjAEWAgFXkAETkAFcAgFQkgEJmQESAgFSoQEwoQFMAgFOngExngFSAgFMqQEwqQG6AQIBR6YBMaYBVgIBRawBcqwB0AECAUKxAWWxAXYCAT+yAVOyAWMCAT2vAVyvAWcCATuwAVCwAWkCATmtAcIBrQHjAQIBOLoBQ7oBWwIBNbwBR7wBYgIBM7gBRrgBZwIBMbcBTLcBbwIBL7kBS7kBbAIBLrUBvAG1AdcBAgEtuwFHuwFcAgErwAHMAcAB3gECASjAATvAAZIBAgEnwQE5wQFqAgEkwQHRAcEBqAICASPCAewBwgGHAgIBIMcBRscBaAIBHsIBuQHCAeEBAgEczAFPzAF6AgEaxgFGxgFoAgEYzgFKzgFwAgEWyQFOyQF4AgEUyAFAyAFcAgESxAFBxAFeAgEQygFBygFeAgEOzQFFzQFmAgEMwgGYAsIBrwICAQrPAUnPAW4CAQjLAUPLAWICAQbFAUXFAWYCAQRnDWfOAQIBaWgNiwEWAgFYlwE0lwFKAgFVlAE1lAFbAgFTZ3tnywECAWpoXGhxAgFZcw96GAIBZXsPggEYAgFhgwEPigEYAgFdahFxGgIBWng6eKUBAgFodTt1WgIBZoABOoABZwIBZH07fWECAWKIATqIAZkBAgFghQE7hQFYAgFebzxvUgIBXGw9bGECAVs=</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d2FDOlxVc2Vyc1xzcGFtaXNoXERvY3VtZW50c1xVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQmlsbGluZ01pbGVzdG9uZVxOZXdBcHByb3ZhbC54YW1sTVID1QEOAgEBVE5UcwIBAlgFWOgBAgF0WQVgDgIBcGEFkAESAgFakQEFnAEKAgFSnQEFpAEOAgFOpQEFrAEOAgFHrQEFrQHTAQIBRK4BBbUBHQIBOrYBBcABHQIBLcEBBcEB5AECASrCAQXCAeEBAgEmwwEFwwGrAgIBIsQBBdMBHQIBA1hzWOUBAgF1XjJeSwIBc1szWzgCAXFhnAFhtwECAW9nC40BFgIBW5EBaZEBqAECAVOTAQmaARICAVWiATCiAUwCAVGfATGfAVICAU+qATCqAboBAgFKpwExpwFWAgFIrQFyrQHQAQIBRbIBZbIBdgIBQrMBU7MBYwIBQLABXLABZwIBPrEBULEBaQIBPK4BwgGuAeMBAgE7uwFDuwFbAgE4vQFHvQFiAgE2uQFGuQFnAgE0uAFMuAFvAgEyugFLugFsAgExtgG8AbYB1wECATC8AUe8AVwCAS7BAXLBAeEBAgErwgHMAcIB3gECASjCATvCAZIBAgEnwwE5wwFqAgEkwwHRAcMBqAICASPEAewBxAGHAgIBIMkBRskBaAIBHsQBuQHEAeEBAgEczgFPzgF6AgEayAFGyAFoAgEY0AFK0AFwAgEWywFOywF4AgEUygFAygFcAgESxgFBxgFeAgEQzAFBzAFeAgEOzwFFzwFmAgEMxAGYAsQBrwICAQrRAUnRAW4CAQjNAUPNAWICAQbHAUXHAWYCAQRoDWjOAQIBbWkNjAEWAgFcmAE0mAFbAgFYlQE1lQFbAgFWaHtoywECAW5pXGlxAgFddA97GAIBaXwPgwEYAgFlhAEPiwEYAgFhaxFyGgIBXnk6eaUBAgFsdjt2WgIBaoEBOoEBZwIBaH47fmECAWaJATqJAZkBAgFkhgE7hgFYAgFicDxwUgIBYG09bWECAV8=</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -228,16 +230,23 @@
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="ForEach`1_1" sap:VirtualizedContainerService.HintSize="515,571" />
       <sap2010:ViewStateData Id="Assign_36" sap:VirtualizedContainerService.HintSize="242,60" />
-      <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="515,208" />
+      <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="515,235">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsAnnotationDocked">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="Assign_35" sap:VirtualizedContainerService.HintSize="515,60" />
       <sap2010:ViewStateData Id="Assign_33" sap:VirtualizedContainerService.HintSize="515,60" />
       <sap2010:ViewStateData Id="LogMessage_3" sap:VirtualizedContainerService.HintSize="515,91" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_1" sap:VirtualizedContainerService.HintSize="515,87" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_4" sap:VirtualizedContainerService.HintSize="515,87" />
+      <sap2010:ViewStateData Id="LogMessage_5" sap:VirtualizedContainerService.HintSize="515,91" />
       <sap2010:ViewStateData Id="SaveMail_1" sap:VirtualizedContainerService.HintSize="515,87" />
       <sap2010:ViewStateData Id="MoveFile_1" sap:VirtualizedContainerService.HintSize="515,22" />
       <sap2010:ViewStateData Id="AddTransactionItem_1" sap:VirtualizedContainerService.HintSize="515,22" />
-      <sap2010:ViewStateData Id="Sequence_4" sap:VirtualizedContainerService.HintSize="537,2292">
+      <sap2010:ViewStateData Id="Sequence_4" sap:VirtualizedContainerService.HintSize="537,2450">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -245,7 +254,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="NewApproval_1" sap:VirtualizedContainerService.HintSize="577,2372" />
+      <sap2010:ViewStateData Id="NewApproval_1" sap:VirtualizedContainerService.HintSize="577,2530" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>

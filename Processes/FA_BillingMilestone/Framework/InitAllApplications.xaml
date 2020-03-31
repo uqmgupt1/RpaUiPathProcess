@@ -14,6 +14,7 @@
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <x:Members>
     <x:Property Name="io_Config" Type="InOutArgument(scg:Dictionary(x:String, x:String))" />
+    <x:Property Name="in_DispatchJob" Type="InArgument(x:Boolean)" />
   </x:Members>
   <mva:VisualBasic.Settings>
     <x:Null />
@@ -78,7 +79,6 @@
       <AssemblyReference>System.Data.Entity</AssemblyReference>
       <AssemblyReference>UiPath.Mail.Activities</AssemblyReference>
       <AssemblyReference>UiPath.Mail</AssemblyReference>
-      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence sap2010:Annotation.AnnotationText="Description: Open and initialize application as needed.&#xA;&#xA;Inputs:&#xA;io_Config &lt;Dictionary&lt;String, String&gt;&gt;: Config file to access app settings, set as in/out to allow file paths to be updated after drives are mounted.&#xA;&#xA;Outputs:&#xA;io_Config &lt;Dictionary&lt;String, String&gt;&gt;&#xA;&#xA;Pre Condition: N/A&#xA;Post Condtion:&#xA;Shared mailbox is accessible over exchange email.&#xA;Network share drive is mounted and Bot Files and Email Store is accessible.&#xA;Logged in to UniFi and tested navigating to Award Profile and Query Viewer" DisplayName="Initialization Sequence" sap2010:WorkflowViewState.IdRef="Sequence_9">
@@ -160,43 +160,49 @@
               <InArgument x:TypeArguments="x:String">[emailStore]</InArgument>
             </Assign.Value>
           </Assign>
-          <Assign DisplayName="Assign users downloads folder" sap2010:WorkflowViewState.IdRef="Assign_5">
-            <Assign.To>
-              <OutArgument x:TypeArguments="x:String">[downloads]</OutArgument>
-            </Assign.To>
-            <Assign.Value>
-              <InArgument x:TypeArguments="x:String">["C:\Users\" + io_Config("Robot Username") + "\Downloads"]</InArgument>
-            </Assign.Value>
-          </Assign>
-          <If Condition="[Not Directory.Exists(downloads)]" DisplayName="If folder doesn't exist" sap2010:WorkflowViewState.IdRef="If_2">
+          <If Condition="[io_Config(&quot;OperatingEnvironment&quot;) &lt;&gt; &quot;DEV&quot;]" DisplayName="Don't remove my downloads!" sap2010:WorkflowViewState.IdRef="If_4">
             <If.Then>
-              <ui:CreateDirectory ContinueOnError="{x:Null}" DisplayName="Create downloads Directory" sap2010:WorkflowViewState.IdRef="CreateDirectory_1" Path="[downloads]" />
+              <Sequence sap2010:WorkflowViewState.IdRef="Sequence_26">
+                <Assign DisplayName="Assign users downloads folder" sap2010:WorkflowViewState.IdRef="Assign_5">
+                  <Assign.To>
+                    <OutArgument x:TypeArguments="x:String">[downloads]</OutArgument>
+                  </Assign.To>
+                  <Assign.Value>
+                    <InArgument x:TypeArguments="x:String">["C:\Users\" + io_Config("Robot Username") + "\Downloads"]</InArgument>
+                  </Assign.Value>
+                </Assign>
+                <If Condition="[Not Directory.Exists(downloads)]" DisplayName="If folder doesn't exist" sap2010:WorkflowViewState.IdRef="If_2">
+                  <If.Then>
+                    <ui:CreateDirectory ContinueOnError="{x:Null}" DisplayName="Create downloads Directory" sap2010:WorkflowViewState.IdRef="CreateDirectory_1" Path="[downloads]" />
+                  </If.Then>
+                </If>
+                <ui:ForEach x:TypeArguments="x:String" CurrentIndex="{x:Null}" DisplayName="For Each file in downloads folder" sap2010:WorkflowViewState.IdRef="ForEach`1_1" Values="[Directory.GetFiles(downloads)]">
+                  <ui:ForEach.Body>
+                    <ActivityAction x:TypeArguments="x:String">
+                      <ActivityAction.Argument>
+                        <DelegateInArgument x:TypeArguments="x:String" Name="filename" />
+                      </ActivityAction.Argument>
+                      <TryCatch DisplayName="Try Catch" sap2010:WorkflowViewState.IdRef="TryCatch_5">
+                        <TryCatch.Try>
+                          <ui:Delete ContinueOnError="{x:Null}" DisplayName="Delete downloaded file" sap2010:WorkflowViewState.IdRef="Delete_1" Path="[filename]" />
+                        </TryCatch.Try>
+                        <TryCatch.Catches>
+                          <Catch x:TypeArguments="si:IOException" sap2010:WorkflowViewState.IdRef="Catch`1_6">
+                            <ActivityAction x:TypeArguments="si:IOException">
+                              <ActivityAction.Argument>
+                                <DelegateInArgument x:TypeArguments="si:IOException" Name="exception" />
+                              </ActivityAction.Argument>
+                              <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_7" Level="Warn" Message="[&quot;Couldn't delete '&quot; + filename + &quot;' due to: &quot; + exception.Message]" />
+                            </ActivityAction>
+                          </Catch>
+                        </TryCatch.Catches>
+                      </TryCatch>
+                    </ActivityAction>
+                  </ui:ForEach.Body>
+                </ui:ForEach>
+              </Sequence>
             </If.Then>
           </If>
-          <ui:ForEach x:TypeArguments="x:String" CurrentIndex="{x:Null}" DisplayName="For Each file in downloads folder" sap2010:WorkflowViewState.IdRef="ForEach`1_1" Values="[Directory.GetFiles(downloads)]">
-            <ui:ForEach.Body>
-              <ActivityAction x:TypeArguments="x:String">
-                <ActivityAction.Argument>
-                  <DelegateInArgument x:TypeArguments="x:String" Name="filename" />
-                </ActivityAction.Argument>
-                <TryCatch DisplayName="Try Catch" sap2010:WorkflowViewState.IdRef="TryCatch_5">
-                  <TryCatch.Try>
-                    <ui:Delete ContinueOnError="{x:Null}" DisplayName="Delete downloaded file" sap2010:WorkflowViewState.IdRef="Delete_1" Path="[filename]" />
-                  </TryCatch.Try>
-                  <TryCatch.Catches>
-                    <Catch x:TypeArguments="si:IOException" sap2010:WorkflowViewState.IdRef="Catch`1_6">
-                      <ActivityAction x:TypeArguments="si:IOException">
-                        <ActivityAction.Argument>
-                          <DelegateInArgument x:TypeArguments="si:IOException" Name="exception" />
-                        </ActivityAction.Argument>
-                        <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_7" Level="Warn" Message="[&quot;Couldn't delete '&quot; + filename + &quot;' due to: &quot; + exception.Message]" />
-                      </ActivityAction>
-                    </Catch>
-                  </TryCatch.Catches>
-                </TryCatch>
-              </ActivityAction>
-            </ui:ForEach.Body>
-          </ui:ForEach>
           <Assign DisplayName="Assign robot temporary folder" sap2010:WorkflowViewState.IdRef="Assign_6">
             <Assign.To>
               <OutArgument x:TypeArguments="x:String">[temporary]</OutArgument>
@@ -259,29 +265,28 @@
               <OutArgument x:TypeArguments="scg:List(snm:MailMessage)" x:Key="out_Messages" />
             </ui:InvokeWorkflowFile.Arguments>
           </ui:InvokeWorkflowFile>
-          <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke GetExchangeMail Sent Items workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_10" UnSafe="False" WorkflowFileName="Mail\GetExchangeMail.xaml">
+          <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke GetExchangeMail workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_21" UnSafe="False" WorkflowFileName="Mail\GetExchangeMail.xaml">
             <ui:InvokeWorkflowFile.Arguments>
               <InArgument x:TypeArguments="x:String" x:Key="in_ServerName">[io_Config("Exchange_ServerName")]</InArgument>
               <InArgument x:TypeArguments="x:String" x:Key="in_CredentialsAsset">[io_Config("Credentials_Exchange")]</InArgument>
-              <InArgument x:TypeArguments="x:String" x:Key="in_MailboxPath">Sent Items</InArgument>
+              <InArgument x:TypeArguments="x:String" x:Key="in_MailboxPath">[StrConv(io_Config("OperatingEnvironment"), VbStrConv.ProperCase)]</InArgument>
               <InArgument x:TypeArguments="x:Int32" x:Key="opt_Number">1</InArgument>
               <OutArgument x:TypeArguments="scg:List(snm:MailMessage)" x:Key="out_Messages" />
             </ui:InvokeWorkflowFile.Arguments>
           </ui:InvokeWorkflowFile>
-          <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke GetExchangeMail Archive workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_11" UnSafe="False" WorkflowFileName="Mail\GetExchangeMail.xaml">
-            <ui:InvokeWorkflowFile.Arguments>
-              <InArgument x:TypeArguments="x:String" x:Key="in_ServerName">[io_Config("Exchange_ServerName")]</InArgument>
-              <InArgument x:TypeArguments="x:String" x:Key="in_CredentialsAsset">[io_Config("Credentials_Exchange")]</InArgument>
-              <InArgument x:TypeArguments="x:String" x:Key="in_MailboxPath">Archive</InArgument>
-              <InArgument x:TypeArguments="x:Int32" x:Key="opt_Number">1</InArgument>
-              <OutArgument x:TypeArguments="scg:List(snm:MailMessage)" x:Key="out_Messages" />
-            </ui:InvokeWorkflowFile.Arguments>
-          </ui:InvokeWorkflowFile>
-          <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke SortMailboxFolder workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_16" UnSafe="False" WorkflowFileName="Mail/SortMailboxFolder.xaml">
-            <ui:InvokeWorkflowFile.Arguments>
-              <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)" x:Key="in_Config">[io_Config]</InArgument>
-            </ui:InvokeWorkflowFile.Arguments>
-          </ui:InvokeWorkflowFile>
+          <ui:CommentOut DisplayName="Comment Out while handling with outlook rules">
+            <ui:CommentOut.Body>
+              <Sequence DisplayName="Ignored Activities">
+                <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke SortMailboxFolder workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_16" UnSafe="False" WorkflowFileName="Mail/SortMailboxFolder.xaml">
+                  <ui:InvokeWorkflowFile.Arguments>
+                    <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)" x:Key="in_Config">[io_Config]</InArgument>
+                  </ui:InvokeWorkflowFile.Arguments>
+                </ui:InvokeWorkflowFile>
+                <sap2010:WorkflowViewState.IdRef>Sequence_27</sap2010:WorkflowViewState.IdRef>
+              </Sequence>
+            </ui:CommentOut.Body>
+            <sap2010:WorkflowViewState.IdRef>CommentOut_1</sap2010:WorkflowViewState.IdRef>
+          </ui:CommentOut>
         </Sequence>
       </TryCatch.Try>
       <TryCatch.Catches>
@@ -315,49 +320,55 @@
         </Catch>
       </TryCatch.Catches>
     </TryCatch>
-    <TryCatch DisplayName="Try Catch - Navigate Query Viewer" sap2010:WorkflowViewState.IdRef="TryCatch_7">
-      <TryCatch.Try>
-        <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke NavToMainMenuItem workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_19" UnSafe="False" WorkflowFileName="UniFi\NavToMainMenuItem.xaml">
-          <ui:InvokeWorkflowFile.Arguments>
-            <InArgument x:TypeArguments="scg:List(x:String)" x:Key="in_NavigationSteps">[io_Config("UniFi Query Viewer").Split("\"c).ToList]</InArgument>
-          </ui:InvokeWorkflowFile.Arguments>
-        </ui:InvokeWorkflowFile>
-      </TryCatch.Try>
-      <TryCatch.Catches>
-        <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch`1_8">
-          <ActivityAction x:TypeArguments="s:Exception">
-            <ActivityAction.Argument>
-              <DelegateInArgument x:TypeArguments="s:Exception" Name="exception" />
-            </ActivityAction.Argument>
-            <Throw DisplayName="Throw navigate error" Exception="[New ApplicationException(String.Format(io_Config(&quot;SystemError NavigateUniFi&quot;), 4, io_Config(&quot;UniFiPath Query Viewer&quot;)), exception)]" sap2010:WorkflowViewState.IdRef="Throw_7" />
-          </ActivityAction>
-        </Catch>
-      </TryCatch.Catches>
-    </TryCatch>
-    <TryCatch DisplayName="Try Catch - Navigate Define Billing Plan" sap2010:WorkflowViewState.IdRef="TryCatch_8">
-      <TryCatch.Try>
-        <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke NavToMainMenuItem workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_20" UnSafe="False" WorkflowFileName="UniFi\NavToMainMenuItem.xaml">
-          <ui:InvokeWorkflowFile.Arguments>
-            <InArgument x:TypeArguments="scg:List(x:String)" x:Key="in_NavigationSteps">[io_Config("UniFi Define Billing Plan").Split("\"c).ToList]</InArgument>
-          </ui:InvokeWorkflowFile.Arguments>
-        </ui:InvokeWorkflowFile>
-      </TryCatch.Try>
-      <TryCatch.Catches>
-        <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch`1_9">
-          <ActivityAction x:TypeArguments="s:Exception">
-            <ActivityAction.Argument>
-              <DelegateInArgument x:TypeArguments="s:Exception" Name="exception" />
-            </ActivityAction.Argument>
-            <Throw DisplayName="Throw navigate error" Exception="[New ApplicationException(String.Format(io_Config(&quot;SystemError NavigateUniFi&quot;), 4, io_Config(&quot;UniFi Define Billing Plan&quot;)), exception)]" sap2010:WorkflowViewState.IdRef="Throw_8" />
-          </ActivityAction>
-        </Catch>
-      </TryCatch.Catches>
-    </TryCatch>
-    <sads:DebugSymbol.Symbol>d3NDOlxVc2Vyc1xzcGFtaXNoXERvY3VtZW50c1xVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQmlsbGluZ01pbGVzdG9uZVxGcmFtZXdvcmtcSW5pdEFsbEFwcGxpY2F0aW9ucy54YW1sclQD5QIOAgEBVQVVsQEDAZcBVgX5ARACATf6AQWpAhACAReqAgW9AhACAQ6+AgXQAhACAQjRAgXjAhACAQJVhQFVrgEDAZgBWAntARQCATr1AQ31AdECAgE4/AEJnQIUAgEapQINpQKnAgIBGKwCCbECIQIBEbkCDbkCwQICAQ/AAgnEAiECAQvMAg3MAogCAgEJ0wIJ1wIhAgEF3wIN3wKLAgIBA18LkAEQAgF0kQELkQHjAQIBcJIBC5kBFAIBa5oBC5oB5wECAWebAQuiARQCAWKjAQuqARQCAV2rAQuvARACAViwAQvHARgCAU7IAQvPARQCAUrQAQvUARACAUXVAQvsARgCATv1AUH1AaQCAgE5/QELhQIjAgEvhgILjgIjAgEnjwILlwIjAgEfmAILnAIjAgEbpQJBpQL6AQIBGa8CSK8CYAIBFa4CUK4CcAIBE6wCvAGsAtMBAgESuQI+uQKUAgIBEMICWcICjQECAQ3AAsMBwALhAQIBDMwCQcwC2wECAQrVAlnVApQBAgEH0wLDAdMC4QECAQbfAkHfAt4BAgEEXxlfqQECAXVhD3AaAwGGAXMPjgEaAgF2kQF5kQHgAQIBcZcBNpcBQAIBbpQBN5QBXQIBbJoBeZoB5AECAWigATagAUICAWWdATedAV8CAWOoATaoAXACAWClATelAUICAV6rARmrATwCAVmtAQ+tAbABAgFasAGvAbAB0AECAVe2ARHEARwCAU/NATbNAToCAU3KATfKAUICAUvQARnQATwCAUbSAQ/SAbABAgFH1QGqAdUBywECAUTbARHpARwCATz/AUz/AW4CATWBAk2BAlICATSAAlKAAnUCATKCAkiCAkkCATH9AcgB/QHjAQIBMIgCTIgCbgIBLYoCTYoCVwIBLIkCUokCdQIBKosCSIsCSQIBKYYCzgGGAukBAgEokQJMkQJuAgElkwJNkwJUAgEkkgJSkgJ1AgEilAJIlAJJAgEhjwLLAY8C5gECASCaAmKaAm0CAR2YAsUBmALiAQIBHGIRaCkDAY8BaRFvKQMBhwF3EX0pAgF/fhGFARoCAXuGARGNARoCAXetAaABrQGtAQIBW7gBFbgBnwECAVTAARnAAeIBAgFQ0gGgAdIBrQECAUjdARXdAZ4BAgFB5QEZ5QHiAQIBPWZVZl8DAZUBZFNkeQMBkwFlU2V5AwGRAWLSAWL0AQMBkAFtVW1hAwGNAWtTa3kDAYsBbFNsewMBiQFp1QFp9wEDAYgBe1V7XwMBhAF5U3l5AwGCAXpTeosBAwGBAXfOAXfwAQMBgAGDATyDAbIBAgF+gAE9gAFHAgF8iwE8iwG2AQIBeogBPYgBSQIBeLgBkAG4AZwBAgFVwAGGAcAB3wECAVHdAY8B3QGbAQIBQuUBhgHlAd8BAgE+</sads:DebugSymbol.Symbol>
+    <If Condition="[in_DispatchJob]" DisplayName="If dispatch else billing plan" sap2010:WorkflowViewState.IdRef="If_5">
+      <If.Then>
+        <TryCatch DisplayName="Try Catch - Navigate Query Viewer" sap2010:WorkflowViewState.IdRef="TryCatch_7">
+          <TryCatch.Try>
+            <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke NavToMainMenuItem workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_19" UnSafe="False" WorkflowFileName="UniFi\NavToMainMenuItem.xaml">
+              <ui:InvokeWorkflowFile.Arguments>
+                <InArgument x:TypeArguments="scg:List(x:String)" x:Key="in_NavigationSteps">[io_Config("UniFi Query Viewer").Split("\"c).ToList]</InArgument>
+              </ui:InvokeWorkflowFile.Arguments>
+            </ui:InvokeWorkflowFile>
+          </TryCatch.Try>
+          <TryCatch.Catches>
+            <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch`1_8">
+              <ActivityAction x:TypeArguments="s:Exception">
+                <ActivityAction.Argument>
+                  <DelegateInArgument x:TypeArguments="s:Exception" Name="exception" />
+                </ActivityAction.Argument>
+                <Throw DisplayName="Throw navigate error" Exception="[New ApplicationException(String.Format(io_Config(&quot;SystemError NavigateUniFi&quot;), 4, io_Config(&quot;UniFiPath Query Viewer&quot;)), exception)]" sap2010:WorkflowViewState.IdRef="Throw_7" />
+              </ActivityAction>
+            </Catch>
+          </TryCatch.Catches>
+        </TryCatch>
+      </If.Then>
+      <If.Else>
+        <TryCatch DisplayName="Try Catch - Navigate Define Billing Plan" sap2010:WorkflowViewState.IdRef="TryCatch_8">
+          <TryCatch.Try>
+            <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke NavToMainMenuItem workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_20" UnSafe="False" WorkflowFileName="UniFi\NavToMainMenuItem.xaml">
+              <ui:InvokeWorkflowFile.Arguments>
+                <InArgument x:TypeArguments="scg:List(x:String)" x:Key="in_NavigationSteps">[io_Config("UniFi Define Billing Plan").Split("\"c).ToList]</InArgument>
+              </ui:InvokeWorkflowFile.Arguments>
+            </ui:InvokeWorkflowFile>
+          </TryCatch.Try>
+          <TryCatch.Catches>
+            <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch`1_9">
+              <ActivityAction x:TypeArguments="s:Exception">
+                <ActivityAction.Argument>
+                  <DelegateInArgument x:TypeArguments="s:Exception" Name="exception" />
+                </ActivityAction.Argument>
+                <Throw DisplayName="Throw navigate error" Exception="[New ApplicationException(String.Format(io_Config(&quot;SystemError NavigateUniFi&quot;), 4, io_Config(&quot;UniFi Define Billing Plan&quot;)), exception)]" sap2010:WorkflowViewState.IdRef="Throw_8" />
+              </ActivityAction>
+            </Catch>
+          </TryCatch.Catches>
+        </TryCatch>
+      </If.Else>
+    </If>
+    <sads:DebugSymbol.Symbol>d3NDOlxVc2Vyc1xzcGFtaXNoXERvY3VtZW50c1xVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQmlsbGluZ01pbGVzdG9uZVxGcmFtZXdvcmtcSW5pdEFsbEFwcGxpY2F0aW9ucy54YW1sb1QD8AIOAgEBVQVVsQEDAZMBVgX/ARACAS+AAgWuAhACARqvAgXCAhACARHDAgXuAgoCAQJVhQFVrgEDAZQBWAnzARQCATL7AQ37AdECAgEwggIJogIUAgEdqgINqgKnAgIBG7ECCbYCIQIBFL4CDb4CwQICARLDAhPDAiUCAQPFAgnXAhQCAQvaAgnsAhQCAQVfC5ABEAIBcJEBC5EB4wECAWySAQuZARQCAWeaAQuaAecBAgFjmwELogEUAgFeowELzQEQAgFGzgEL1QEUAgFC1gEL2gEQAgE92wEL8gEYAgEz+wFB+wGkAgIBMYMCC4sCIwIBJ4wCC5QCIwIBH5UCC6ECGwIBHqoCQaoC+gECARy0Aki0AmACARizAlCzAnACARaxArwBsQLTAQIBFb4CPr4ClAICARPHAg3LAiUCAQ7TAhHTAowCAgEM3AIN4AIlAgEI6AIR6AKPAgIBBl8ZX6kBAgFxYQ9wGgMBggFzD44BGgIBcpEBeZEB4AECAW2XATaXAUACAWqUATeUAV0CAWiaAXmaAeQBAgFkoAE2oAFCAgFhnQE3nQFfAgFfowEZowFhAgFHpQEPywEaAgFJ0wE20wE6AgFF0AE30AFCAgFD1gEZ1gE8AgE+2AEP2AGwAQIBP9sBqgHbAcsBAgE84QER7wEcAgE0hQJMhQJuAgEthwJNhwJSAgEshgJShgJ1AgEqiAJIiAJJAgEpgwLIAYMC4wECASiOAkyOAm4CASWQAk2QAo8BAgEkjwJSjwJ1AgEikQJIkQJJAgEhjALDAYwC3gECASDJAl3JApEBAgEQxwLHAccC5QECAQ/TAkXTAt8BAgEN3gJd3gKYAQIBCtwCxwHcAuUBAgEJ6AJF6ALiAQIBB2IRaCkDAYsBaRFvKQMBgwF3EX0pAgF7fhGFARoCAXeGARGNARoCAXOmARGtARoCAVmuARGyARYCAVSzARHKAR4CAUrYAaAB2AGtAQIBQOMBFeMBngECATnrARnrAeIBAgE1ZlVmXwMBkQFkU2R5AwGPAWVTZXkDAY0BYtIBYvQBAwGMAW1VbWEDAYkBa1NreQMBhwFsU2x7AwGFAWnVAWn3AQMBhAF7VXtfAwGAAXlTeXkCAX56U3qLAQIBfXfOAXfwAQIBfIMBPIMBsgECAXqAAT2AAUcCAXiLATyLAbYBAgF2iAE9iAFJAgF0qwE8qwF2AgFcqAE9qAFIAgFargEfrgFCAgFVsAEVsAG2AQIBVrMBtQGzAdYBAgFTuQEXxwEiAgFL4wGPAeMBmwECATrrAYYB6wHfAQIBNrABpgGwAbMBAgFXuwEbuwGlAQIBUMMBH8MB6AECAUy7AZYBuwGiAQIBUcMBjAHDAeUBAgFN</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
-      <sap2010:ViewStateData Id="LogMessage_2" sap:VirtualizedContainerService.HintSize="737,91" />
+      <sap2010:ViewStateData Id="LogMessage_2" sap:VirtualizedContainerService.HintSize="861,91" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_4" sap:VirtualizedContainerService.HintSize="314,87" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_14" sap:VirtualizedContainerService.HintSize="314,87" />
       <sap2010:ViewStateData Id="Sequence_24" sap:VirtualizedContainerService.HintSize="336,338">
@@ -382,9 +393,9 @@
       <sap2010:ViewStateData Id="Assign_2" sap:VirtualizedContainerService.HintSize="697,60" />
       <sap2010:ViewStateData Id="LogMessage_5" sap:VirtualizedContainerService.HintSize="697,91" />
       <sap2010:ViewStateData Id="Assign_3" sap:VirtualizedContainerService.HintSize="697,60" />
-      <sap2010:ViewStateData Id="Assign_5" sap:VirtualizedContainerService.HintSize="697,60" />
+      <sap2010:ViewStateData Id="Assign_5" sap:VirtualizedContainerService.HintSize="464,60" />
       <sap2010:ViewStateData Id="CreateDirectory_1" sap:VirtualizedContainerService.HintSize="200,22" />
-      <sap2010:ViewStateData Id="If_2" sap:VirtualizedContainerService.HintSize="697,208" />
+      <sap2010:ViewStateData Id="If_2" sap:VirtualizedContainerService.HintSize="464,208" />
       <sap2010:ViewStateData Id="Delete_1" sap:VirtualizedContainerService.HintSize="200,22" />
       <sap2010:ViewStateData Id="LogMessage_7" sap:VirtualizedContainerService.HintSize="314,91" />
       <sap2010:ViewStateData Id="Catch`1_6" sap:VirtualizedContainerService.HintSize="404,21">
@@ -396,7 +407,15 @@
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="TryCatch_5" sap:VirtualizedContainerService.HintSize="418,287" />
-      <sap2010:ViewStateData Id="ForEach`1_1" sap:VirtualizedContainerService.HintSize="697,421" />
+      <sap2010:ViewStateData Id="ForEach`1_1" sap:VirtualizedContainerService.HintSize="464,421" />
+      <sap2010:ViewStateData Id="Sequence_26" sap:VirtualizedContainerService.HintSize="486,893">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="If_4" sap:VirtualizedContainerService.HintSize="697,1041" />
       <sap2010:ViewStateData Id="Assign_6" sap:VirtualizedContainerService.HintSize="697,60" />
       <sap2010:ViewStateData Id="CreateDirectory_2" sap:VirtualizedContainerService.HintSize="200,22" />
       <sap2010:ViewStateData Id="If_3" sap:VirtualizedContainerService.HintSize="697,208" />
@@ -412,7 +431,7 @@
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="TryCatch_6" sap:VirtualizedContainerService.HintSize="418,287" />
       <sap2010:ViewStateData Id="ForEach`1_2" sap:VirtualizedContainerService.HintSize="697,421" />
-      <sap2010:ViewStateData Id="Sequence_16" sap:VirtualizedContainerService.HintSize="719,2763">
+      <sap2010:ViewStateData Id="Sequence_16" sap:VirtualizedContainerService.HintSize="719,3035">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -428,7 +447,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_4" sap:VirtualizedContainerService.HintSize="737,2990">
+      <sap2010:ViewStateData Id="TryCatch_4" sap:VirtualizedContainerService.HintSize="861,3262">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -437,10 +456,24 @@
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="InvokeWorkflowFile_5" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_10" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_11" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_21" sap:VirtualizedContainerService.HintSize="314,87" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_16" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="Sequence_22" sap:VirtualizedContainerService.HintSize="336,592">
+      <sap2010:ViewStateData Id="Sequence_27" sap:VirtualizedContainerService.HintSize="336,211">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="CommentOut_1" sap:VirtualizedContainerService.HintSize="314,51">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Sequence_22" sap:VirtualizedContainerService.HintSize="336,429">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -456,7 +489,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_2" sap:VirtualizedContainerService.HintSize="737,819">
+      <sap2010:ViewStateData Id="TryCatch_2" sap:VirtualizedContainerService.HintSize="861,656">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -474,7 +507,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="737,314">
+      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="861,314">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -492,7 +525,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_7" sap:VirtualizedContainerService.HintSize="737,314">
+      <sap2010:ViewStateData Id="TryCatch_7" sap:VirtualizedContainerService.HintSize="418,314">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -510,7 +543,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_8" sap:VirtualizedContainerService.HintSize="737,314">
+      <sap2010:ViewStateData Id="TryCatch_8" sap:VirtualizedContainerService.HintSize="418,314">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -518,7 +551,8 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_9" sap:VirtualizedContainerService.HintSize="759,5388">
+      <sap2010:ViewStateData Id="If_5" sap:VirtualizedContainerService.HintSize="861,462" />
+      <sap2010:ViewStateData Id="Sequence_9" sap:VirtualizedContainerService.HintSize="883,5276">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -526,7 +560,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Initialization_1" sap:VirtualizedContainerService.HintSize="799,5468" />
+      <sap2010:ViewStateData Id="Initialization_1" sap:VirtualizedContainerService.HintSize="923,5356" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>

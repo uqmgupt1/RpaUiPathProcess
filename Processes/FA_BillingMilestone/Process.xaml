@@ -18,14 +18,6 @@
     <x:Property Name="in_TransactionReceived" Type="InArgument(s:DateTime)" />
     <x:Property Name="in_TransactionFilename" Type="InArgument(x:String)" />
     <x:Property Name="in_TransactionItem" Type="InArgument(ui:QueueItem)" />
-    <x:Property Name="out_ProjectsUpdated" Type="OutArgument(x:Int32)" />
-    <x:Property Name="out_ProjectsTotal" Type="OutArgument(x:Int32)" />
-    <x:Property Name="out_GrantorsUpdated" Type="OutArgument(x:Int32)" />
-    <x:Property Name="out_GrantorsTotal" Type="OutArgument(x:Int32)" />
-    <x:Property Name="out_LinesUpdated" Type="OutArgument(x:Int32)" />
-    <x:Property Name="out_LinesTotal" Type="OutArgument(x:Int32)" />
-    <x:Property Name="out_EventsUpdated" Type="OutArgument(x:Int32)" />
-    <x:Property Name="out_EventsTotal" Type="OutArgument(x:Int32)" />
   </x:Members>
   <mva:VisualBasic.Settings>
     <x:Null />
@@ -88,14 +80,19 @@
       <AssemblyReference>System.Web</AssemblyReference>
       <AssemblyReference>UiPath.Mail.Activities</AssemblyReference>
       <AssemblyReference>UiPath.Mail</AssemblyReference>
+      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
-  <Sequence sap2010:Annotation.AnnotationText="Description: In this file all other process specific files will be invoked. If an application exception occurs, the current transaction can be retried. If a BRE is thrown, the transaction will be skipped. Can be a flowchart or sequence. &#xA;&#xA;Scrapes data from the Transaction Message, Then enters UniFi and updates the Billing Milestone items.&#xA;&#xA;Inputs:&#xA;in_Config &lt;Dictionary&lt;String, String&gt;&gt;.&#xA;in_TransactionMessage &lt;MailMessage&gt;.&#xA;in_TransactionSubject &lt;String&gt;.&#xA;in_TransactionReceived &lt;DateTime&gt;.&#xA;in_TransactionFilename &lt;String&gt;.&#xA;in_TransactionItem &lt;QueueItem&gt;.&#xA;&#xA;Outputs:&#xA;out_ProjectsUpdated &lt;Integer&gt;: &#xA;out_ProjectsTotal &lt;Integer&gt;.&#xA;out_GrantorsUpdated &lt;Integer&gt;: &#xA;out_GrantorsTotal &lt;Integer&gt;.&#xA;out_LinesUpdated &lt;Integer&gt;: &#xA;out_LinesTotal &lt;Integer&gt;.&#xA;out_EventsUpdated &lt;Integer&gt;: &#xA;out_EventsTotal &lt;Integer&gt;.&#xA;&#xA;Pre Condition: NA&#xA;Post Condition: NA" DisplayName="ProcessTransaction" sap2010:WorkflowViewState.IdRef="Sequence_1">
+  <Sequence sap2010:Annotation.AnnotationText="Description: In this file all other process specific files will be invoked. If an application exception occurs, the current transaction can be retried. If a BRE is thrown, the transaction will be skipped. Can be a flowchart or sequence. &#xA;&#xA;Scrapes data from the Transaction Message, Then enters UniFi and updates the Billing Milestone items.&#xA;&#xA;Inputs:&#xA;in_Config &lt;Dictionary&lt;String, String&gt;&gt;.&#xA;in_TransactionMessage &lt;MailMessage&gt;.&#xA;in_TransactionSubject &lt;String&gt;.&#xA;in_TransactionReceived &lt;DateTime&gt;.&#xA;in_TransactionFilename &lt;String&gt;.&#xA;in_TransactionItem &lt;QueueItem&gt;.&#xA;&#xA;Outputs: NA&#xA;Pre Condition: NA&#xA;Post Condition: NA" DisplayName="ProcessTransaction" sap2010:WorkflowViewState.IdRef="Sequence_1">
     <Sequence.Variables>
       <Variable x:TypeArguments="x:Boolean" Name="milestoneApproved" />
       <Variable x:TypeArguments="x:String" Name="milestoneAttachmentUpload" />
       <Variable x:TypeArguments="x:String" Name="milestoneRejectionDetails" />
       <Variable x:TypeArguments="x:Boolean" Name="milestoneDetailsChanged" />
+      <Variable x:TypeArguments="x:Boolean" Name="billingPlanOpen" />
+      <Variable x:TypeArguments="s:Exception" Name="updateError" />
+      <Variable x:TypeArguments="ui:BusinessRuleException" Name="shouldntUpdate" />
+      <Variable x:TypeArguments="x:String" Name="popupMessage" />
     </Sequence.Variables>
     <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;Start Process.xaml, got &quot; + in_TransactionItem.Reference]" />
     <TryCatch DisplayName="Try Catch" sap2010:WorkflowViewState.IdRef="TryCatch_1">
@@ -128,76 +125,183 @@
         <Throw DisplayName="Throw milestone not approved" Exception="[New BusinessRuleException(String.Format(in_Config(&quot;RuleException NotApproved&quot;), in_TransactionItem.SpecificContent(&quot;Contract&quot;).ToString, in_TransactionItem.SpecificContent(&quot;Milestone ID&quot;).ToString, in_Config(&quot;Network Share Email Store&quot;)))]" sap2010:WorkflowViewState.IdRef="Throw_2" />
       </If.Then>
     </If>
-    <Sequence sap2010:WorkflowViewState.IdRef="Sequence_41">
-      <Sequence DisplayName="Search project ID" sap2010:WorkflowViewState.IdRef="Sequence_17" />
-      <ui:CommentOut DisplayName="Comment Out" sap2010:WorkflowViewState.IdRef="CommentOut_16">
-        <ui:CommentOut.Body>
-          <Sequence DisplayName="Ignored Activities" sap2010:WorkflowViewState.IdRef="Sequence_42">
-            <ui:ForEach x:TypeArguments="x:Object" CurrentIndex="{x:Null}" DisplayName="For Each award" sap2010:WorkflowViewState.IdRef="ForEach`1_4">
-              <ui:ForEach.Body>
-                <ActivityAction x:TypeArguments="x:Object">
-                  <ActivityAction.Argument>
-                    <DelegateInArgument x:TypeArguments="x:Object" Name="item" />
-                  </ActivityAction.Argument>
-                  <Sequence DisplayName="Body" sap2010:WorkflowViewState.IdRef="Sequence_22">
-                    <Sequence DisplayName="View award ID" sap2010:WorkflowViewState.IdRef="Sequence_18" />
-                    <If DisplayName="If grantor name not matched" sap2010:WorkflowViewState.IdRef="If_7">
-                      <If.Then>
-                        <Throw sap2010:WorkflowViewState.IdRef="Throw_3" />
-                      </If.Then>
-                    </If>
-                    <Sequence DisplayName="View Contract" sap2010:WorkflowViewState.IdRef="Sequence_19" />
-                    <Sequence DisplayName="View Lines" sap2010:WorkflowViewState.IdRef="Sequence_20" />
-                    <ui:ForEach x:TypeArguments="x:Object" CurrentIndex="{x:Null}" DisplayName="For Each billing line" sap2010:WorkflowViewState.IdRef="ForEach`1_3">
-                      <ui:ForEach.Body>
-                        <ActivityAction x:TypeArguments="x:Object">
-                          <ActivityAction.Argument>
-                            <DelegateInArgument x:TypeArguments="x:Object" Name="item" />
-                          </ActivityAction.Argument>
-                          <Sequence DisplayName="Body" sap2010:WorkflowViewState.IdRef="Sequence_21">
-                            <If DisplayName="If billing plan not in progress" sap2010:WorkflowViewState.IdRef="If_8">
-                              <If.Then>
-                                <Throw sap2010:WorkflowViewState.IdRef="Throw_4" />
-                              </If.Then>
-                            </If>
-                            <Sequence DisplayName="View In Progress" sap2010:WorkflowViewState.IdRef="Sequence_23" />
-                            <Sequence DisplayName="View Events" sap2010:WorkflowViewState.IdRef="Sequence_24" />
-                            <If DisplayName="If any amount value is 0.00 (reversal)" sap2010:WorkflowViewState.IdRef="If_9">
-                              <If.Then>
-                                <Throw sap2010:WorkflowViewState.IdRef="Throw_5" />
-                              </If.Then>
-                            </If>
-                            <ui:ForEach x:TypeArguments="x:Object" CurrentIndex="{x:Null}" DisplayName="For Each amount" sap2010:WorkflowViewState.IdRef="ForEach`1_5">
-                              <ui:ForEach.Body>
-                                <ActivityAction x:TypeArguments="x:Object">
-                                  <ActivityAction.Argument>
-                                    <DelegateInArgument x:TypeArguments="x:Object" Name="item" />
-                                  </ActivityAction.Argument>
-                                  <Sequence DisplayName="Body" sap2010:WorkflowViewState.IdRef="Sequence_25">
-                                    <If DisplayName="If amount value not matched" sap2010:WorkflowViewState.IdRef="If_10">
-                                      <If.Then>
-                                        <Throw sap2010:WorkflowViewState.IdRef="Throw_6" />
-                                      </If.Then>
-                                    </If>
-                                    <Sequence DisplayName="Update Event Date" sap2010:WorkflowViewState.IdRef="Sequence_27" />
-                                    <Sequence DisplayName="Set Event Status to Ready" sap2010:WorkflowViewState.IdRef="Sequence_28" />
-                                  </Sequence>
-                                </ActivityAction>
-                              </ui:ForEach.Body>
-                            </ui:ForEach>
-                          </Sequence>
-                        </ActivityAction>
-                      </ui:ForEach.Body>
-                    </ui:ForEach>
-                  </Sequence>
-                </ActivityAction>
-              </ui:ForEach.Body>
-            </ui:ForEach>
+    <ui:UiElementExists DisplayName="Define Billing Plan Exists" Exists="[billingPlanOpen]" sap2010:WorkflowViewState.IdRef="UiElementExists_2">
+      <ui:UiElementExists.Target>
+        <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Selector="[&quot;&lt;html app='chrome.exe' title='&quot; + in_Config(&quot;UniFi Define Billing Plan&quot;).Split(&quot;\&quot;c).Last + &quot;' /&gt;&quot;]" TimeoutMS="3000" WaitForReady="INTERACTIVE" />
+      </ui:UiElementExists.Target>
+    </ui:UiElementExists>
+    <If Condition="[Not billingPlanOpen]" DisplayName="If Define Billing Plan not open" sap2010:WorkflowViewState.IdRef="If_12">
+      <If.Then>
+        <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke NavToMainMenuItem workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_3" UnSafe="False" WorkflowFileName="UniFi\NavToMainMenuItem.xaml">
+          <ui:InvokeWorkflowFile.Arguments>
+            <InArgument x:TypeArguments="scg:List(x:String)" x:Key="in_NavigationSteps">[in_Config("UniFi Define Billing Plan").Split("\"c).ToList]</InArgument>
+          </ui:InvokeWorkflowFile.Arguments>
+        </ui:InvokeWorkflowFile>
+      </If.Then>
+    </If>
+    <TryCatch DisplayName="Try Catch" sap2010:WorkflowViewState.IdRef="TryCatch_2">
+      <TryCatch.Try>
+        <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke UpdateEvent workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_4" UnSafe="False" WorkflowFileName="UniFi\UpdateEvent.xaml">
+          <ui:InvokeWorkflowFile.Arguments>
+            <InArgument x:TypeArguments="x:String" x:Key="in_ContractID">[in_TransactionItem.SpecificContent("Contract").ToString]</InArgument>
+            <InArgument x:TypeArguments="x:String" x:Key="in_MilestoneID">[in_TransactionItem.SpecificContent("Milestone ID").ToString]</InArgument>
+            <InArgument x:TypeArguments="x:String" x:Key="in_MilestoneDescription">[in_TransactionItem.SpecificContent("Milestone Description").ToString]</InArgument>
+            <InArgument x:TypeArguments="s:DateTime" x:Key="in_EventDate">[CDate(in_Config("Job Start Time"))]</InArgument>
+          </ui:InvokeWorkflowFile.Arguments>
+        </ui:InvokeWorkflowFile>
+      </TryCatch.Try>
+      <TryCatch.Catches>
+        <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch`1_2">
+          <ActivityAction x:TypeArguments="s:Exception">
+            <ActivityAction.Argument>
+              <DelegateInArgument x:TypeArguments="s:Exception" Name="exception" />
+            </ActivityAction.Argument>
+            <Assign DisplayName="Assign error during update" sap2010:WorkflowViewState.IdRef="Assign_1">
+              <Assign.To>
+                <OutArgument x:TypeArguments="s:Exception">[updateError]</OutArgument>
+              </Assign.To>
+              <Assign.Value>
+                <InArgument x:TypeArguments="s:ApplicationException">[New ApplicationException(String.Format(in_Config("SystemError UpdateError"), exception.Message, exception.Source), exception)]</InArgument>
+              </Assign.Value>
+            </Assign>
+          </ActivityAction>
+        </Catch>
+        <Catch x:TypeArguments="ui:BusinessRuleException" sap2010:WorkflowViewState.IdRef="Catch`1_3">
+          <ActivityAction x:TypeArguments="ui:BusinessRuleException">
+            <ActivityAction.Argument>
+              <DelegateInArgument x:TypeArguments="ui:BusinessRuleException" Name="exception" />
+            </ActivityAction.Argument>
+            <Assign DisplayName="Assign reason to not update" sap2010:WorkflowViewState.IdRef="Assign_2">
+              <Assign.To>
+                <OutArgument x:TypeArguments="ui:BusinessRuleException">[shouldntUpdate]</OutArgument>
+              </Assign.To>
+              <Assign.Value>
+                <InArgument x:TypeArguments="ui:BusinessRuleException">[New BusinessRuleException(String.Format(in_Config("RuleException ShouldntUpdate"), exception.Message), exception)]</InArgument>
+              </Assign.Value>
+            </Assign>
+          </ActivityAction>
+        </Catch>
+      </TryCatch.Catches>
+    </TryCatch>
+    <ui:BrowserScope Browser="{x:Null}" SearchScope="{x:Null}" TimeoutMS="{x:Null}" UiBrowser="{x:Null}" BrowserType="Chrome" DisplayName="Attach Browser UniFi Define Billing Plan" sap2010:WorkflowViewState.IdRef="BrowserScope_2" Selector="&lt;html app='chrome.exe' title='Define Billing Plan' /&gt;">
+      <ui:BrowserScope.Body>
+        <ActivityAction x:TypeArguments="x:Object">
+          <ActivityAction.Argument>
+            <DelegateInArgument x:TypeArguments="x:Object" Name="ContextTarget" />
+          </ActivityAction.Argument>
+          <Sequence sap2010:WorkflowViewState.IdRef="Sequence_43">
+            <ui:GetValue ContinueOnError="True" DisplayName="Get Text error message" sap2010:WorkflowViewState.IdRef="GetValue_1">
+              <ui:GetValue.Target>
+                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Selector="&lt;webctrl parentid='alertmsg' tag='SPAN' class='popupText' /&gt;" TimeoutMS="500" WaitForReady="INTERACTIVE" />
+              </ui:GetValue.Target>
+              <ui:GetValue.Value>
+                <OutArgument x:TypeArguments="x:String">[popupMessage]</OutArgument>
+              </ui:GetValue.Value>
+            </ui:GetValue>
+            <ui:Click ClickType="CLICK_SINGLE" ContinueOnError="True" DelayBefore="5" DelayMS="5" DisplayName="Click OK Alert button" sap2010:WorkflowViewState.IdRef="Click_1" KeyModifiers="None" MouseButton="BTN_LEFT" SendWindowMessages="False" SimulateClick="True">
+              <ui:Click.CursorPosition>
+                <ui:CursorPosition Position="Center">
+                  <ui:CursorPosition.OffsetX>
+                    <InArgument x:TypeArguments="x:Int32" />
+                  </ui:CursorPosition.OffsetX>
+                  <ui:CursorPosition.OffsetY>
+                    <InArgument x:TypeArguments="x:Int32" />
+                  </ui:CursorPosition.OffsetY>
+                </ui:CursorPosition>
+              </ui:Click.CursorPosition>
+              <ui:Click.Target>
+                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Selector="&lt;webctrl id='#ALERTOK' tag='INPUT' /&gt;" TimeoutMS="500" WaitForReady="INTERACTIVE" />
+              </ui:Click.Target>
+            </ui:Click>
+            <ui:Click ClickType="CLICK_SINGLE" ContinueOnError="True" DelayBefore="5" DelayMS="5" DisplayName="Click Return to Search" sap2010:WorkflowViewState.IdRef="Click_2" KeyModifiers="None" MouseButton="BTN_LEFT" SendWindowMessages="False" SimulateClick="True">
+              <ui:Click.CursorPosition>
+                <ui:CursorPosition Position="Center">
+                  <ui:CursorPosition.OffsetX>
+                    <InArgument x:TypeArguments="x:Int32" />
+                  </ui:CursorPosition.OffsetX>
+                  <ui:CursorPosition.OffsetY>
+                    <InArgument x:TypeArguments="x:Int32" />
+                  </ui:CursorPosition.OffsetY>
+                </ui:CursorPosition>
+              </ui:Click.CursorPosition>
+              <ui:Click.Target>
+                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="&lt;webctrl tag='IFRAME' parentclass='PSPAGE' /&gt;&lt;webctrl tag='INPUT' aaname='Return to Search*' type='button' /&gt;" WaitForReady="INTERACTIVE" />
+              </ui:Click.Target>
+            </ui:Click>
+            <ui:Click ClickType="CLICK_SINGLE" ContinueOnError="True" DelayBefore="5" DelayMS="5" DisplayName="Click No button" sap2010:WorkflowViewState.IdRef="Click_3" KeyModifiers="None" MouseButton="BTN_LEFT" SendWindowMessages="False" SimulateClick="True">
+              <ui:Click.CursorPosition>
+                <ui:CursorPosition Position="Center">
+                  <ui:CursorPosition.OffsetX>
+                    <InArgument x:TypeArguments="x:Int32" />
+                  </ui:CursorPosition.OffsetX>
+                  <ui:CursorPosition.OffsetY>
+                    <InArgument x:TypeArguments="x:Int32" />
+                  </ui:CursorPosition.OffsetY>
+                </ui:CursorPosition>
+              </ui:Click.CursorPosition>
+              <ui:Click.Target>
+                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Selector="&lt;webctrl id='#ALERTNO' tag='INPUT' parentid='alertbutton' /&gt;" TimeoutMS="500" WaitForReady="INTERACTIVE" />
+              </ui:Click.Target>
+            </ui:Click>
+            <TryCatch DisplayName="Try Catch">
+              <TryCatch.Try>
+                <ui:Click ClickType="CLICK_SINGLE" DelayBefore="5" DelayMS="5" DisplayName="Click Clear button" sap2010:WorkflowViewState.IdRef="Click_4" KeyModifiers="None" MouseButton="BTN_LEFT" SendWindowMessages="False" SimulateClick="True">
+                  <ui:Click.CursorPosition>
+                    <ui:CursorPosition Position="Center">
+                      <ui:CursorPosition.OffsetX>
+                        <InArgument x:TypeArguments="x:Int32" />
+                      </ui:CursorPosition.OffsetX>
+                      <ui:CursorPosition.OffsetY>
+                        <InArgument x:TypeArguments="x:Int32" />
+                      </ui:CursorPosition.OffsetY>
+                    </ui:CursorPosition>
+                  </ui:Click.CursorPosition>
+                  <ui:Click.Target>
+                    <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="&lt;webctrl tag='INPUT' aaname='Clear' type='button' /&gt;" WaitForReady="INTERACTIVE" />
+                  </ui:Click.Target>
+                </ui:Click>
+              </TryCatch.Try>
+              <TryCatch.Catches>
+                <Catch x:TypeArguments="s:Exception">
+                  <ActivityAction x:TypeArguments="s:Exception">
+                    <ActivityAction.Argument>
+                      <DelegateInArgument x:TypeArguments="s:Exception" Name="exception" />
+                    </ActivityAction.Argument>
+                    <Assign DisplayName="Assign new message if not set">
+                      <Assign.To>
+                        <OutArgument x:TypeArguments="x:String">[popupMessage]</OutArgument>
+                      </Assign.To>
+                      <Assign.Value>
+                        <InArgument x:TypeArguments="x:String">[If(popupMessage Is Nothing, exception.Message, popupMessage)]</InArgument>
+                      </Assign.Value>
+                      <sap2010:WorkflowViewState.IdRef>Assign_3</sap2010:WorkflowViewState.IdRef>
+                    </Assign>
+                  </ActivityAction>
+                  <sap2010:WorkflowViewState.IdRef>Catch`1_4</sap2010:WorkflowViewState.IdRef>
+                </Catch>
+              </TryCatch.Catches>
+              <sap2010:WorkflowViewState.IdRef>TryCatch_3</sap2010:WorkflowViewState.IdRef>
+            </TryCatch>
           </Sequence>
-        </ui:CommentOut.Body>
-      </ui:CommentOut>
-    </Sequence>
-    <sads:DebugSymbol.Symbol>d0VDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQmlsbGluZ01pbGVzdG9uZVxQcm9jZXNzLnhhbWwWXQPJAQ4CAQFkBWS8AQIBHGUFfRACAQp+BYIBCgIBBYMBBccBEAIBAmRyZLkBAgEdZwlxIQIBDXkNefcBAgELfhN+LAIBBoABCYABjAMCAQiEAQeEAWECAQSFAQfGARcCAQNvUW9vAgEbalZqbQIBGW1SbW0CARduUm5tAgEVaWBpawIBE2tTa2YCARFnvAFn0wECARBsUWxqAgEOeT95ygECAQyAAUWAAd8CAgEJ</sads:DebugSymbol.Symbol>
+        </ActivityAction>
+      </ui:BrowserScope.Body>
+    </ui:BrowserScope>
+    <If Condition="[popupMessage IsNot Nothing]" DisplayName="If popup message" sap2010:WorkflowViewState.IdRef="If_15">
+      <If.Then>
+        <Throw DisplayName="Throw popup error" Exception="[New ApplicationException(String.Format(in_Config(&quot;SystemError UpdateError&quot;), popupMessage, &quot;saving milestone&quot;), updateError)]" sap2010:WorkflowViewState.IdRef="Throw_8" />
+      </If.Then>
+    </If>
+    <If Condition="[updateError IsNot Nothing]" DisplayName="If system error" sap2010:WorkflowViewState.IdRef="If_13">
+      <If.Then>
+        <Throw DisplayName="Throw system error" Exception="[updateError]" sap2010:WorkflowViewState.IdRef="Throw_9" />
+      </If.Then>
+    </If>
+    <If Condition="[shouldntUpdate IsNot Nothing]" DisplayName="If rule exception" sap2010:WorkflowViewState.IdRef="If_14">
+      <If.Then>
+        <Throw DisplayName="Throw rule exception" Exception="[shouldntUpdate]" sap2010:WorkflowViewState.IdRef="Throw_10" />
+      </If.Then>
+    </If>
+    <sads:DebugSymbol.Symbol>d11DOlxVc2Vyc1xzcGFtaXNoXERvY3VtZW50c1xVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQmlsbGluZ01pbGVzdG9uZVxQcm9jZXNzLnhhbWxWVgOxAg4CAQFhBWG8AQIBamIFehACAVh7BX8KAgFTgAEFhAEaAgFOhQEFjQEKAgFIjgEFuQEQAgE4ugEFoAIXAgERoQIFpQIKAgEMpgIFqgIKAgEGqwIFrwIKAgECYXJhuQECAWtkCW4hAgFbdg129wECAVl7E3ssAgFUfQl9jAMCAVaCAUqCAd8BAgFSggHqAYIB8AECAVGAAUmAAVwCAU+FAROFASoCAUmHAQmLASECAUuQAQmXASECAUGfAQ2mARYCAT2uAQ21ARYCATm6AfABugGtAgIBN8ABC50CFgIBEqECE6ECMQIBDaMCCaMC+wECAQ+mAhOmAjACAQeoAgmoAncCAQmrAhOrAjMCAQOtAgmtAn0CAQRsUWxvAgFpZ1ZnbQIBZ2pSam0CAWVrUmttAgFjZmBmawIBYWhTaGYCAV9kvAFk0wECAV5pUWlqAgFcdj92ygECAVp9RX3fAgIBV4kBWYkBlAECAU2HAcIBhwHgAQIBTJUBS5UBbwIBRpQBVJQBmgECAUWTAUuTAYgBAgFEkAG8AZAB1AECAUOSAUqSAYMBAgFCpAFGpAHFAQIBQKEBPKEBSQIBPrMBSLMBuwECATywAUmwAVkCATrBAQ3IARsCATDJAQ3XARgCASrYAQ3mARgCASXnAQ31ARgCAR/2AQ2cAhgCAROjAjqjAs4BAgEQqAI7qAJKAgEKrQI9rQJPAgEFxgE5xgFHAgEzwQEqwQEwAgEywwFSwwGWAQIBNsMBoQHDAaYBAgE11QFS1QF/AgEvyQFfyQFiAgEu1QGKAdUBjwECAS3JAUDJAUYCASzJAVPJAVYCASvkAWfkAeIBAgEp2AFf2AFiAgEo2AFA2AFGAgEn2AFT2AFWAgEm8wFS8wGWAQIBJOcBX+cBYgIBI/MBoQHzAaYBAgEi5wFA5wFGAgEh5wFT5wFWAgEg+AERhgIcAgEbjgIVlgIeAgEUhAJrhAKnAQIBHvgBTPgBTwIBHfgBQPgBQwIBHJMCQJMCfgIBF5ACQZACTwIBFQ==</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -215,109 +319,12 @@
       <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="464,314" />
       <sap2010:ViewStateData Id="Throw_2" sap:VirtualizedContainerService.HintSize="200,22" />
       <sap2010:ViewStateData Id="If_6" sap:VirtualizedContainerService.HintSize="464,208" />
-      <sap2010:ViewStateData Id="Sequence_17" sap:VirtualizedContainerService.HintSize="200,99">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_18" sap:VirtualizedContainerService.HintSize="540,99">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Throw_3" sap:VirtualizedContainerService.HintSize="200,22" />
-      <sap2010:ViewStateData Id="If_7" sap:VirtualizedContainerService.HintSize="540,207" />
-      <sap2010:ViewStateData Id="Sequence_19" sap:VirtualizedContainerService.HintSize="540,99">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_20" sap:VirtualizedContainerService.HintSize="540,99">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Throw_4" sap:VirtualizedContainerService.HintSize="200,22" />
-      <sap2010:ViewStateData Id="If_8" sap:VirtualizedContainerService.HintSize="502,208" />
-      <sap2010:ViewStateData Id="Sequence_23" sap:VirtualizedContainerService.HintSize="502,99">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_24" sap:VirtualizedContainerService.HintSize="502,99">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Throw_5" sap:VirtualizedContainerService.HintSize="200,22" />
-      <sap2010:ViewStateData Id="If_9" sap:VirtualizedContainerService.HintSize="502,208" />
-      <sap2010:ViewStateData Id="Throw_6" sap:VirtualizedContainerService.HintSize="200,22" />
-      <sap2010:ViewStateData Id="If_10" sap:VirtualizedContainerService.HintSize="464,208" />
-      <sap2010:ViewStateData Id="Sequence_27" sap:VirtualizedContainerService.HintSize="464,99">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_28" sap:VirtualizedContainerService.HintSize="464,99">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_25" sap:VirtualizedContainerService.HintSize="486,610">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="ForEach`1_5" sap:VirtualizedContainerService.HintSize="502,744" />
-      <sap2010:ViewStateData Id="Sequence_21" sap:VirtualizedContainerService.HintSize="524,1642">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="ForEach`1_3" sap:VirtualizedContainerService.HintSize="540,1776" />
-      <sap2010:ViewStateData Id="Sequence_22" sap:VirtualizedContainerService.HintSize="562,2564">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="ForEach`1_4" sap:VirtualizedContainerService.HintSize="578,2697">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-            <x:Boolean x:Key="IsPinned">False</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_42" sap:VirtualizedContainerService.HintSize="600,2821">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="CommentOut_16" sap:VirtualizedContainerService.HintSize="200,51">
+      <sap2010:ViewStateData Id="UiElementExists_2" sap:VirtualizedContainerService.HintSize="464,68" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_3" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="If_12" sap:VirtualizedContainerService.HintSize="464,235" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_4" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="Assign_1" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="Catch`1_2" sap:VirtualizedContainerService.HintSize="400,21">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">False</x:Boolean>
@@ -325,7 +332,8 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_41" sap:VirtualizedContainerService.HintSize="464,314">
+      <sap2010:ViewStateData Id="Assign_2" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="Catch`1_3" sap:VirtualizedContainerService.HintSize="400,129">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -333,7 +341,44 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="486,1588">
+      <sap2010:ViewStateData Id="TryCatch_2" sap:VirtualizedContainerService.HintSize="464,313" />
+      <sap2010:ViewStateData Id="GetValue_1" sap:VirtualizedContainerService.HintSize="418,68" />
+      <sap2010:ViewStateData Id="Click_1" sap:VirtualizedContainerService.HintSize="418,68" />
+      <sap2010:ViewStateData Id="Click_2" sap:VirtualizedContainerService.HintSize="418,68" />
+      <sap2010:ViewStateData Id="Click_3" sap:VirtualizedContainerService.HintSize="418,68" />
+      <sap2010:ViewStateData Id="Click_4" sap:VirtualizedContainerService.HintSize="314,68" />
+      <sap2010:ViewStateData Id="Assign_3" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="Catch`1_4" sap:VirtualizedContainerService.HintSize="404,21">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="TryCatch_3" sap:VirtualizedContainerService.HintSize="418,295" />
+      <sap2010:ViewStateData Id="Sequence_43" sap:VirtualizedContainerService.HintSize="440,851">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="BrowserScope_2" sap:VirtualizedContainerService.HintSize="464,959">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Throw_8" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="If_15" sap:VirtualizedContainerService.HintSize="464,208" />
+      <sap2010:ViewStateData Id="Throw_9" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="If_13" sap:VirtualizedContainerService.HintSize="464,208" />
+      <sap2010:ViewStateData Id="Throw_10" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="If_14" sap:VirtualizedContainerService.HintSize="464,208" />
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="486,3578">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -341,7 +386,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="ProcessTransaction_1" sap:VirtualizedContainerService.HintSize="526,1708" />
+      <sap2010:ViewStateData Id="ProcessTransaction_1" sap:VirtualizedContainerService.HintSize="526,3658" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
