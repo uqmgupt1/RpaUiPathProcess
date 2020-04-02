@@ -1,0 +1,211 @@
+﻿<Activity mc:Ignorable="sap sap2010 sads" x:Class="Matching"
+ xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
+ xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+ xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities"
+ xmlns:s="clr-namespace:System;assembly=mscorlib"
+ xmlns:sads="http://schemas.microsoft.com/netfx/2010/xaml/activities/debugger"
+ xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
+ xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
+ xmlns:scg="clr-namespace:System.Collections.Generic;assembly=mscorlib"
+ xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=mscorlib"
+ xmlns:snm="clr-namespace:System.Net.Mail;assembly=System"
+ xmlns:ui="http://schemas.uipath.com/workflow/activities"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <x:Members>
+    <x:Property Name="in_Config" Type="InArgument(scg:Dictionary(x:String, x:String))" />
+    <x:Property Name="io_DispatchedTransactions" Type="InOutArgument(scg:List(ui:QueueItem))" />
+    <x:Property Name="in_TransactionMessage" Type="InArgument(snm:MailMessage)" />
+    <x:Property Name="in_TransactionSubject" Type="InArgument(x:String)" />
+    <x:Property Name="in_TransactionReceived" Type="InArgument(s:DateTime)" />
+    <x:Property Name="in_TransactionFilename" Type="InArgument(x:String)" />
+    <x:Property Name="out_TransactionItem" Type="OutArgument(ui:QueueItem)" />
+  </x:Members>
+  <mva:VisualBasic.Settings>
+    <x:Null />
+  </mva:VisualBasic.Settings>
+  <sap2010:WorkflowViewState.IdRef>Matching_1</sap2010:WorkflowViewState.IdRef>
+  <TextExpression.NamespacesForImplementation>
+    <sco:Collection x:TypeArguments="x:String">
+      <x:String>System.Activities</x:String>
+      <x:String>System.Activities.Statements</x:String>
+      <x:String>System.Activities.Expressions</x:String>
+      <x:String>System.Activities.Validation</x:String>
+      <x:String>System.Activities.XamlIntegration</x:String>
+      <x:String>Microsoft.VisualBasic</x:String>
+      <x:String>Microsoft.VisualBasic.Activities</x:String>
+      <x:String>System</x:String>
+      <x:String>System.Collections</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Data</x:String>
+      <x:String>System.Diagnostics</x:String>
+      <x:String>System.Drawing</x:String>
+      <x:String>System.IO</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>System.Net.Mail</x:String>
+      <x:String>System.Xml</x:String>
+      <x:String>System.Xml.Linq</x:String>
+      <x:String>System.Windows.Markup</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+      <x:String>Microsoft.VisualBasic.CompilerServices</x:String>
+    </sco:Collection>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <sco:Collection x:TypeArguments="AssemblyReference">
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>Microsoft.VisualBasic</AssemblyReference>
+      <AssemblyReference>mscorlib</AssemblyReference>
+      <AssemblyReference>System.Data</AssemblyReference>
+      <AssemblyReference>System.Data.DataSetExtensions</AssemblyReference>
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Drawing</AssemblyReference>
+      <AssemblyReference>System.Core</AssemblyReference>
+      <AssemblyReference>System.Xml</AssemblyReference>
+      <AssemblyReference>System.Xml.Linq</AssemblyReference>
+      <AssemblyReference>PresentationFramework</AssemblyReference>
+      <AssemblyReference>WindowsBase</AssemblyReference>
+      <AssemblyReference>PresentationCore</AssemblyReference>
+      <AssemblyReference>System.Xaml</AssemblyReference>
+      <AssemblyReference>UiPath.UiAutomation.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>System.ServiceModel</AssemblyReference>
+      <AssemblyReference>System.ValueTuple</AssemblyReference>
+      <AssemblyReference>System.ComponentModel.Composition</AssemblyReference>
+      <AssemblyReference>Microsoft.VisualStudio.Services.Common</AssemblyReference>
+      <AssemblyReference>UiPath.Studio.Plugin.Workflow</AssemblyReference>
+      <AssemblyReference>System.Collections.Immutable</AssemblyReference>
+    </sco:Collection>
+  </TextExpression.ReferencesForImplementation>
+  <Sequence sap2010:Annotation.AnnotationText="Description: Looks up the reference from an email in all transactions that are In Progress.&#xA;&#xA;If an email reference is matched the dispatched email is moved from Bot Files to Temp, a new transaction is created in the Update Queue and the dispatched transaction is set to Successful.&#xA;&#xA;Inputs:&#xA;in_Config &lt;Dictionary&lt;String, String&gt;&gt;.&#xA;io_DispatchedTransactions &lt;List&lt;QueueItem&gt;&gt;: All active dispatched transactions.&#xA;in_TransactionMessage &lt;MailMessage&gt;.&#xA;in_TransactionSubject &lt;String&gt;.&#xA;in_TransactionReceived &lt;DateTime&gt;.&#xA;in_TransactionFilename &lt;String&gt;.&#xA;&#xA;Outputs:&#xA;io_DispatchedTransactions &lt;List&lt;QueueItem&gt;&gt;.&#xA;out_TransactionItem &lt;QueueItem&gt;.&#xA;&#xA;Pre Condition:&#xA;io_DispatchedTransactions have all been started (Status is In Progress).&#xA;&#xA;Post Condition:&#xA;Throws an error if email reference is not found in dispatched items or if there's an error moving the request email, creating an update transaction or finishing the dispatched transaction." DisplayName="Matching" sap2010:WorkflowViewState.IdRef="Sequence_2">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="x:String" Name="emailReference" />
+    </Sequence.Variables>
+    <Assign DisplayName="Assign reference part of subject" sap2010:WorkflowViewState.IdRef="Assign_1">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">[emailReference]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">[in_TransactionSubject.Split(":"c).Last]</InArgument>
+      </Assign.Value>
+    </Assign>
+    <If Condition="[io_DispatchedTransactions.Any(function(qi) qi.Reference = emailReference)]" DisplayName="If message is in dispatch queue" sap2010:WorkflowViewState.IdRef="If_1">
+      <If.Then>
+        <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;Found &quot; + emailReference + &quot; in dispatched approvals&quot;]" />
+      </If.Then>
+      <If.Else>
+        <Throw DisplayName="Throw unmatched mail error" Exception="[New BusinessRuleException(String.Format(in_Config(&quot;RuleException UnmatchedMail&quot;), emailReference))]" sap2010:WorkflowViewState.IdRef="Throw_1" />
+      </If.Else>
+    </If>
+    <TryCatch DisplayName="Try Catch" sap2010:WorkflowViewState.IdRef="TryCatch_1">
+      <TryCatch.Try>
+        <Sequence sap2010:WorkflowViewState.IdRef="Sequence_1">
+          <Sequence.Variables>
+            <Variable x:TypeArguments="ui:QueueItem" Name="dispatched" />
+          </Sequence.Variables>
+          <Assign DisplayName="Assign dispatched transaction" sap2010:WorkflowViewState.IdRef="Assign_2">
+            <Assign.To>
+              <OutArgument x:TypeArguments="ui:QueueItem">[dispatched]</OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="ui:QueueItem">[io_DispatchedTransactions.First(function(qi) qi.Reference = emailReference)]</InArgument>
+            </Assign.Value>
+          </Assign>
+          <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[&quot;Moving '&quot; + Path.GetFileName(dispatched.SpecificContent(&quot;Request Filename&quot;).ToString) + &quot;' to working folder&quot;]" />
+          <ui:MoveFile ContinueOnError="{x:Null}" Destination="[&quot;Temp\&quot; + Path.GetFileName(dispatched.SpecificContent(&quot;Request Filename&quot;).ToString)]" DisplayName="Move Dispatched Email File" sap2010:WorkflowViewState.IdRef="MoveFile_1" Overwrite="False" Path="[dispatched.SpecificContent(&quot;Request Filename&quot;).ToString]" />
+          <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_3" Level="Info" Message="[&quot;Adding transaction for '&quot; + Path.GetFileName(in_TransactionFilename) + &quot;' received &quot; + in_TransactionReceived.ToShortDateString]" />
+          <ui:ForEach x:TypeArguments="x:String" CurrentIndex="{x:Null}" DisplayName="For Each key to log" sap2010:WorkflowViewState.IdRef="ForEach`1_1" Values="[dispatched.SpecificContent.Keys]">
+            <ui:ForEach.Body>
+              <ActivityAction x:TypeArguments="x:String">
+                <ActivityAction.Argument>
+                  <DelegateInArgument x:TypeArguments="x:String" Name="key" />
+                </ActivityAction.Argument>
+                <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_4" Level="Trace" Message="[key.PadRight(25) + dispatched.SpecificContent(key).ToString]" />
+              </ActivityAction>
+            </ui:ForEach.Body>
+          </ui:ForEach>
+          <ui:AddTransactionItem ContinueOnError="{x:Null}" TimeoutMS="{x:Null}" DisplayName="Add Update Transaction Item" sap2010:WorkflowViewState.IdRef="AddTransactionItem_1" QueueType="[in_Config(&quot;UpdateQueue&quot;)]" Reference="[emailReference]" TransactionItem="[out_TransactionItem]">
+            <ui:AddTransactionItem.TransactionInformation>
+              <InArgument x:TypeArguments="x:String" x:Key="Contract">[dispatched.SpecificContent("Contract").ToString]</InArgument>
+              <InArgument x:TypeArguments="x:String" x:Key="Milestone ID">[dispatched.SpecificContent("Milestone ID").ToString]</InArgument>
+              <InArgument x:TypeArguments="x:String" x:Key="Customer Name">[dispatched.SpecificContent("Customer Name").ToString]</InArgument>
+              <InArgument x:TypeArguments="x:String" x:Key="Project title">[dispatched.SpecificContent("Project title").ToString]</InArgument>
+              <InArgument x:TypeArguments="x:String" x:Key="CI Name">[dispatched.SpecificContent("CI Name").ToString]</InArgument>
+              <InArgument x:TypeArguments="x:String" x:Key="Milestone Description">[dispatched.SpecificContent("Milestone Description").ToString]</InArgument>
+              <InArgument x:TypeArguments="x:String" x:Key="Due Date">[dispatched.SpecificContent("Due Date").ToString]</InArgument>
+              <InArgument x:TypeArguments="x:String" x:Key="Project ID">[dispatched.SpecificContent("Project ID").ToString]</InArgument>
+              <InArgument x:TypeArguments="x:String" x:Key="Research master number">[dispatched.SpecificContent("Research master number").ToString]</InArgument>
+              <InArgument x:TypeArguments="x:String" x:Key="Request Sent">[dispatched.SpecificContent("Request Sent").ToString]</InArgument>
+              <InArgument x:TypeArguments="x:String" x:Key="Request Recipient">[dispatched.SpecificContent("Request Recipient").ToString]</InArgument>
+              <InArgument x:TypeArguments="x:String" x:Key="Request Filename">["Temp\" + Path.GetFileName(dispatched.SpecificContent("Request Filename").ToString)]</InArgument>
+              <InArgument x:TypeArguments="x:String" x:Key="Response Subject">[in_TransactionSubject]</InArgument>
+              <InArgument x:TypeArguments="x:String" x:Key="Response Received">[in_TransactionReceived.ToString("yyyy-MM-dd")]</InArgument>
+              <InArgument x:TypeArguments="x:String" x:Key="Response Filename">[in_TransactionFilename]</InArgument>
+            </ui:AddTransactionItem.TransactionInformation>
+          </ui:AddTransactionItem>
+          <ui:SetTransactionStatus ContinueOnError="{x:Null}" Reason="{x:Null}" ServiceBaseAddress="{x:Null}" TimeoutMS="{x:Null}" DisplayName="Set Dispatch Transaction Status" ErrorType="Business" sap2010:WorkflowViewState.IdRef="SetTransactionStatus_1" Status="Successful" TransactionItem="[dispatched]">
+            <ui:SetTransactionStatus.Output>
+              <InArgument x:TypeArguments="x:String" x:Key="Response Subject">[in_TransactionSubject]</InArgument>
+              <InArgument x:TypeArguments="x:String" x:Key="Response Received">[in_TransactionReceived.ToString("yyyy-MM-dd")]</InArgument>
+              <InArgument x:TypeArguments="x:String" x:Key="Response Filename">[in_TransactionFilename]</InArgument>
+            </ui:SetTransactionStatus.Output>
+          </ui:SetTransactionStatus>
+          <RemoveFromCollection x:TypeArguments="ui:QueueItem" Collection="[io_DispatchedTransactions]" DisplayName="Remove From Dispatched items" sap2010:WorkflowViewState.IdRef="RemoveFromCollection`1_1" Item="[dispatched]" />
+        </Sequence>
+      </TryCatch.Try>
+      <TryCatch.Catches>
+        <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch`1_1">
+          <ActivityAction x:TypeArguments="s:Exception">
+            <ActivityAction.Argument>
+              <DelegateInArgument x:TypeArguments="s:Exception" Name="exception" />
+            </ActivityAction.Argument>
+            <Throw DisplayName="Throw transaction error" Exception="[New Exception(String.Format(in_Config(&quot;SystemError TransactionError&quot;), emailReference, exception.Message, exception.Source), exception)]" sap2010:WorkflowViewState.IdRef="Throw_2" />
+          </ActivityAction>
+        </Catch>
+      </TryCatch.Catches>
+    </TryCatch>
+    <sads:DebugSymbol.Symbol>d15DOlxVc2Vyc1xzcGFtaXNoXERvY3VtZW50c1xVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQmlsbGluZ01pbGVzdG9uZVxNYXRjaGluZy54YW1sN08DpwEOAgEBUwVaDgIBQlsFYgoCATtjBaUBEAIBAlgwWFgCAUVVMVVBAgFDWxNbYAIBPF0JXccBAgE/YAlg4AECAT1lCZkBFAIBBaEBDaEBhgICAQNddl3EAQIBQGBDYLMBAgE+aQtwFAIBN3ELcYsCAgE1cgty4AICATJzC3OTAgIBMHQLfRgCASx+C5ABIwIBE5EBC5cBJQIBCpgBC5gB5QECAQahAUShAdkBAgEEbjpuhwECATprO2tHAgE4cXhxiAICATZyP3KqAQIBNHKYAnLdAgIBM3N4c5ACAgExdKEBdMQBAgEvehF6wQECAS1+7gF+gAICASqMAU+MAWYCASiDAUyDAYIBAgEnfr0BfuMBAgEliAFViAGUAQIBJIIBTIIBggECASOKAVCKAYoBAgEihQFUhQGSAQIBIYQBRoQBdgIBII4BUI4BaAIBHoABR4ABeAIBHYYBR4YBeAIBHIkBS4kBgAECARt+kQJ+qAICARmLAU+LAaQBAgEYhwFJhwF8AgEXjQFQjQF/AgEVgQFLgQGAAQIBFJMBT5MBZgIBEZUBUJUBaAIBD5EBpAKRAbICAgENlAFQlAF/AgELmAFLmAFoAgEJmAHUAZgB4gECAQd6f3q+AQIBLg==</sads:DebugSymbol.Symbol>
+  </Sequence>
+  <sap2010:WorkflowViewState.ViewStateManager>
+    <sap2010:ViewStateManager>
+      <sap2010:ViewStateData Id="Assign_1" sap:VirtualizedContainerService.HintSize="539,60" />
+      <sap2010:ViewStateData Id="LogMessage_1" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="Throw_1" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="539,239" />
+      <sap2010:ViewStateData Id="Assign_2" sap:VirtualizedContainerService.HintSize="330,60" />
+      <sap2010:ViewStateData Id="LogMessage_2" sap:VirtualizedContainerService.HintSize="330,91" />
+      <sap2010:ViewStateData Id="MoveFile_1" sap:VirtualizedContainerService.HintSize="330,22" />
+      <sap2010:ViewStateData Id="LogMessage_3" sap:VirtualizedContainerService.HintSize="330,91" />
+      <sap2010:ViewStateData Id="LogMessage_4" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="ForEach`1_1" sap:VirtualizedContainerService.HintSize="330,225" />
+      <sap2010:ViewStateData Id="AddTransactionItem_1" sap:VirtualizedContainerService.HintSize="330,22" />
+      <sap2010:ViewStateData Id="SetTransactionStatus_1" sap:VirtualizedContainerService.HintSize="330,22" />
+      <sap2010:ViewStateData Id="RemoveFromCollection`1_1" sap:VirtualizedContainerService.HintSize="330,22" />
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="352,959">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Throw_2" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="Catch`1_1" sap:VirtualizedContainerService.HintSize="404,21">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="539,1186" />
+      <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="561,2046">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsAnnotationDocked">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Matching_1" sap:VirtualizedContainerService.HintSize="601,2166" />
+    </sap2010:ViewStateManager>
+  </sap2010:WorkflowViewState.ViewStateManager>
+</Activity>
