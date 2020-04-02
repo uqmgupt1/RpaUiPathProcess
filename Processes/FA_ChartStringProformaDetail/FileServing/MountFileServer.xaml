@@ -1,4 +1,4 @@
-﻿<Activity mc:Ignorable="sap sap2010 sads" x:Class="Main" this:Main.in_Credentials="SSO_rpa00001" this:Main.in_MappedDrive="\\nas02.storage.uq.edu.au\CA\FBS\test"
+﻿<Activity mc:Ignorable="sap sap2010 sads" x:Class="Main"
  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
  xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities"
@@ -7,14 +7,13 @@
  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
  xmlns:scg="clr-namespace:System.Collections.Generic;assembly=mscorlib"
  xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=mscorlib"
- xmlns:sd="clr-namespace:System.Data;assembly=System.Data"
  xmlns:ss="clr-namespace:System.Security;assembly=mscorlib"
- xmlns:this="clr-namespace:"
  xmlns:ui="http://schemas.uipath.com/workflow/activities"
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <x:Members>
     <x:Property Name="in_Credentials" Type="InArgument(x:String)" />
     <x:Property Name="in_MappedDrive" Type="InArgument(x:String)" />
+    <x:Property Name="out_DriveLetter" Type="OutArgument(x:String)" />
   </x:Members>
   <mva:VisualBasic.Settings>
     <x:Null />
@@ -51,6 +50,8 @@
       <x:String>Dapplo.Windows.Advapi32</x:String>
       <x:String>PInvoke</x:String>
       <x:String>System.Xml.Serialization</x:String>
+      <x:String>System.Security</x:String>
+      <x:String>Microsoft.VisualBasic.CompilerServices</x:String>
     </sco:Collection>
   </TextExpression.NamespacesForImplementation>
   <TextExpression.ReferencesForImplementation>
@@ -92,112 +93,139 @@
   </TextExpression.ReferencesForImplementation>
   <Sequence sap2010:WorkflowViewState.IdRef="Sequence_1">
     <Sequence.Variables>
-      <Variable x:TypeArguments="x:Uri" Name="folder" />
       <Variable x:TypeArguments="x:String" Name="username" />
-      <Variable x:TypeArguments="x:String" Name="password" />
-      <Variable x:TypeArguments="x:String" Name="text" />
-      <Variable x:TypeArguments="sd:DataTable" Name="testing" />
+      <Variable x:TypeArguments="ss:SecureString" Name="password" />
       <Variable x:TypeArguments="sco:Collection(x:String)" Name="response" />
     </Sequence.Variables>
-    <Assign DisplayName="Assign without variable part of name" sap2010:WorkflowViewState.IdRef="Assign_9">
-      <Assign.To>
-        <OutArgument x:TypeArguments="x:String">[in_MappedDrive]</OutArgument>
-      </Assign.To>
-      <Assign.Value>
-        <InArgument x:TypeArguments="x:String">[in_MappedDrive.Replace("{0}", "").TrimEnd("\"c)]</InArgument>
-      </Assign.Value>
-    </Assign>
     <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_21" Level="Info" Message="[&quot;Start MountFileServer.xaml, mapping: &quot; + in_MappedDrive]" />
-    <Assign DisplayName="Assign folder" sap2010:WorkflowViewState.IdRef="Assign_8">
-      <Assign.To>
-        <OutArgument x:TypeArguments="x:Uri">[folder]</OutArgument>
-      </Assign.To>
-      <Assign.Value>
-        <InArgument x:TypeArguments="x:Uri">[New Uri(in_MappedDrive)]</InArgument>
-      </Assign.Value>
-    </Assign>
     <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke GetAppCredentials workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_2" UnSafe="False" WorkflowFileName="Framework\GetAppCredentials.xaml">
       <ui:InvokeWorkflowFile.Arguments>
-        <InArgument x:TypeArguments="x:String" x:Key="in_Domain">UQ</InArgument>
-        <InArgument x:TypeArguments="x:String" x:Key="in_Host" />
-        <InArgument x:TypeArguments="x:String" x:Key="in_Credential">[in_Credentials]</InArgument>
         <OutArgument x:TypeArguments="x:String" x:Key="out_Username">[username]</OutArgument>
-        <OutArgument x:TypeArguments="ss:SecureString" x:Key="out_Password" />
-        <OutArgument x:TypeArguments="x:String" x:Key="out_Plaintext">[password]</OutArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="in_Credential">[in_Credentials]</InArgument>
+        <OutArgument x:TypeArguments="ss:SecureString" x:Key="out_Password">[password]</OutArgument>
       </ui:InvokeWorkflowFile.Arguments>
     </ui:InvokeWorkflowFile>
+    <Assign DisplayName="Assign append UQ" sap2010:WorkflowViewState.IdRef="Assign_10">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">[username]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">["UQ\" + username]</InArgument>
+      </Assign.Value>
+    </Assign>
     <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_12" Level="Trace" Message="[&quot;Using username &quot; + username]" />
     <ui:InvokePowerShell x:TypeArguments="x:String" ContinueOnError="{x:Null}" CommandText="net use" DisplayName="Invoke List Mapped Drives" sap2010:WorkflowViewState.IdRef="InvokePowerShell`1_5" IsScript="True" Output="[response]" />
-    <If Condition="[response.Any(Function(r) r.Contains(Path.GetPathRoot(folder.LocalPath)))]" sap2010:WorkflowViewState.IdRef="If_2">
-      <If.Then>
-        <Sequence sap2010:WorkflowViewState.IdRef="Sequence_8">
-          <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_19" Level="Trace" Message="[Path.GetPathRoot(folder.LocalPath) + &quot; is already mapped&quot;]" />
-          <ui:InvokePowerShell x:TypeArguments="x:String" ContinueOnError="{x:Null}" CommandText="net use $drive /delete /yes" DisplayName="Invoke Remove Existing Mapping" sap2010:WorkflowViewState.IdRef="InvokePowerShell`1_11" IsScript="True" Output="[response]">
-            <ui:InvokePowerShell.PowerShellVariables>
-              <InArgument x:TypeArguments="x:String" x:Key="drive">[Path.GetPathRoot(folder.LocalPath)]</InArgument>
-            </ui:InvokePowerShell.PowerShellVariables>
-          </ui:InvokePowerShell>
-          <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_20" Level="Trace" Message="[&quot;Removed drives:&quot; + vbNewLine + String.Join(vbNewLine, response).Trim]" />
-        </Sequence>
-      </If.Then>
-    </If>
+    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_25" Level="Trace" Message="[&quot;Existing mappings: &quot; + String.Join(vbNewLine, response.Where(function(s) s.Trim &lt;&gt; &quot;&quot;))]" />
+    <While DisplayName="While drives mapped" sap2010:WorkflowViewState.IdRef="While_1" Condition="[response.Any(Function(r) r.Contains(Path.GetPathRoot(in_MappedDrive)))]">
+      <Sequence sap2010:WorkflowViewState.IdRef="Sequence_8">
+        <Sequence.Variables>
+          <Variable x:TypeArguments="ui:GenericValue" Name="driveLetter" />
+        </Sequence.Variables>
+        <Assign DisplayName="Assign first mapped drive" sap2010:WorkflowViewState.IdRef="Assign_13">
+          <Assign.To>
+            <OutArgument x:TypeArguments="ui:GenericValue">[driveLetter]</OutArgument>
+          </Assign.To>
+          <Assign.Value>
+            <InArgument x:TypeArguments="ui:GenericValue">[response.First(Function(r) r.Contains(Path.GetPathRoot(in_MappedDrive)))]</InArgument>
+          </Assign.Value>
+        </Assign>
+        <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_19" Level="Trace" Message="[&quot;Removing: &quot; + driveLetter]" />
+        <Assign DisplayName="Assign letter part of name" sap2010:WorkflowViewState.IdRef="Assign_14">
+          <Assign.To>
+            <OutArgument x:TypeArguments="ui:GenericValue">[driveLetter]</OutArgument>
+          </Assign.To>
+          <Assign.Value>
+            <InArgument x:TypeArguments="ui:GenericValue">[driveLetter.Substring(13, 2)]</InArgument>
+          </Assign.Value>
+        </Assign>
+        <ui:InvokePowerShell x:TypeArguments="x:String" ContinueOnError="{x:Null}" CommandText="net use $drive /delete /yes" DisplayName="Invoke Remove Existing Mapping" sap2010:WorkflowViewState.IdRef="InvokePowerShell`1_13" IsScript="True" Output="[response]">
+          <ui:InvokePowerShell.PowerShellVariables>
+            <InArgument x:TypeArguments="x:String" x:Key="drive">[driveLetter]</InArgument>
+          </ui:InvokePowerShell.PowerShellVariables>
+        </ui:InvokePowerShell>
+        <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_27" Level="Trace" Message="[&quot;Removed: &quot; + String.Join(vbNewLine, response.Where(function(s) s.Trim &lt;&gt; &quot;&quot;))]" />
+        <ui:InvokePowerShell x:TypeArguments="x:String" ContinueOnError="{x:Null}" CommandText="net use" DisplayName="Invoke List Mapped Drives" sap2010:WorkflowViewState.IdRef="InvokePowerShell`1_12" IsScript="True" Output="[response]" />
+        <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_26" Level="Trace" Message="[&quot;Existing mappings: &quot; + String.Join(vbNewLine, response.Where(function(s) s.Trim &lt;&gt; &quot;&quot;))]" />
+      </Sequence>
+    </While>
     <ui:InvokePowerShell x:TypeArguments="x:String" ContinueOnError="{x:Null}" CommandText="ping -n 1 $hostname" DisplayName="Invoke Ping Network Share" sap2010:WorkflowViewState.IdRef="InvokePowerShell`1_6" IsScript="True" Output="[response]">
       <ui:InvokePowerShell.PowerShellVariables>
-        <InArgument x:TypeArguments="x:String" x:Key="hostname">[folder.Host]</InArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="hostname">[New Uri(in_MappedDrive).Host]</InArgument>
       </ui:InvokePowerShell.PowerShellVariables>
     </ui:InvokePowerShell>
-    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_10" Level="Trace" Message="[&quot;Ping host:&quot; + vbNewLine + String.Join(vbNewLine, response).Trim]" />
-    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_8" Level="Trace" Message="[&quot;Mapping &quot; + Path.GetPathRoot(folder.LocalPath)]" />
-    <ui:InvokePowerShell x:TypeArguments="x:String" ContinueOnError="{x:Null}" CommandText="net use $drive /persistent:no /user:$username $password" DisplayName="Invoke Map Network Share" sap2010:WorkflowViewState.IdRef="InvokePowerShell`1_3" IsScript="True" Output="[response]">
+    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_10" Level="Trace" Message="[&quot;Ping host: &quot; + String.Join(vbNewLine, response.Where(function(s) s.Trim &lt;&gt; &quot;&quot;))]" />
+    <ui:InvokePowerShell x:TypeArguments="x:String" ContinueOnError="{x:Null}" CommandText="net use * $drive /persistent:no /user:$username $password" DisplayName="Invoke Map Network Share" sap2010:WorkflowViewState.IdRef="InvokePowerShell`1_3" IsScript="True" Output="[response]">
       <ui:InvokePowerShell.PowerShellVariables>
-        <InArgument x:TypeArguments="x:String" x:Key="drive">[Path.GetPathRoot(folder.LocalPath)]</InArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="drive">[in_MappedDrive]</InArgument>
         <InArgument x:TypeArguments="x:String" x:Key="username">[username]</InArgument>
-        <InArgument x:TypeArguments="x:String" x:Key="password">[password]</InArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="password">[New System.Net.NetworkCredential(Nothing, password).Password]</InArgument>
       </ui:InvokePowerShell.PowerShellVariables>
     </ui:InvokePowerShell>
-    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_6" Level="Trace" Message="[&quot;Mapped Network Share:&quot; + vbNewLine + String.Join(vbNewLine, response).Trim]" />
-    <ui:InvokePowerShell x:TypeArguments="x:String" ContinueOnError="{x:Null}" CommandText="net use" DisplayName="Invoke List Mapped Drives" sap2010:WorkflowViewState.IdRef="InvokePowerShell`1_10" IsScript="True" Output="[response]" />
-    <ui:CheckTrue DisplayName="Check Drive Mapped" ErrorMessage="[Path.GetPathRoot(folder.LocalPath) + &quot; was not mapped correctly&quot;]" Expression="[response.Any(Function(r) r.Contains(Path.GetPathRoot(folder.LocalPath)))]" sap2010:WorkflowViewState.IdRef="CheckTrue_1" />
-    <ui:CheckTrue DisplayName="Check Folder Accessible" ErrorMessage="[folder.LocalPath + &quot; was not accessible&quot;]" Expression="[Directory.Exists(folder.LocalPath)]" sap2010:WorkflowViewState.IdRef="CheckTrue_2" />
-    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_5" Level="Info" Message="[&quot;End MountFileServer.xaml, &quot; + folder.LocalPath + &quot; mapped and accessible.&quot;]" />
-    <sads:DebugSymbol.Symbol>d2JDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQ2hhcnRTdHJpbmdQcm9mb3JtYURldGFpbFxGaWxlU2VydmluZ1xNb3VudEZpbGVTZXJ2ZXIueGFtbDwBUwFgAQMBewGhAQECXQOkAQ4CAQFmBW0OAgFIbgVuvAECAUVvBXYOAgFBdwWAAR0CATiBAQWBAaEBAgE1ggEFggHrAQIBMYMBBY8BCgIBJZABBZQBGwIBH5UBBZUBxQECAR2WAQWWAbMBAgEblwEFnQEbAgESngEFngHPAQIBEJ8BBZ8B7AECAQygAQWgAZgCAgEJoQEFoQHfAQIBBaIBBaIB2AECAQJrMGthAgFLaDFoQQIBSW5zbrkBAgFGdC10RgIBRHEucTYCAUJ7RntWAgE/fEZ8UAIBPXlCeUQCATx+R35RAgE6d74Bd+ABAgE5gQF0gQGeAQIBNoIB3AGCAegBAgEzggFcggFlAgEygwETgwFfAgEmhQEJjQEUAgEnkAHoAZAB9AECASOQAVyQAXECASKSAUGSAU4CASCVAXSVAcIBAgEelgFzlgGwAQIBHJcBiwKXAZcCAgEZlwFclwGVAQIBGJkBPpkBYgIBF5sBQZsBSwIBFZoBQZoBSwIBE54Bc54BzAECARGfAd0BnwHpAQIBDp8BXJ8BZQIBDaABmwGgAecBAgELoAFBoAGPAQIBCqEBiAGhAa4BAgEIoQFGoQF8AgEGogFyogHVAQIBA4YBC4YBxAECAS+HAQuLASECASqMAQuMAdABAgEohgF6hgHBAQIBMIcB/AGHAYgCAgEthwFihwF/AgEsiQFEiQFoAgErjAF6jAHNAQIBKQ==</sads:DebugSymbol.Symbol>
+    <ui:CheckTrue DisplayName="Check Drive Mapped" ErrorMessage="[in_MappedDrive + &quot; was not mapped correctly&quot;]" Expression="[response.Any(Function(r) r.Contains(in_MappedDrive))]" sap2010:WorkflowViewState.IdRef="CheckTrue_1" />
+    <Assign DisplayName="Assign mapping result" sap2010:WorkflowViewState.IdRef="Assign_11">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">[out_DriveLetter]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">[response.First(Function(r) r.Contains(in_MappedDrive))]</InArgument>
+      </Assign.Value>
+    </Assign>
+    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_6" Level="Trace" Message="[&quot;Mapped Network Share: &quot; + out_DriveLetter]" />
+    <Assign DisplayName="Assign drive letter only" sap2010:WorkflowViewState.IdRef="Assign_12">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">[out_DriveLetter]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">[out_DriveLetter.Substring(6, 2) + "\"]</InArgument>
+      </Assign.Value>
+    </Assign>
+    <ui:CheckTrue DisplayName="Check Folder Accessible" ErrorMessage="[in_MappedDrive + &quot; was not accessible&quot;]" Expression="[Directory.Exists(in_MappedDrive)]" sap2010:WorkflowViewState.IdRef="CheckTrue_2" />
+    <ui:CheckTrue DisplayName="Check Shortcut Accessible" ErrorMessage="[out_DriveLetter + &quot; was not accessible&quot;]" Expression="[Directory.Exists(out_DriveLetter)]" sap2010:WorkflowViewState.IdRef="CheckTrue_3" />
+    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_5" Level="Info" Message="[&quot;End MountFileServer.xaml, &quot; + in_MappedDrive + &quot; mounted as &quot; + out_DriveLetter]" />
+    <sads:DebugSymbol.Symbol>d2JDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQ2hhcnRTdHJpbmdQcm9mb3JtYURldGFpbFxGaWxlU2VydmluZ1xNb3VudEZpbGVTZXJ2ZXIueGFtbEdeA7oBDgIBAWQFZLwBAgFgZQVrHQIBWGwFcw4CAVN0BXShAQIBUHUFdesBAgFMdgV27QECAUp3BZYBDQIBL5cBBZsBGwIBKpwBBZwB5QECASidAQWjARsCAR6kAQWkAfABAgEapQEFrAEOAgEWrQEFrQGuAQIBE64BBbUBDgIBDrYBBbYB2wECAQq3AQW3Ad8BAgEGuAEFuAHdAQIBAmRzZLkBAgFhaU1pVwIBXmhGaFYCAVxnRmdQAgFaZb4BZeABAgFZcTBxQgIBVm4xbjsCAVR0dHSeAQIBUXXcAXXoAQIBTnVcdWUCAU12dHbqAQIBS3gHlQESAgExd2J3rAECATCXAegBlwH0AQIBLZcBXJcBcQIBLJkBQZkBXwIBK5wBdJwB4gECASmdAY0CnQGZAgIBJp0BXJ0BlwECASWfAT6fAU4CASOhAUGhAX8CASGgAUGgAUsCAR+kAYcBpAG/AQIBHaQBQaQBewIBG6oBMKoBaAIBGacBMacBQgIBF60Bc60BqwECARSzATCzAVcCARGwATGwAUICAQ+2AYYBtgGqAQIBDbYBRrYBegIBC7cBiQG3Aa4BAgEJtwFItwF9AgEHuAFyuAHaAQIBA3wJgwESAgFGhAEJhAGjAQIBRIUBCYwBEgIBP40BCZEBHwIBOpIBCZIB5wECATiTAQmTAfABAgE0lAEJlAHxAQIBMoEBO4EBhQECAUl+PH5JAgFHhAF4hAGgAQIBRYoBO4oBWQIBQocBPIcBSQIBQI0B+gGNAYYCAgE9jQFgjQF9AgE8jwFCjwFPAgE7kgF4kgHkAQIBOZMB4QGTAe0BAgE2kwFgkwFpAgE1lAF4lAHuAQIBMw==</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
-      <sap2010:ViewStateData Id="Assign_9" sap:VirtualizedContainerService.HintSize="464,60" />
       <sap2010:ViewStateData Id="LogMessage_21" sap:VirtualizedContainerService.HintSize="464,91" />
-      <sap2010:ViewStateData Id="Assign_8" sap:VirtualizedContainerService.HintSize="464,60" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_2" sap:VirtualizedContainerService.HintSize="464,87" />
+      <sap2010:ViewStateData Id="Assign_10" sap:VirtualizedContainerService.HintSize="464,60" />
       <sap2010:ViewStateData Id="LogMessage_12" sap:VirtualizedContainerService.HintSize="464,91" />
       <sap2010:ViewStateData Id="InvokePowerShell`1_5" sap:VirtualizedContainerService.HintSize="464,59" />
+      <sap2010:ViewStateData Id="LogMessage_25" sap:VirtualizedContainerService.HintSize="464,91" />
+      <sap2010:ViewStateData Id="Assign_13" sap:VirtualizedContainerService.HintSize="314,60" />
       <sap2010:ViewStateData Id="LogMessage_19" sap:VirtualizedContainerService.HintSize="314,91" />
-      <sap2010:ViewStateData Id="InvokePowerShell`1_11" sap:VirtualizedContainerService.HintSize="314,59" />
-      <sap2010:ViewStateData Id="LogMessage_20" sap:VirtualizedContainerService.HintSize="314,91" />
-      <sap2010:ViewStateData Id="Sequence_8" sap:VirtualizedContainerService.HintSize="336,445">
+      <sap2010:ViewStateData Id="Assign_14" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="InvokePowerShell`1_13" sap:VirtualizedContainerService.HintSize="314,59" />
+      <sap2010:ViewStateData Id="LogMessage_27" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="InvokePowerShell`1_12" sap:VirtualizedContainerService.HintSize="314,59" />
+      <sap2010:ViewStateData Id="LogMessage_26" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="Sequence_8" sap:VirtualizedContainerService.HintSize="336,875">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_2" sap:VirtualizedContainerService.HintSize="464,593" />
+      <sap2010:ViewStateData Id="While_1" sap:VirtualizedContainerService.HintSize="464,1033" />
       <sap2010:ViewStateData Id="InvokePowerShell`1_6" sap:VirtualizedContainerService.HintSize="464,59" />
       <sap2010:ViewStateData Id="LogMessage_10" sap:VirtualizedContainerService.HintSize="464,91" />
-      <sap2010:ViewStateData Id="LogMessage_8" sap:VirtualizedContainerService.HintSize="464,91" />
       <sap2010:ViewStateData Id="InvokePowerShell`1_3" sap:VirtualizedContainerService.HintSize="464,59" />
-      <sap2010:ViewStateData Id="LogMessage_6" sap:VirtualizedContainerService.HintSize="464,91" />
-      <sap2010:ViewStateData Id="InvokePowerShell`1_10" sap:VirtualizedContainerService.HintSize="464,59" />
       <sap2010:ViewStateData Id="CheckTrue_1" sap:VirtualizedContainerService.HintSize="464,87" />
+      <sap2010:ViewStateData Id="Assign_11" sap:VirtualizedContainerService.HintSize="464,60" />
+      <sap2010:ViewStateData Id="LogMessage_6" sap:VirtualizedContainerService.HintSize="464,91" />
+      <sap2010:ViewStateData Id="Assign_12" sap:VirtualizedContainerService.HintSize="464,60" />
       <sap2010:ViewStateData Id="CheckTrue_2" sap:VirtualizedContainerService.HintSize="464,87" />
+      <sap2010:ViewStateData Id="CheckTrue_3" sap:VirtualizedContainerService.HintSize="464,87" />
       <sap2010:ViewStateData Id="LogMessage_5" sap:VirtualizedContainerService.HintSize="464,91" />
-      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="486,2480">
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="486,3048">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Main_1" sap:VirtualizedContainerService.HintSize="526,2560" />
+      <sap2010:ViewStateData Id="Main_1" sap:VirtualizedContainerService.HintSize="526,3128" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>

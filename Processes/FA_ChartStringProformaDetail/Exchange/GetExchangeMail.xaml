@@ -81,7 +81,7 @@
       <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
-  <Sequence DisplayName="Get Exchange Mail" sap2010:WorkflowViewState.IdRef="Sequence_1">
+  <Sequence sap2010:Annotation.AnnotationText="Description: Checks if the mailbox path is accessible by the user and returns a number or 1 email message.&#xA;&#xA;Inputs:&#xA;in_CredentialsAsset (String): Orchestrator credentials asset.&#xA;in_ServerName (String): Exchange URL.&#xA;in_MailboxPath (String): Path to a shared mailbox folder or subfolder of the users mailbox.&#xA;in_Number (Integer) [optional]: If not set then get the first email.&#xA;&#xA;Outputs:&#xA;out_Messages (List&lt;MailMessage&gt;): List of mail messages from the mailbox folder.&#xA;&#xA;Pre Condition: NA.&#xA;&#xA;Post Condition:&#xA;Exchange server is reachable.&#xA;Username and password are correct.&#xA;If shared mailbox then email exists.&#xA;If subfolder then path is valid." DisplayName="Get Exchange Mail" sap2010:WorkflowViewState.IdRef="Sequence_1">
     <Sequence.Variables>
       <Variable x:TypeArguments="x:String" Name="password" />
       <Variable x:TypeArguments="x:String" Name="username" />
@@ -111,7 +111,7 @@
         <OutArgument x:TypeArguments="x:String" x:Key="out_Plaintext">[password]</OutArgument>
       </ui:InvokeWorkflowFile.Arguments>
     </ui:InvokeWorkflowFile>
-    <ui:LogMessage DisplayName="Log App Initialization message" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[&quot;Start GetExchangeMail.xaml, as &quot; + username]" />
+    <ui:LogMessage DisplayName="Log App Initialization message" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[&quot;Start GetExchangeMail.xaml, as &quot; + username + &quot; connecting to &quot; + in_ServerName]" />
     <Assign DisplayName="Assign mailbox folder path parts" sap2010:WorkflowViewState.IdRef="Assign_17">
       <Assign.To>
         <OutArgument x:TypeArguments="scg:List(x:String)">[parts]</OutArgument>
@@ -145,105 +145,121 @@
         </Sequence>
       </If.Then>
     </If>
-    <If Condition="[parts.First = &quot;Inbox&quot;]" DisplayName="If starts with inbox" sap2010:WorkflowViewState.IdRef="If_6">
-      <If.Then>
-        <Assign DisplayName="Assign inbox" sap2010:WorkflowViewState.IdRef="Assign_14">
-          <Assign.To>
-            <OutArgument x:TypeArguments="mewd:FolderId">[folder]</OutArgument>
-          </Assign.To>
-          <Assign.Value>
-            <InArgument x:TypeArguments="mewd:FolderId">[New FolderId(WellKnownFolderName.Inbox, mailbox)]</InArgument>
-          </Assign.Value>
-        </Assign>
-      </If.Then>
-      <If.Else>
-        <Sequence sap2010:WorkflowViewState.IdRef="Sequence_11">
-          <Assign DisplayName="Assign non inbox" sap2010:WorkflowViewState.IdRef="Assign_15">
-            <Assign.To>
-              <OutArgument x:TypeArguments="mewd:FolderId">[folder]</OutArgument>
-            </Assign.To>
-            <Assign.Value>
-              <InArgument x:TypeArguments="mewd:FolderId">[New FolderId(WellKnownFolderName.MsgFolderRoot, mailbox)]</InArgument>
-            </Assign.Value>
-          </Assign>
-          <Assign DisplayName="Assign root folder" sap2010:WorkflowViewState.IdRef="Assign_19">
-            <Assign.To>
-              <OutArgument x:TypeArguments="scg:List(x:String)">[parts]</OutArgument>
-            </Assign.To>
-            <Assign.Value>
-              <InArgument x:TypeArguments="scg:List(x:String)">[parts.Prepend("").ToList]</InArgument>
-            </Assign.Value>
-          </Assign>
+    <ui:LogMessage DisplayName="Log App Initialization message" sap2010:WorkflowViewState.IdRef="LogMessage_21" Level="Info" Message="[&quot;Checking out '&quot; + If(mailbox Is Nothing, &quot;My Mailbox&quot;, mailbox) + &quot;' looking for '&quot; + String.Join(&quot; &gt; &quot;, parts) + &quot;'&quot;]" />
+    <ui:CommentOut DisplayName="Comment Out" sap2010:WorkflowViewState.IdRef="CommentOut_1">
+      <ui:CommentOut.Body>
+        <Sequence sap2010:Annotation.AnnotationText="Iteratively checks if all folders are accessible, eg. Inbox &gt; Subfolder &gt; etc..." DisplayName="Ignored Activities" sap2010:WorkflowViewState.IdRef="Sequence_12">
+          <If Condition="[parts.First = &quot;Inbox&quot;]" DisplayName="If starts with inbox" sap2010:WorkflowViewState.IdRef="If_6">
+            <If.Then>
+              <Assign DisplayName="Assign inbox" sap2010:WorkflowViewState.IdRef="Assign_14">
+                <Assign.To>
+                  <OutArgument x:TypeArguments="mewd:FolderId">[folder]</OutArgument>
+                </Assign.To>
+                <Assign.Value>
+                  <InArgument x:TypeArguments="mewd:FolderId">[New FolderId(WellKnownFolderName.Inbox, mailbox)]</InArgument>
+                </Assign.Value>
+              </Assign>
+            </If.Then>
+            <If.Else>
+              <Sequence sap2010:WorkflowViewState.IdRef="Sequence_11">
+                <Assign DisplayName="Assign non inbox" sap2010:WorkflowViewState.IdRef="Assign_15">
+                  <Assign.To>
+                    <OutArgument x:TypeArguments="mewd:FolderId">[folder]</OutArgument>
+                  </Assign.To>
+                  <Assign.Value>
+                    <InArgument x:TypeArguments="mewd:FolderId">[New FolderId(WellKnownFolderName.MsgFolderRoot, mailbox)]</InArgument>
+                  </Assign.Value>
+                </Assign>
+                <Assign DisplayName="Assign root folder" sap2010:WorkflowViewState.IdRef="Assign_19">
+                  <Assign.To>
+                    <OutArgument x:TypeArguments="scg:List(x:String)">[parts]</OutArgument>
+                  </Assign.To>
+                  <Assign.Value>
+                    <InArgument x:TypeArguments="scg:List(x:String)">[parts.Prepend("").ToList]</InArgument>
+                  </Assign.Value>
+                </Assign>
+              </Sequence>
+            </If.Else>
+          </If>
+          <If Condition="[parts.Count &gt; 1]" DisplayName="If within subfolders" sap2010:WorkflowViewState.IdRef="If_7">
+            <If.Then>
+              <ui:ExchangeScope Domain="{x:Null}" ExchangeService="{x:Null}" ExistingExchangeService="{x:Null}" Server="{x:Null}" TimeoutMS="{x:Null}" DisplayName="Exchange Scope" EmailAutodiscover="[username]" ExchangeVersion="Exchange2007_SP1" sap2010:WorkflowViewState.IdRef="ExchangeScope_2" Password="[password]" User="[username]">
+                <ui:ExchangeScope.Body>
+                  <ActivityAction x:TypeArguments="mewd:ExchangeService">
+                    <ActivityAction.Argument>
+                      <DelegateInArgument x:TypeArguments="mewd:ExchangeService" Name="ExchangeConnection" />
+                    </ActivityAction.Argument>
+                    <While DisplayName="While more folders to check" sap2010:WorkflowViewState.IdRef="While_2">
+                      <While.Variables>
+                        <Variable x:TypeArguments="x:Int32" Default="1" Name="i" />
+                      </While.Variables>
+                      <While.Condition>[i &lt; parts.Count]</While.Condition>
+                      <Sequence sap2010:WorkflowViewState.IdRef="Sequence_10">
+                        <Sequence.Variables>
+                          <Variable x:TypeArguments="mewd:FindFoldersResults" Name="subfolders" />
+                        </Sequence.Variables>
+                        <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_20" Level="Info" Message="[&quot;Folder ID: &quot; + folder.UniqueId]" />
+                        <Assign DisplayName="Assign subfolders" sap2010:WorkflowViewState.IdRef="Assign_16">
+                          <Assign.To>
+                            <OutArgument x:TypeArguments="mewd:FindFoldersResults">[subfolders]</OutArgument>
+                          </Assign.To>
+                          <Assign.Value>
+                            <InArgument x:TypeArguments="mewd:FindFoldersResults">[ExchangeConnection.FindFolders(folder, New FolderView(10))]</InArgument>
+                          </Assign.Value>
+                        </Assign>
+                        <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_19" Level="Trace" Message="[parts(i - 1) + &quot; contains &quot; + String.Join(&quot;, &quot;, subfolders.Select(function(f) f.DisplayName))]" />
+                        <If Condition="[subfolders.Any(Function(f) f.DisplayName = parts(i))]" DisplayName="If subfolder found" sap2010:WorkflowViewState.IdRef="If_4">
+                          <If.Then>
+                            <Assign DisplayName="Assign next folder ID" sap2010:WorkflowViewState.IdRef="Assign_13">
+                              <Assign.To>
+                                <OutArgument x:TypeArguments="mewd:FolderId">[folder]</OutArgument>
+                              </Assign.To>
+                              <Assign.Value>
+                                <InArgument x:TypeArguments="mewd:FolderId">[subfolders.Single(Function(f) f.DisplayName = parts(i)).Id]</InArgument>
+                              </Assign.Value>
+                            </Assign>
+                          </If.Then>
+                          <If.Else>
+                            <Throw DisplayName="Throw subfolder not found" Exception="[New Exception(&quot;Couldn't find &quot; + parts(i))]" sap2010:WorkflowViewState.IdRef="Throw_2" />
+                          </If.Else>
+                        </If>
+                        <Assign DisplayName="Increment i" sap2010:WorkflowViewState.IdRef="Assign_18">
+                          <Assign.To>
+                            <OutArgument x:TypeArguments="x:Int32">[i]</OutArgument>
+                          </Assign.To>
+                          <Assign.Value>
+                            <InArgument x:TypeArguments="x:Int32">[i + 1]</InArgument>
+                          </Assign.Value>
+                        </Assign>
+                      </Sequence>
+                    </While>
+                  </ActivityAction>
+                </ui:ExchangeScope.Body>
+              </ui:ExchangeScope>
+            </If.Then>
+          </If>
         </Sequence>
-      </If.Else>
-    </If>
-    <If Condition="[parts.Count &gt; 1]" DisplayName="If within subfolders" sap2010:WorkflowViewState.IdRef="If_7">
-      <If.Then>
-        <ui:ExchangeScope Domain="{x:Null}" EmailAutodiscover="{x:Null}" ExchangeService="{x:Null}" ExistingExchangeService="{x:Null}" TimeoutMS="{x:Null}" DisplayName="Exchange Scope" ExchangeVersion="Exchange2007_SP1" sap2010:WorkflowViewState.IdRef="ExchangeScope_2" Password="[password]" Server="[in_ServerName]" User="[username]">
-          <ui:ExchangeScope.Body>
-            <ActivityAction x:TypeArguments="mewd:ExchangeService">
-              <ActivityAction.Argument>
-                <DelegateInArgument x:TypeArguments="mewd:ExchangeService" Name="ExchangeConnection" />
-              </ActivityAction.Argument>
-              <While DisplayName="While more folders to check" sap2010:WorkflowViewState.IdRef="While_2">
-                <While.Variables>
-                  <Variable x:TypeArguments="x:Int32" Default="1" Name="i" />
-                </While.Variables>
-                <While.Condition>[i &lt; parts.Count]</While.Condition>
-                <Sequence sap2010:WorkflowViewState.IdRef="Sequence_10">
-                  <Sequence.Variables>
-                    <Variable x:TypeArguments="mewd:FindFoldersResults" Name="subfolders" />
-                  </Sequence.Variables>
-                  <Assign DisplayName="Assign subfolders" sap2010:WorkflowViewState.IdRef="Assign_16">
-                    <Assign.To>
-                      <OutArgument x:TypeArguments="mewd:FindFoldersResults">[subfolders]</OutArgument>
-                    </Assign.To>
-                    <Assign.Value>
-                      <InArgument x:TypeArguments="mewd:FindFoldersResults">[ExchangeConnection.FindFolders(folder, New FolderView(10))]</InArgument>
-                    </Assign.Value>
-                  </Assign>
-                  <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_19" Level="Trace" Message="[parts(i - 1) + &quot; contains &quot; + String.Join(&quot;, &quot;, subfolders.Select(function(f) f.DisplayName))]" />
-                  <If Condition="[subfolders.Any(Function(f) f.DisplayName = parts(i))]" DisplayName="If subfolder found" sap2010:WorkflowViewState.IdRef="If_4">
-                    <If.Then>
-                      <Assign DisplayName="Assign next folder ID" sap2010:WorkflowViewState.IdRef="Assign_13">
-                        <Assign.To>
-                          <OutArgument x:TypeArguments="mewd:FolderId">[folder]</OutArgument>
-                        </Assign.To>
-                        <Assign.Value>
-                          <InArgument x:TypeArguments="mewd:FolderId">[subfolders.Single(Function(f) f.DisplayName = parts(i)).Id]</InArgument>
-                        </Assign.Value>
-                      </Assign>
-                    </If.Then>
-                    <If.Else>
-                      <Throw DisplayName="Throw subfolder not found" Exception="[New Exception(&quot;Couldn't find &quot; + parts(i))]" sap2010:WorkflowViewState.IdRef="Throw_2" />
-                    </If.Else>
-                  </If>
-                  <Assign DisplayName="Increment i" sap2010:WorkflowViewState.IdRef="Assign_18">
-                    <Assign.To>
-                      <OutArgument x:TypeArguments="x:Int32">[i]</OutArgument>
-                    </Assign.To>
-                    <Assign.Value>
-                      <InArgument x:TypeArguments="x:Int32">[i + 1]</InArgument>
-                    </Assign.Value>
-                  </Assign>
-                </Sequence>
-              </While>
-            </ActivityAction>
-          </ui:ExchangeScope.Body>
-        </ui:ExchangeScope>
-      </If.Then>
-    </If>
+      </ui:CommentOut.Body>
+    </ui:CommentOut>
     <ui:GetExchangeMailMessages Domain="{x:Null}" EmailAutodiscover="{x:Null}" TimeoutMS="{x:Null}" CustomFolder="[String.Join(&quot;\&quot;, parts)]" DisplayName="Get Exchange Mail Messages" ExchangeVersion="Exchange2007_SP1" GetAttachements="True" sap2010:WorkflowViewState.IdRef="GetExchangeMailMessages_6" IsBodyHtml="True" MailFolder="Calendar" MarkAsRead="False" Messages="[out_Messages]" OnlyUnreadMessages="False" Password="[password]" Server="[in_ServerName]" SharedMailbox="[mailbox]" Top="[in_Number]" User="[username]" />
+    <Assign DisplayName="Reset password" sap2010:WorkflowViewState.IdRef="Assign_20">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">[password]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">[Nothing]</InArgument>
+      </Assign.Value>
+    </Assign>
     <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;End GetExchangeMail.xaml, got &quot; &amp; out_Messages.Count &amp; &quot; from &quot; + in_MailboxPath]" />
-    <sads:DebugSymbol.Symbol>d2VDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUlBBVGFzazEtQ2hhcnRTdHJpbmdQcm9mb3JtYURldGFpbFxFeGNoYW5nZVxHZXRFeGNoYW5nZU1haWwueGFtbEpUA+8BDgIBAVg0WD8CAQJcBWcKAgFjaAVxHQIBWnIFcsIBAgFXcwV6DgIBU3sFkwEKAgFIlAEFswEKAgE5tAEF6wEKAgEW7AEF7AGWBAIBB+0BBe0B5gECAQNcE1wkAgFkXgllEgIBZmxGbFsCAWFtRm1QAgFfa0BrSQIBXm9Hb1ECAVxovgFo4AECAVtyhQFyvwECAVh4OniGAQIBVnU7dUICAVR7E3s6AgFJfQmRARQCAUqUAROUATYCATqWAQmdARICAUSgAQmxARQCATu0ARO0ASkCARe2AQnpARwCARnsAfQD7AGBBAIBFOwBcuwBlwECARLsAYcE7AGTBAIBEOwB5APsAe8DAgEO7AH7AuwBiwMCAQzsAcQD7AHVAwIBCuwBsAPsAbwDAgEI7QFy7QHjAQIBBGMzYzQCAWlgNGA/AgFngQELiAEUAgFPiQELkAEUAgFLmwE5mwFrAgFHmAE6mAFCAgFFoQELqAEUAgFAqQELsAEUAgE8tgHDArYBzwICATe2AawCtgG9AgIBNbYBmAK2AaQCAgEzvAEP5gEXAgEahgE2hgFDAgFSgwE3gwFAAgFQjgFAjgFWAgFOiwFBiwFIAgFMpgE7pgF1AgFDowE8owFEAgFBrgFArgFaAgE/qwFBqwFIAgE9vgE/vgFCAgEbwQER5QEcAgEfwAEiwAE2AgEcxQETzAEcAgEvzQETzQH6AQIBLc4BE9wBGAIBJd0BE+QBHAIBIMoBTcoBiQECATLHAU7HAVoCATDNAYIBzQH3AQIBLs4BIc4BWQIBJtABF9cBIAIBKdoBF9oBtQECASfiAT3iAUQCASPfAT7fAUECASHVAUfVAYMBAgEs0gFI0gFQAgEq2gFQ2gGIAQIBKA==</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d19DOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQ2hhcnRTdHJpbmdQcm9mb3JtYURldGFpbFxFeGNoYW5nZVxHZXRFeGNoYW5nZU1haWwueGFtbCtUA/8BDgIBAVg0WD8CAQJcBWcKAgE8aAVxHQIBM3IFcvABAgEvcwV6DgIBK3sFkwEKAgEglAEFlAG4AgIBG5UBBfMBFQIBGvQBBfQBlgQCAQv1AQX8AQ4CAQf9AQX9AeYBAgEDXBNcJAIBPV4JZRICAT9sRmxbAgE6bUZtUAIBOGtAa0kCATdvR29RAgE1aL4BaOABAgE0coUBcu0BAgEweDp4hgECAS51O3VCAgEsexN7OgIBIX0JkQEUAgEilAGGAZQBtQICARz0AfQD9AGBBAIBGPQBcvQBlwECARb0AYcE9AGTBAIBFPQB5AP0Ae8DAgES9AH7AvQBiwMCARD0AcQD9AHVAwIBDvQBsAP0AbwDAgEM+gEw+gE5AgEK9wEx9wE7AgEI/QFy/QHjAQIBBGMzYzQCAUJgNGA/AgFAgQELiAEUAgEniQELkAEUAgEjhgE2hgFDAgEqgwE3gwFAAgEojgFAjgFWAgEmiwFBiwFIAgEk</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
       <sap2010:ViewStateData Id="Assign_6" sap:VirtualizedContainerService.HintSize="242,60" />
-      <sap2010:ViewStateData Id="If_2" sap:VirtualizedContainerService.HintSize="654,208" />
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_1" sap:VirtualizedContainerService.HintSize="654,87" />
-      <sap2010:ViewStateData Id="LogMessage_2" sap:VirtualizedContainerService.HintSize="654,91" />
-      <sap2010:ViewStateData Id="Assign_17" sap:VirtualizedContainerService.HintSize="654,60" />
+      <sap2010:ViewStateData Id="If_2" sap:VirtualizedContainerService.HintSize="464,208" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_1" sap:VirtualizedContainerService.HintSize="464,87" />
+      <sap2010:ViewStateData Id="LogMessage_2" sap:VirtualizedContainerService.HintSize="464,91" />
+      <sap2010:ViewStateData Id="Assign_17" sap:VirtualizedContainerService.HintSize="464,60" />
       <sap2010:ViewStateData Id="Assign_1" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="Assign_2" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="Sequence_4" sap:VirtualizedContainerService.HintSize="264,284">
@@ -253,7 +269,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="654,432">
+      <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="464,432">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -261,6 +277,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="LogMessage_21" sap:VirtualizedContainerService.HintSize="464,91" />
       <sap2010:ViewStateData Id="Assign_14" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="Assign_15" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="Assign_19" sap:VirtualizedContainerService.HintSize="242,60" />
@@ -271,14 +288,22 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_6" sap:VirtualizedContainerService.HintSize="654,432" />
+      <sap2010:ViewStateData Id="If_6" sap:VirtualizedContainerService.HintSize="200,51">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="LogMessage_20" sap:VirtualizedContainerService.HintSize="467,91" />
       <sap2010:ViewStateData Id="Assign_16" sap:VirtualizedContainerService.HintSize="467,60" />
       <sap2010:ViewStateData Id="LogMessage_19" sap:VirtualizedContainerService.HintSize="467,91" />
       <sap2010:ViewStateData Id="Assign_13" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="Throw_2" sap:VirtualizedContainerService.HintSize="200,22" />
       <sap2010:ViewStateData Id="If_4" sap:VirtualizedContainerService.HintSize="467,207" />
       <sap2010:ViewStateData Id="Assign_18" sap:VirtualizedContainerService.HintSize="467,60" />
-      <sap2010:ViewStateData Id="Sequence_10" sap:VirtualizedContainerService.HintSize="489,662">
+      <sap2010:ViewStateData Id="Sequence_10" sap:VirtualizedContainerService.HintSize="489,793">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -286,8 +311,8 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="While_2" sap:VirtualizedContainerService.HintSize="515,819" />
-      <sap2010:ViewStateData Id="ExchangeScope_2" sap:VirtualizedContainerService.HintSize="529,905">
+      <sap2010:ViewStateData Id="While_2" sap:VirtualizedContainerService.HintSize="515,950" />
+      <sap2010:ViewStateData Id="ExchangeScope_2" sap:VirtualizedContainerService.HintSize="529,1036">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -295,17 +320,35 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_7" sap:VirtualizedContainerService.HintSize="654,1053" />
-      <sap2010:ViewStateData Id="GetExchangeMailMessages_6" sap:VirtualizedContainerService.HintSize="654,22" />
-      <sap2010:ViewStateData Id="LogMessage_1" sap:VirtualizedContainerService.HintSize="654,91" />
-      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="676,2920">
+      <sap2010:ViewStateData Id="If_7" sap:VirtualizedContainerService.HintSize="200,51">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="InitExchange_1" sap:VirtualizedContainerService.HintSize="716,3000" />
+      <sap2010:ViewStateData Id="Sequence_12" sap:VirtualizedContainerService.HintSize="222,323">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsAnnotationDocked">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="CommentOut_1" sap:VirtualizedContainerService.HintSize="464,401" />
+      <sap2010:ViewStateData Id="GetExchangeMailMessages_6" sap:VirtualizedContainerService.HintSize="464,22" />
+      <sap2010:ViewStateData Id="Assign_20" sap:VirtualizedContainerService.HintSize="464,60" />
+      <sap2010:ViewStateData Id="LogMessage_1" sap:VirtualizedContainerService.HintSize="464,91" />
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="486,2339">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsAnnotationDocked">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="InitExchange_1" sap:VirtualizedContainerService.HintSize="526,2419" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
