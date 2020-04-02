@@ -41,6 +41,7 @@
       <x:String>System.Windows.Markup</x:String>
       <x:String>UiPath.Core</x:String>
       <x:String>UiPath.Core.Activities</x:String>
+      <x:String>System.Text</x:String>
     </sco:Collection>
   </TextExpression.NamespacesForImplementation>
   <TextExpression.ReferencesForImplementation>
@@ -64,11 +65,11 @@
       <AssemblyReference>System.ServiceModel</AssemblyReference>
       <AssemblyReference>System.ValueTuple</AssemblyReference>
       <AssemblyReference>System.ComponentModel.Composition</AssemblyReference>
-      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
       <AssemblyReference>System.Data.Entity</AssemblyReference>
       <AssemblyReference>Microsoft.VisualStudio.Services.Common</AssemblyReference>
       <AssemblyReference>System.Collections.Immutable</AssemblyReference>
       <AssemblyReference>UiPath.Studio.Plugin.Workflow</AssemblyReference>
+      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence DisplayName="Tool_SaveEmails" sap2010:WorkflowViewState.IdRef="Sequence_1">
@@ -93,7 +94,7 @@
             <OutArgument x:TypeArguments="scg:List(x:String)">[robotFolders]</OutArgument>
           </Assign.To>
           <Assign.Value>
-            <InArgument x:TypeArguments="scg:List(x:String)">[{"SSO_RPA_Sam", "Development\Proforma\Robot In", "Development\Proforma\Robot Out", "Development\Proforma\Robot Error"}.ToList]</InArgument>
+            <InArgument x:TypeArguments="scg:List(x:String)">[{"SSO_rpa00002", "Inbox\Proforma - Dev\New"}.ToList]</InArgument>
           </Assign.Value>
         </Assign>
       </If.Else>
@@ -104,49 +105,46 @@
           <ActivityAction.Argument>
             <DelegateInArgument x:TypeArguments="x:String" Name="item" />
           </ActivityAction.Argument>
-          <Sequence>
+          <Sequence sap2010:WorkflowViewState.IdRef="Sequence_4">
             <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke InitExchange workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_2" UnSafe="False" WorkflowFileName="Exchange\GetExchangeMail.xaml">
               <ui:InvokeWorkflowFile.Arguments>
                 <InArgument x:TypeArguments="x:String" x:Key="in_CredentialsAsset">[robotFolders.First]</InArgument>
                 <InArgument x:TypeArguments="x:String" x:Key="in_ServerName">https://outlook.office365.com/EWS/Exchange.asmx</InArgument>
                 <OutArgument x:TypeArguments="scg:List(snm:MailMessage)" x:Key="out_Messages">[messages]</OutArgument>
-                <InArgument x:TypeArguments="x:Int32" x:Key="in_Number">30</InArgument>
+                <InArgument x:TypeArguments="x:Int32" x:Key="in_Number">10</InArgument>
                 <InArgument x:TypeArguments="x:String" x:Key="in_MailboxPath">[item]</InArgument>
               </ui:InvokeWorkflowFile.Arguments>
             </ui:InvokeWorkflowFile>
-            <ui:ForEach x:TypeArguments="snm:MailMessage" CurrentIndex="{x:Null}" DisplayName="For Each" Values="[messages]">
+            <ui:ForEach x:TypeArguments="snm:MailMessage" CurrentIndex="{x:Null}" DisplayName="For Each" sap2010:WorkflowViewState.IdRef="ForEach`1_2" Values="[messages]">
               <ui:ForEach.Body>
                 <ActivityAction x:TypeArguments="snm:MailMessage">
                   <ActivityAction.Argument>
-                    <DelegateInArgument x:TypeArguments="snm:MailMessage" Name="item" />
+                    <DelegateInArgument x:TypeArguments="snm:MailMessage" Name="in_ProformaMessage" />
                   </ActivityAction.Argument>
-                  <Sequence DisplayName="Body">
+                  <Sequence sap2010:WorkflowViewState.IdRef="Sequence_5">
                     <Sequence.Variables>
                       <Variable x:TypeArguments="x:String" Name="filename" />
+                      <Variable x:TypeArguments="x:String" Name="encodedMessage" />
                     </Sequence.Variables>
-                    <Assign>
+                    <Assign DisplayName="Assign filename" sap2010:WorkflowViewState.IdRef="Assign_3">
                       <Assign.To>
                         <OutArgument x:TypeArguments="x:String">[filename]</OutArgument>
                       </Assign.To>
                       <Assign.Value>
-                        <InArgument x:TypeArguments="x:String">["Test_Framework\temp_" + String.Join(String.Empty, item.Subject.Where(Function(c) Not Path.GetInvalidFileNameChars.Contains(c))) + ".mht"]</InArgument>
+                        <InArgument x:TypeArguments="x:String">["testing_" + String.Join(String.Empty, in_ProformaMessage.Subject.Where(Function(c) Not Path.GetInvalidFileNameChars.Contains(c))) + ".html"]</InArgument>
                       </Assign.Value>
-                      <sap2010:WorkflowViewState.IdRef>Assign_4</sap2010:WorkflowViewState.IdRef>
                     </Assign>
-                    <ui:LogMessage DisplayName="Log Message" Level="Info" Message="[&quot;Saving &quot; + Path.GetFileName(filename)]" sap2010:WorkflowViewState.IdRef="LogMessage_1" />
-                    <ui:SaveMail DisplayName="Save Mail Message" FilePath="[filename]" MailMessage="[item]" sap2010:WorkflowViewState.IdRef="SaveMail_1" />
-                    <sap2010:WorkflowViewState.IdRef>Sequence_3</sap2010:WorkflowViewState.IdRef>
+                    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Trace" Message="[&quot;Saving &quot; + Path.GetFileName(filename)]" />
+                    <ui:WriteTextFile DisplayName="Write Text File" FileName="[filename]" sap2010:WorkflowViewState.IdRef="WriteTextFile_2" Text="[in_ProformaMessage.Body]" />
                   </Sequence>
                 </ActivityAction>
               </ui:ForEach.Body>
-              <sap2010:WorkflowViewState.IdRef>ForEach`1_2</sap2010:WorkflowViewState.IdRef>
             </ui:ForEach>
-            <sap2010:WorkflowViewState.IdRef>Sequence_4</sap2010:WorkflowViewState.IdRef>
           </Sequence>
         </ActivityAction>
       </ui:ForEach.Body>
     </ui:ForEach>
-    <sads:DebugSymbol.Symbol>d2tDOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcUlBBVGFzazEtQ2hhcnRTdHJpbmdQcm9mb3JtYURldGFpbFxUZXN0X0ZyYW1ld29ya1xUb29sX1NhdmVFbWFpbHMueGFtbB5KA5YBDgIBAU8FZAoCAR1lBZQBEgIBAk8TTzICAR5RCVgSAgEjWwliEgIBH2WQAWWoAQIBHGsLkQEWAgEDVj5WdgIBJlM/U00CASRgPmC9AQIBIl0/XU0CASBsDXQlAgETdQ2PARoCAQRvTm99AgEbcF9waQIBGXJPclUCARdxSXFLAgEWblRuaAIBFWzBAWzgAQIBFHVxdX0CARF7E4sBHgIBBX8VhwEeAgENiAEViAG5AQIBC4kBFYkBnAECAQaEAUCEAcsBAgEQgQFBgQFLAgEOiAFTiAGHAQIBDIkBZIkBbAIBCYkBS4kBVwIBBw==</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d25DOlxVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQ2hhcnRTdHJpbmdQcm9mb3JtYURldGFpbFxUZXN0X0ZyYW1ld29ya1xFeGNoYW5nZVxUb29sX1NhdmVFbWFpbHMueGFtbB5LA5QBDgIBAVAFZQoCAR1mBZIBEgIBAlATUDICAR5SCVkSAgEjXAljEgIBH2aQAWaoAQIBHGwLjwEWAgEDVz5XdgIBJlQ/VE0CASRhPmFzAgEiXj9eTQIBIG0NdSUCARN2DY4BGgIBBHBOcH0CARtxX3FpAgEZc09zVQIBF3JJcksCARZvVG9oAgEVbcEBbeABAgEUdp8BdqsBAgERfBOLAR4CAQWBARWIAR4CAQ2JARWJAboBAgELigEVigGwAQIBBoYBQIYBzgECARCDAUGDAUsCAQ6JAYMBiQG3AQIBDIoBkgGKAa0BAgEJigFOigFaAgEH</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -154,10 +152,10 @@
       <sap2010:ViewStateData Id="Assign_2" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="509,208" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_2" sap:VirtualizedContainerService.HintSize="352,87" />
-      <sap2010:ViewStateData Id="Assign_4" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="Assign_3" sap:VirtualizedContainerService.HintSize="314,60" />
       <sap2010:ViewStateData Id="LogMessage_1" sap:VirtualizedContainerService.HintSize="314,91" />
-      <sap2010:ViewStateData Id="SaveMail_1" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="Sequence_3" sap:VirtualizedContainerService.HintSize="336,442">
+      <sap2010:ViewStateData Id="WriteTextFile_2" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="Sequence_5" sap:VirtualizedContainerService.HintSize="336,442">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -180,7 +178,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Tool_SaveEmails_1" sap:VirtualizedContainerService.HintSize="571,1453" />
+      <sap2010:ViewStateData Id="Tool_SaveEmails_1" sap:VirtualizedContainerService.HintSize="571,1413" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
