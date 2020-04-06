@@ -41,6 +41,7 @@
       <x:String>Microsoft.VisualBasic.CompilerServices</x:String>
       <x:String>System.Net</x:String>
       <x:String>System.Security.Principal</x:String>
+      <x:String>System.Text.RegularExpressions</x:String>
     </sco:Collection>
   </TextExpression.NamespacesForImplementation>
   <TextExpression.ReferencesForImplementation>
@@ -179,23 +180,30 @@
                 <TryCatch.Try>
                   <Sequence sap2010:WorkflowViewState.IdRef="Sequence_37">
                     <Sequence.Variables>
-                      <Variable x:TypeArguments="x:String" Name="filename" />
+                      <Variable x:TypeArguments="x:String" Name="robotDetails" />
                     </Sequence.Variables>
-                    <Assign DisplayName="Assign screenshot name" sap2010:WorkflowViewState.IdRef="Assign_36">
+                    <Assign DisplayName="Assign screenshot name">
                       <Assign.To>
-                        <OutArgument x:TypeArguments="x:String">[filename]</OutArgument>
+                        <OutArgument x:TypeArguments="x:String">[robotDetails]</OutArgument>
                       </Assign.To>
                       <Assign.Value>
-                        <InArgument x:TypeArguments="x:String" xml:space="preserve">[String.Format("init_{0}_{1}_{2}.png",
-Environment.MachineName,
-System.Security.Principal.WindowsIdentity.GetCurrent().Name.Replace(System.Environment.UserDomainName+"\",""),
-StartTime.ToString("yyyyMMdd_hhmmss"))]</InArgument>
+                        <InArgument x:TypeArguments="x:String">["Initialization_" + Environment.MachineName + "_" + System.Security.Principal.WindowsIdentity.GetCurrent().Name.Replace(System.Environment.UserDomainName+"\","")]</InArgument>
                       </Assign.Value>
+                      <sap2010:WorkflowViewState.IdRef>Assign_37</sap2010:WorkflowViewState.IdRef>
+                    </Assign>
+                    <Assign DisplayName="Assign valid characters only">
+                      <Assign.To>
+                        <OutArgument x:TypeArguments="x:String">[robotDetails]</OutArgument>
+                      </Assign.To>
+                      <Assign.Value>
+                        <InArgument x:TypeArguments="x:String">[Regex.Replace(robotDetails, "[^0-9a-zA-Z_-]", "")]</InArgument>
+                      </Assign.Value>
+                      <sap2010:WorkflowViewState.IdRef>Assign_38</sap2010:WorkflowViewState.IdRef>
                     </Assign>
                     <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke TakeScreenshot workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_29" UnSafe="False" WorkflowFileName="Framework\TakeScreenshot.xaml">
                       <ui:InvokeWorkflowFile.Arguments>
                         <InArgument x:TypeArguments="x:String" x:Key="in_Folder">Exceptions_Screenshots</InArgument>
-                        <InOutArgument x:TypeArguments="x:String" x:Key="io_FilePath">[filename]</InOutArgument>
+                        <InOutArgument x:TypeArguments="x:String" x:Key="io_FilePath">[robotDetails]</InOutArgument>
                       </ui:InvokeWorkflowFile.Arguments>
                     </ui:InvokeWorkflowFile>
                   </Sequence>
@@ -601,7 +609,7 @@ StartTime.ToString("yyyyMMdd_hhmmss"))]</InArgument>
       <Variable x:TypeArguments="s:DateTime" Default="[Now]" Name="StartTime" />
       <Variable x:TypeArguments="x:String" Name="OperatingEnvironment" />
     </StateMachine.Variables>
-    <sads:DebugSymbol.Symbol>d2NDOlxVc2Vyc1xzcGFtaXNoXERvY3VtZW50c1xVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQ2hhcnRTdHJpbmdQcm9mb3JtYURldGFpbFxNYWluLnhhbWzBAUwD3QQSAgEB0AQz0AQ2AwGbAtIEM9IENgMBmgLVBELVBFwDAZkC2QQ22QQ9AwGYAk4HxgQPAwHQAZkCF5UDHwIBe54DF7AEHwIBM9wBD7gEFwIBAlALrQEWAwHuAbABC9cBEAMB3AG9BCO9BDsDAdkBuwQPuwSdAQMB2AHDBCPDBD4DAdYBwQQPwQT3AQMB0gGbAhuCAyYDAYkBkAMzkANOAwGGAYcDH44DKAMBggGSA58BkgO+AQMBgAGTA4sCkwPCAgIBfaADG64EJgIBNd4BE5QCHgIBD5oDK5oDTQIBDJgDF5gD4QECAQi1BCu1BEoCAQazBBezBMgBAgEEUg+aARoDAfQBogETqQEcAwHvAbABGbABNgMB3QGyAQ/VARoDAd8BwQR+wQT0AQMB0wGdAh+wAioDAb0B0wIfgAMqAwGUAbgCI78CLAMBjwHHAiPOAiwDAYoBjANNjANWAwGFAYkDTokDWwMBgwGiAx+mAzcCAXjIAx+sBCoCAUKuAyPDAy4CATbiARXiAYsBAgEw4wEVkwIaAgEQmAOFAZgD3gECAQmzBIUBswTFAQIBBVMRWhoDAZQCWxGUARYDAfkBlQERmQEpAwH1AacBQacBTAMB8gGkAUKkAU8DAfABtAETyQEeAwHkAdEBF9EB9wEDAeABngIhpQIqAwHMAaYCIa8COQMBvgHVAiPhAjsDAakB7gIj/gIuAwGZAekCJ+kChwIDAZUBvQJhvQJsAwGSAboCYroCcQMBkAHMAlHMAlwDAY0ByQJSyQJfAwGLAaIDxAGiA84BAgF6ogPvAaIDlAICAXnJAyGIBCYCAVKJBCGmBCwCAUmnBCGrBCYCAUOvAyWvA4kCAgE+sAMlwgMwAgE34gF64gGIAQIBMeMBI+MBMQIBEeUBGe8BJAIBKfIBGZECJAIBE1g/WEgDAZcCVUBVTQMBlQJbH1s0AwH6AV0VkgEgAwH8AZcBaJcBcAMB9wGVAc4BlQHyAQMB9gG4ARXCAR4DAeoBwwEVyAEtAwHlAdEBhQHRAfQBAwHhAaMCX6MCaAMBzwGgAmCgAm8DAc0BrQJrrQJ/AwHKAaoCcaoChQEDAcgBqQJ4qQKAAQMBxgGoAmuoAnwDAcQBqwJnqwJ2AwHCAawCa6wCfwMBwAGmAtwBpgLqAQMBvwHeAnreAokBAwG7AdwCZ9wCdgMBuQHYAmjYAnUDAbcB3QJr3QJ/AwG1AdsCc9sChwEDAbMB3wJr3wJ/AwGxAdcCetcCggEDAa8B2QJt2QJ+AwGtAdoCbdoCgAEDAasB1QLgAdUChQIDAaoB8wIl8wLLAQMBpwH0AiX0AqcDAwGiAfUCJfwCLgMBngH9AiX9AuQBAwGaAekClgHpAoQCAwGWAckDL8kDTAIBU8sDJYYEMAIBVYsEJZoEPQIBTaIEKaIEsAECAUqnBC+nBEwCAUSpBCWpBJgBAgFGrwOTAa8DhgICAT+yAym2A0ECATy+Ay2+A4gCAgE45gEb5gG3AQIBLucBG+4BJAIBKvQBHfsBNQIBH4MCIY0CLAIBFF4XcCIDAY0CcReHASIDAYICiAEXjAEvAwGAAo0BF5EBKQMB/QG6AUG6AUsDAesBxgFXxgFhAwHoAcUBUsUBaAMB5wHDAcwBwwHrAQMB5gHzApMB8wLIAQMBqAH0AvYC9AKTAwMBpgH0Ar4C9ALrAgMBpAH0ApsD9AKkAwMBowH6AlT6AmoDAaEB9wJV9wJfAwGfAf0CYP0CcwMBnQH9AtUB/QLhAQMBmwHMAyfMA+IBAgF1zQMn1AMwAgFx1QMn3AMwAgFu3QMn5AMwAgFq5QMn7AMwAgFm7QMn9AMwAgFi9QMn/AMwAgFe/QMnhAQwAgFahQQnhQTtAQIBVpgEeZgEigECAVGNBHyNBIQBAgFPiwTbAYsE7gECAU6iBJcBogStAQIBS6kEXKkEawIBR7ID4gGyA4MCAgE9vgOcAb4DhQICATnmAY4B5gG0AQIBL+wBSuwBUwIBLekBS+kBXAIBK/gBafgBegIBJ/YBZPYBdwIBJfcBdPcBfAIBI/QB2AH0AfsBAgEi+QFv+QGDAQIBIIQCI4QCvgICARmFAiOMAiwCARVgG2QuAwGQAmwfbKwCAwGOAnMbezMDAYUCgwEfgwHDAgMBgwKIAdABiAHxAQMBgQKPAV6PAX4DAf4BzAOVAcwD3wECAXbSA1bSA2UCAXTPA1fPA2gCAXLaA1LaA2ACAXDXA1PXA24CAW/iA1ziA3QCAW3fA13fA3UCAWvqA2DqA3kCAWnnA2HnA4YBAgFn8gNk8gOSAQIBZe8DZe8DjwECAWP6A1L6A2cCAWD3A1P3A38CAV+CBFKCBGgCAVz/A1P/A4ABAgFbhQRihQR1AgFZhQTXAYUE6gECAVeEApIBhAK7AgIBGooCVYoCXgIBGIcCVocCagIBFmJHYl0DAZICYExgYgMBkQJsT2z/AQMBjwJ5XXloAwGLAnhmeHwDAYkCd3R3fAMBhwJz0wFz8wEDAYYCgwFRgwGWAgMBhAI=</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d2NDOlxVc2Vyc1xzcGFtaXNoXERvY3VtZW50c1xVaVBhdGhcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcRkFfQ2hhcnRTdHJpbmdQcm9mb3JtYURldGFpbFxNYWluLnhhbWzFAU0D5QQSAgEB2AQz2AQ2AwGfAtoEM9oENgMBngLdBELdBFwDAZ0C4QQ24QQ9AwGcAk8HzgQPAwHQAaECF50DHwIBe6YDF7gEHwIBM+QBD8AEFwIBAlELrgEWAwHyAbEBC98BEAMB3AHFBCPFBDsDAdkBwwQPwwSdAQMB2AHLBCPLBD4DAdYByQQPyQT3AQMB0gGjAhuKAyYDAYkBmAMzmANOAwGGAY8DH5YDKAMBggGaA58BmgO+AQMBgAGbA4sCmwPCAgIBfagDG7YEJgIBNeYBE5wCHgIBD6IDK6IDTQIBDKADF6AD4QECAQi9BCu9BEoCAQa7BBe7BMgBAgEEUw+bARoDAfgBowETqgEcAwHzAbEBGbEBNgMB3QGzAQ/dARoDAd8ByQR+yQT0AQMB0wGlAh+4AioDAb0B2wIfiAMqAwGUAcACI8cCLAMBjwHPAiPWAiwDAYoBlANNlANWAwGFAZEDTpEDWwMBgwGqAx+uAzcCAXjQAx+0BCoCAUK2AyPLAy4CATbqARXqAYsBAgEw6wEVmwIaAgEQoAOFAaAD3gECAQm7BIUBuwTFAQIBBVQRWxoDAZgCXBGVARYDAf0BlgERmgEpAwH5AagBQagBTAMB9gGlAUKlAU8DAfQBtQET0QEeAwHkAdkBF9kB9wEDAeABpgIhrQIqAwHMAa4CIbcCOQMBvgHdAiPpAjsDAakB9gIjhgMuAwGZAfECJ/EChwIDAZUBxQJhxQJsAwGSAcICYsICcQMBkAHUAlHUAlwDAY0B0QJS0QJfAwGLAaoDxAGqA84BAgF6qgPvAaoDlAICAXnRAyGQBCYCAVKRBCGuBCwCAUmvBCGzBCYCAUO3AyW3A4kCAgE+uAMlygMwAgE36gF66gGIAQIBMesBI+sBMQIBEe0BGfcBJAIBKfoBGZkCJAIBE1k/WUgDAZsCVkBWTQMBmQJcH1w0AwH+AV4VkwEgAwGAApgBaJgBcAMB+wGWAc4BlgHyAQMB+gG5ARXBAR4DAe4BwgEVygEeAwHqAcsBFdABLQMB5QHZAYUB2QH0AQMB4QGrAl+rAmgDAc8BqAJgqAJvAwHNAbUCa7UCfwMBygGyAnGyAoUBAwHIAbECeLECgAEDAcYBsAJrsAJ8AwHEAbMCZ7MCdgMBwgG0Amu0An8DAcABrgLcAa4C6gEDAb8B5gJ65gKJAQMBuwHkAmfkAnYDAbkB4AJo4AJ1AwG3AeUCa+UCfwMBtQHjAnPjAocBAwGzAecCa+cCfwMBsQHfAnrfAoIBAwGvAeECbeECfgMBrQHiAm3iAoABAwGrAd0C4AHdAoUCAwGqAfsCJfsCywEDAacB/AIl/AKnAwMBogH9AiWEAy4DAZ4BhQMlhQPkAQMBmgHxApYB8QKEAgMBlgHRAy/RA0wCAVPTAyWOBDACAVWTBCWiBD0CAU2qBCmqBLABAgFKrwQvrwRMAgFEsQQlsQSYAQIBRrcDkwG3A4YCAgE/ugMpvgNBAgE8xgMtxgOIAgIBOO4BG+4BtwECAS7vARv2ASQCASr8AR2DAjUCAR+LAiGVAiwCARRfF3EiAwGRAnIXiAEiAwGGAokBF40BLwMBhAKOAReSASkDAYECvgFAvgHjAQMB8QG7AUG7AU8DAe8BxwFAxwFzAwHtAcQBQcQBTwMB6wHOAVfOAWUDAegBzQFSzQFoAwHnAcsBzAHLAesBAwHmAfsCkwH7AsgBAwGoAfwC9gL8ApMDAwGmAfwCvgL8AusCAwGkAfwCmwP8AqQDAwGjAYIDVIIDagMBoQH/AlX/Al8DAZ8BhQNghQNzAwGdAYUD1QGFA+EBAwGbAdQDJ9QD4gECAXXVAyfcAzACAXHdAyfkAzACAW7lAyfsAzACAWrtAyf0AzACAWb1Ayf8AzACAWL9AyeEBDACAV6FBCeMBDACAVqNBCeNBO0BAgFWoAR5oASKAQIBUZUEfJUEhAECAU+TBNsBkwTuAQIBTqoElwGqBK0BAgFLsQRcsQRrAgFHugPiAboDgwICAT3GA5wBxgOFAgIBOe4BjgHuAbQBAgEv9AFK9AFTAgEt8QFL8QFcAgErgAJpgAJ6AgEn/gFk/gF3AgEl/wF0/wF8AgEj/AHYAfwB+wECASKBAm+BAoMBAgEgjAIjjAK+AgIBGY0CI5QCLAIBFWEbZS4DAZQCbR9trAIDAZICdBt8MwMBiQKEAR+EAcMCAwGHAokB0AGJAfEBAwGFApABXpABfgMBggLUA5UB1APfAQIBdtoDVtoDZQIBdNcDV9cDaAIBcuIDUuIDYAIBcN8DU98DbgIBb+oDXOoDdAIBbecDXecDdQIBa/IDYPIDeQIBae8DYe8DhgECAWf6A2T6A5IBAgFl9wNl9wOPAQIBY4IEUoIEZwIBYP8DU/8DfwIBX4oEUooEaAIBXIcEU4cEgAECAVuNBGKNBHUCAVmNBNcBjQTqAQIBV4wCkgGMArsCAgEakgJVkgJeAgEYjwJWjwJqAgEWY0djXQMBlgJhTGFiAwGVAm1Pbf8BAwGTAnpdemgDAY8CeWZ5fAMBjQJ4dHh8AwGLAnTTAXTzAQMBigKEAVGEAZYCAwGIAg==</sads:DebugSymbol.Symbol>
   </StateMachine>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -677,9 +685,10 @@ StartTime.ToString("yyyyMMdd_hhmmss"))]</InArgument>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Assign_36" sap:VirtualizedContainerService.HintSize="314,64" />
+      <sap2010:ViewStateData Id="Assign_37" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="Assign_38" sap:VirtualizedContainerService.HintSize="314,60" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_29" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="Sequence_37" sap:VirtualizedContainerService.HintSize="336,315">
+      <sap2010:ViewStateData Id="Sequence_37" sap:VirtualizedContainerService.HintSize="336,411">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -695,7 +704,7 @@ StartTime.ToString("yyyyMMdd_hhmmss"))]</InArgument>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_16" sap:VirtualizedContainerService.HintSize="418,542">
+      <sap2010:ViewStateData Id="TryCatch_16" sap:VirtualizedContainerService.HintSize="418,638">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -703,7 +712,7 @@ StartTime.ToString("yyyyMMdd_hhmmss"))]</InArgument>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_18" sap:VirtualizedContainerService.HintSize="543,690" />
+      <sap2010:ViewStateData Id="If_18" sap:VirtualizedContainerService.HintSize="543,786" />
       <sap2010:ViewStateData Id="ShouldStop_2" sap:VirtualizedContainerService.HintSize="779,22" />
       <sap2010:ViewStateData Id="LogMessage_26" sap:VirtualizedContainerService.HintSize="314,91" />
       <sap2010:ViewStateData Id="Assign_22" sap:VirtualizedContainerService.HintSize="314,60" />
@@ -996,7 +1005,7 @@ StartTime.ToString("yyyyMMdd_hhmmss"))]</InArgument>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="State_8" sap:VirtualizedContainerService.HintSize="234,103">
+      <sap2010:ViewStateData Id="State_8" sap:VirtualizedContainerService.HintSize="631,2799">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <av:Point x:Key="ShapeLocation">274.5,8.5</av:Point>
@@ -1020,7 +1029,7 @@ StartTime.ToString("yyyyMMdd_hhmmss"))]</InArgument>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Main2_1" sap:VirtualizedContainerService.HintSize="826,956" />
+      <sap2010:ViewStateData Id="Main2_1" sap:VirtualizedContainerService.HintSize="826,996" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
