@@ -11,7 +11,8 @@
  xmlns:ui="http://schemas.uipath.com/workflow/activities"
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <x:Members>
-    <x:Property Name="in_Config" Type="InArgument(scg:Dictionary(x:String, x:Object))" />
+    <x:Property Name="in_CredentialsAsset" Type="InArgument(x:String)" />
+    <x:Property Name="in_SInetURL" Type="InArgument(x:String)" />
   </x:Members>
   <mva:VisualBasic.Settings>
     <x:Null />
@@ -73,11 +74,16 @@
       <AssemblyReference>System.ComponentModel.Composition</AssemblyReference>
       <AssemblyReference>UiPath.Studio.Plugin.Workflow</AssemblyReference>
       <AssemblyReference>Microsoft.VisualStudio.Services.Common</AssemblyReference>
+      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence sap2010:Annotation.AnnotationText="The purpose of this file is to sign into mySI-net website. In some environments you are required to login into UQ first. This file will first look for the UQ login page and if found login otherwise it will attempt to login straight to mySI-net.&#xA;On completion you should be at the mySI-net home page.&#xA;Inputs:&#xA;UQ credentials&#xA;mySI-net crediantials" DisplayName="Login to mySI-net" sap2010:WorkflowViewState.IdRef="Sequence_5">
     <Sequence.Variables>
-      <Variable x:TypeArguments="x:String" Name="environment" />
+      <Variable x:TypeArguments="x:String" Name="environment">
+        <Variable.Default>
+          <Literal x:TypeArguments="x:String" Value="" />
+        </Variable.Default>
+      </Variable>
       <Variable x:TypeArguments="x:String" Name="credentialAD" />
       <Variable x:TypeArguments="x:String" Name="credentialSI" />
       <Variable x:TypeArguments="x:String" Name="usernameAD" />
@@ -85,46 +91,15 @@
       <Variable x:TypeArguments="x:String" Name="usernameSI" />
       <Variable x:TypeArguments="ss:SecureString" Name="passwordSI" />
     </Sequence.Variables>
-    <Assign DisplayName="Assign Environment" sap2010:WorkflowViewState.IdRef="Assign_1">
-      <Assign.To>
-        <OutArgument x:TypeArguments="x:String">[environment]</OutArgument>
-      </Assign.To>
-      <Assign.Value>
-        <InArgument x:TypeArguments="x:String">[in_Config("Environment").ToString]</InArgument>
-      </Assign.Value>
-    </Assign>
-    <Assign DisplayName="Assign ADAssetCredential" sap2010:WorkflowViewState.IdRef="Assign_2">
-      <Assign.To>
-        <OutArgument x:TypeArguments="x:String">[credentialAD]</OutArgument>
-      </Assign.To>
-      <Assign.Value>
-        <InArgument x:TypeArguments="x:String">[in_Config("ADAssetCredential").ToString]</InArgument>
-      </Assign.Value>
-    </Assign>
-    <Assign DisplayName="Assign SI_netAssetCredential" sap2010:WorkflowViewState.IdRef="Assign_3">
-      <Assign.To>
-        <OutArgument x:TypeArguments="x:String">[credentialSI]</OutArgument>
-      </Assign.To>
-      <Assign.Value>
-        <InArgument x:TypeArguments="x:String">[in_Config("SI_netAssetCredential").ToString]</InArgument>
-      </Assign.Value>
-    </Assign>
-    <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke GetAppCredentials AD login" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_1" UnSafe="False" WorkflowFileName="Framework\GetAppCredentials.xaml">
-      <ui:InvokeWorkflowFile.Arguments>
-        <OutArgument x:TypeArguments="x:String" x:Key="out_Username">[usernameAD]</OutArgument>
-        <InArgument x:TypeArguments="x:String" x:Key="in_Credential">[credentialAD]</InArgument>
-        <OutArgument x:TypeArguments="ss:SecureString" x:Key="out_Password">[passwordAD]</OutArgument>
-      </ui:InvokeWorkflowFile.Arguments>
-    </ui:InvokeWorkflowFile>
     <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke GetAppCredentials mySI-net login" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_2" UnSafe="False" WorkflowFileName="Framework\GetAppCredentials.xaml">
       <ui:InvokeWorkflowFile.Arguments>
         <OutArgument x:TypeArguments="x:String" x:Key="out_Username">[usernameSI]</OutArgument>
-        <InArgument x:TypeArguments="x:String" x:Key="in_Credential">[credentialSI]</InArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="in_Credential">[in_CredentialsAsset]</InArgument>
         <OutArgument x:TypeArguments="ss:SecureString" x:Key="out_Password">[passwordSI]</OutArgument>
       </ui:InvokeWorkflowFile.Arguments>
     </ui:InvokeWorkflowFile>
     <ui:LogMessage DisplayName="Log Message - Logging in" sap2010:WorkflowViewState.IdRef="LogMessage_3" Level="Info" Message="[&quot;Signing in using AD username: '&quot; + usernameAD + &quot;' and mySI-net username: '&quot; + usernameSI + &quot;'&quot;]" />
-    <ui:OpenBrowser UiBrowser="{x:Null}" BrowserType="Chrome" DisplayName="Open Browser" Hidden="False" sap2010:WorkflowViewState.IdRef="OpenBrowser_1" NewSession="True" Private="False" Url="[in_Config(&quot;mySI_netURL_&quot; + environment).ToString]">
+    <ui:OpenBrowser UiBrowser="{x:Null}" BrowserType="Chrome" DisplayName="Open Browser" Hidden="False" sap2010:WorkflowViewState.IdRef="OpenBrowser_1" NewSession="True" Private="False" Url="[in_SInetURL]">
       <ui:OpenBrowser.Body>
         <ActivityAction x:TypeArguments="x:Object">
           <ActivityAction.Argument>
@@ -143,12 +118,12 @@
                 </PickBranch.Trigger>
                 <Sequence DisplayName="Logging into UQ" sap2010:WorkflowViewState.IdRef="Sequence_3">
                   <ui:LogMessage DisplayName="Log Message - Logging into UQ" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[&quot;Signing into UQ with AD login&quot;]" />
-                  <ui:SetValue ContinueOnError="{x:Null}" DelayAfter="{x:Null}" DelayBefore="{x:Null}" DisplayName="Set AD Username" sap2010:WorkflowViewState.IdRef="SetValue_1" Text="[usernameAD]">
+                  <ui:SetValue ContinueOnError="{x:Null}" DelayAfter="{x:Null}" DelayBefore="{x:Null}" DisplayName="Set AD Username" sap2010:WorkflowViewState.IdRef="SetValue_1" Text="[usernameSI]">
                     <ui:SetValue.Target>
                       <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="&lt;webctrl id='input_1' tag='INPUT' /&gt;" WaitForReady="COMPLETE" />
                     </ui:SetValue.Target>
                   </ui:SetValue>
-                  <ui:TypeSecureText DelayBefore="{x:Null}" DelayMS="{x:Null}" Activate="True" ClickBeforeTyping="False" DelayBetweenKeys="150" DisplayName="Type AD Password" EmptyField="True" sap2010:WorkflowViewState.IdRef="TypeSecureText_1" SecureText="[passwordAD]" SendWindowMessages="False" SimulateType="True">
+                  <ui:TypeSecureText DelayBefore="{x:Null}" DelayMS="{x:Null}" Activate="True" ClickBeforeTyping="False" DelayBetweenKeys="150" DisplayName="Type AD Password" EmptyField="True" sap2010:WorkflowViewState.IdRef="TypeSecureText_1" SecureText="[passwordSI]" SendWindowMessages="False" SimulateType="True">
                     <ui:TypeSecureText.Target>
                       <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="&lt;webctrl id='input_2' tag='INPUT' /&gt;" WaitForReady="COMPLETE" />
                     </ui:TypeSecureText.Target>
@@ -220,14 +195,10 @@
         </ActivityAction>
       </ui:OpenBrowser.Body>
     </ui:OpenBrowser>
-    <sads:DebugSymbol.Symbol>d15DOlxVc2Vyc1x1cW1ndXB0MVxEb2N1bWVudHNcVWlQYXRoXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXElBQV9JRUxUU1xTSS1uZXRcTG9naW5TSW5ldC54YW1sPk4D4AEOAgEBWAVfDgIBTmAFZw4CAUloBW8OAgFEcAV2HQIBPHcFfR0CATR+BX6EAgIBMH8F3gEWAgECXTBdUwIBUVoxWj4CAU9lMGVZAgFMYjFiPwIBSm0wbV0CAUdqMWo/AgFFdE10WQIBQnNGc1QCAUByRnJSAgE+cL4BcOABAgE9e017WQIBOnpGelQCATh5RnlSAgE2d8QBd+YBAgE1fn9+gQICATF/vwF//QECAS2FAQvbARYCAQOGAQ2GAYUBAgEshwENtgEUAgEVtwENuwEmAgETvAENvAHOAQIBEb0BDcEBGwIBDcIBDcYBIQIBCMcBDdUBGAIBBtYBDdoBJgIBBIgBD6wBHAIBGq0BD7UBHAIBFrkBZ7kBlwECARS8AZIBvAHLAQIBEr0BuAG9AcYBAgEOvwFnvwGTAQIBEMQBZ8QBjwECAQzCAYUBwgGKAQIBC8IBgALCAY4CAgEJ0wFn0wGHAQIBB9gBZ9gBmwECAQWKAROOASgCASmQARGrARwCARuvAROzASgCAReMAViMAZMBAgErjAGeAYwBpQECASqRARORAcIBAgEnkgETlgEhAgEjlwETmwEnAgEenAETqgEeAgEcsQFYsQGIAQIBGbEBkwGxAZkBAgEYkQGSAZEBvwECASiSAbgBkgHGAQIBJJQBbZQBmQECASaZAW2ZAZkBAgEilwGLAZcBkAECASGXAYAClwGOAgIBH6gBbagBmgECAR0=</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d15DOlxVc2Vyc1x1cW1ndXB0MVxEb2N1bWVudHNcVWlQYXRoXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXElBQV9JRUxUU1xTSS1uZXRcTG9naW5TSW5ldC54YW1sMVADxwEOAgEBVAtUOgIBAl4FZB0CATRlBWWEAgIBMGYFxQEWAgEDYk1iWQIBOmFGYVsCAThgRmBSAgE2XsQBXuYBAgE1ZX9lgQICATFmvwFmzgECAS5sC8IBFgIBBG0NbYUBAgEtbg2dARQCARaeAQ2iASYCARSjAQ2jAc4BAgESpAENqAEbAgEOqQENrQEhAgEJrgENvAEYAgEHvQENwQEmAgEFbw+TARwCARuUAQ+cARwCARegAWegAZcBAgEVowGSAaMBywECAROkAbgBpAHGAQIBD6YBZ6YBkwECARGrAWerAY8BAgENqQGFAakBigECAQypAYACqQGOAgIBCroBZ7oBhwECAQi/AWe/AZsBAgEGcRN1KAIBKncRkgEcAgEclgETmgEoAgEYc1hzkwECASxzngFzpQECASt4E3jCAQIBKHkTfSECASR+E4IBJwIBH4MBE5EBHgIBHZgBWJgBiAECARqYAZMBmAGZAQIBGXiSAXi/AQIBKXm4AXnGAQIBJXtte5kBAgEngAFtgAGZAQIBI36LAX6QAQIBIn6AAn6OAgIBII8BbY8BmgECAR4=</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
-      <sap2010:ViewStateData Id="Assign_1" sap:VirtualizedContainerService.HintSize="900,60" />
-      <sap2010:ViewStateData Id="Assign_2" sap:VirtualizedContainerService.HintSize="900,60" />
-      <sap2010:ViewStateData Id="Assign_3" sap:VirtualizedContainerService.HintSize="900,60" />
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_1" sap:VirtualizedContainerService.HintSize="900,87" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_2" sap:VirtualizedContainerService.HintSize="900,87" />
       <sap2010:ViewStateData Id="LogMessage_3" sap:VirtualizedContainerService.HintSize="900,91" />
       <sap2010:ViewStateData Id="MaximizeWindow_1" sap:VirtualizedContainerService.HintSize="864,22" />
@@ -268,7 +239,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_5" sap:VirtualizedContainerService.HintSize="922,2774">
+      <sap2010:ViewStateData Id="Sequence_5" sap:VirtualizedContainerService.HintSize="922,2347">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -276,7 +247,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Login_1" sap:VirtualizedContainerService.HintSize="962,2854">
+      <sap2010:ViewStateData Id="Login_1" sap:VirtualizedContainerService.HintSize="962,2427">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="ShouldExpandAll">True</x:Boolean>
