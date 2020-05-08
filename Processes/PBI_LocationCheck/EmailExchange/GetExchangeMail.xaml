@@ -1,4 +1,4 @@
-﻿<Activity mc:Ignorable="sap sap2010 sads" x:Class="GetExchangeMail"
+﻿<Activity mc:Ignorable="sap sap2010 sads" x:Class="GetExchangeMail" this:GetExchangeMail.in_SenderAddress="manish.gupta@uq.edu.au" this:GetExchangeMail.in_FileLocation="Data"
  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
  xmlns:mewd="clr-namespace:Microsoft.Exchange.WebServices.Data;assembly=Microsoft.Exchange.WebServices"
@@ -10,12 +10,18 @@
  xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=mscorlib"
  xmlns:snm="clr-namespace:System.Net.Mail;assembly=System"
  xmlns:ss="clr-namespace:System.Security;assembly=mscorlib"
+ xmlns:this="clr-namespace:"
  xmlns:ui="http://schemas.uipath.com/workflow/activities"
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <x:Members>
     <x:Property Name="in_CredentialsAsset" Type="InArgument(x:String)" />
     <x:Property Name="in_ServerName" Type="InArgument(x:String)" />
     <x:Property Name="in_Number" Type="InArgument(x:Int32)" />
+    <x:Property Name="in_SenderAddress" Type="InArgument(x:String)" />
+    <x:Property Name="in_FileLocation" Type="InArgument(x:String)" />
+    <x:Property Name="out_AttachFileName" Type="OutArgument(x:String)" />
+    <x:Property Name="out_EmailSubject" Type="OutArgument(x:String)" />
+    <x:Property Name="in_SubjectPrefix" Type="InArgument(x:String)" />
   </x:Members>
   <mva:VisualBasic.Settings>
     <x:Null />
@@ -81,10 +87,9 @@
       <AssemblyReference>UiPath.IntelligentOCR</AssemblyReference>
       <AssemblyReference>UiPath.PDF</AssemblyReference>
       <AssemblyReference>UiPath.Word</AssemblyReference>
-      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
-  <Sequence sap2010:Annotation.AnnotationText="Description: Checks RPA00001 mailbox for email from PBI team and download input file (EXTRACT_FOR_ROBOT.csv)&#xA;&#xA;Inputs:&#xA;in_CredentialsAsset (String): Orchestrator credentials asset.&#xA;in_ServerName (String): Exchange URL.&#xA;in_SenderEmail (String): PBI team email address.&#xA;in_Subject (String): Input email subject .&#xA;in_FileName (String): Attachment file name.&#xA;in_FileLocation (String) : File path where input file will be saved&#xA;&#xA;Outputs:&#xA;out_Messages (List&lt;MailMessage&gt;): List of mail messages from the mailbox folder.&#xA;&#xA;Pre Condition: NA.&#xA;&#xA;Post Condition:&#xA;Exchange server is reachable.&#xA;Username and password are correct.&#xA;If shared mailbox then email exists.&#xA;If subfolder then path is valid." DisplayName="Get Exchange Mail" sap2010:WorkflowViewState.IdRef="Sequence_1">
+  <Sequence sap2010:Annotation.AnnotationText="Description: Checks RPA00001 mailbox for email from PBI team and download input file (EXTRACT_FOR_ROBOT.csv)&#xA;&#xA;Inputs:&#xA;in_CredentialsAsset (String): Orchestrator credentials asset.&#xA;in_ServerName (String): Exchange URL.&#xA;in_SenderEmail (String): PBI team email address.&#xA;in_FileName (String): Attachment file name.&#xA;in_FileLocation (String) : File path where input file will be saved&#xA;&#xA;Outputs:&#xA;out_Messages (List&lt;MailMessage&gt;): List of mail messages from the mailbox folder.&#xA;&#xA;Pre Condition: NA.&#xA;&#xA;Post Condition:&#xA;Exchange server is reachable.&#xA;Username and password are correct.&#xA;If shared mailbox then email exists.&#xA;If subfolder then path is valid." DisplayName="Get Exchange Mail" sap2010:WorkflowViewState.IdRef="Sequence_1">
     <Sequence.Variables>
       <Variable x:TypeArguments="x:String" Name="username" />
       <Variable x:TypeArguments="x:String" Default="[Nothing]" Name="mailbox" />
@@ -106,7 +111,6 @@
         </Assign>
       </If.Then>
     </If>
-    <ui:LogMessage DisplayName="Log App Initialization message" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[&quot;Start GetExchangeMail.xaml, as &quot; + username + &quot; connecting to &quot; + in_ServerName]" />
     <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke GetAppCredentials workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_2" UnSafe="False" WorkflowFileName="Framework\GetAppCredentials.xaml">
       <ui:InvokeWorkflowFile.Arguments>
         <OutArgument x:TypeArguments="x:String" x:Key="out_Username">[username]</OutArgument>
@@ -209,7 +213,7 @@
         </Sequence>
       </ui:CommentOut.Body>
     </ui:CommentOut>
-    <Assign sap2010:WorkflowViewState.IdRef="Assign_22">
+    <Assign DisplayName="Append username with UQ domain " sap2010:WorkflowViewState.IdRef="Assign_22">
       <Assign.To>
         <OutArgument x:TypeArguments="x:String">[username]</OutArgument>
       </Assign.To>
@@ -217,7 +221,8 @@
         <InArgument x:TypeArguments="x:String">[username+"@uq.edu.au"]</InArgument>
       </Assign.Value>
     </Assign>
-    <Assign sap2010:WorkflowViewState.IdRef="Assign_21">
+    <ui:LogMessage DisplayName="Log App Initialization message" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[&quot;Start GetExchangeMail.xaml, as &quot; + username + &quot; connecting to &quot; + in_ServerName]" />
+    <Assign DisplayName="Private: Assign password to plain text " sap2010:WorkflowViewState.IdRef="Assign_21">
       <Assign.To>
         <OutArgument x:TypeArguments="x:String">[password_plain]</OutArgument>
       </Assign.To>
@@ -225,8 +230,8 @@
         <InArgument x:TypeArguments="x:String">[new System.Net.NetworkCredential(string.Empty, password).Password]</InArgument>
       </Assign.Value>
     </Assign>
-    <ui:GetExchangeMailMessages Domain="{x:Null}" EmailAutodiscover="{x:Null}" SharedMailbox="{x:Null}" TimeoutMS="{x:Null}" CustomFolder="Inbox" DisplayName="Get Exchange Mail Messages" ExchangeVersion="Exchange2007_SP1" GetAttachements="True" sap2010:WorkflowViewState.IdRef="GetExchangeMailMessages_6" IsBodyHtml="True" MailFolder="Calendar" MarkAsRead="False" Messages="[emailList]" OnlyUnreadMessages="False" Password="[password_plain]" Server="[in_ServerName]" Top="5" User="[username]" />
-    <Assign DisplayName="Reset password" sap2010:WorkflowViewState.IdRef="Assign_20">
+    <ui:GetExchangeMailMessages Domain="{x:Null}" EmailAutodiscover="{x:Null}" SharedMailbox="{x:Null}" TimeoutMS="{x:Null}" CustomFolder="Inbox" DisplayName="Get Exchange Mail Messages" ExchangeVersion="Exchange2007_SP1" GetAttachements="True" sap2010:WorkflowViewState.IdRef="GetExchangeMailMessages_6" IsBodyHtml="True" MailFolder="Calendar" MarkAsRead="False" Messages="[emailList]" OnlyUnreadMessages="False" Password="[password_plain]" Server="[in_ServerName]" Top="2" User="[username]" />
+    <Assign DisplayName="Private: Reset password to Nothing " sap2010:WorkflowViewState.IdRef="Assign_20">
       <Assign.To>
         <OutArgument x:TypeArguments="x:String">[password_plain]</OutArgument>
       </Assign.To>
@@ -234,18 +239,34 @@
         <InArgument x:TypeArguments="x:String">[Nothing]</InArgument>
       </Assign.Value>
     </Assign>
-    <ui:ForEach x:TypeArguments="snm:MailMessage" CurrentIndex="{x:Null}" DisplayName="For Each" sap2010:WorkflowViewState.IdRef="ForEach`1_1" Values="[emailList]">
+    <ui:ForEach x:TypeArguments="snm:MailMessage" CurrentIndex="{x:Null}" DisplayName="For Each item in Mail List " sap2010:WorkflowViewState.IdRef="ForEach`1_1" Values="[emailList]">
       <ui:ForEach.Body>
         <ActivityAction x:TypeArguments="snm:MailMessage">
           <ActivityAction.Argument>
             <DelegateInArgument x:TypeArguments="snm:MailMessage" Name="item" />
           </ActivityAction.Argument>
           <Sequence DisplayName="Body" sap2010:WorkflowViewState.IdRef="Sequence_13">
-            <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_22" Level="Info" Message="[item.Headers(&quot;date&quot;).ToString+vbTab+item.Subject.ToString+vbTab+item.Sender.Address.ToString+vbTab+item.Attachments.Any.ToString]" />
-            <If Condition="[item.Sender.Address.ToString.Trim = &quot;manish.gupta@uq.edu.au&quot;]" sap2010:WorkflowViewState.IdRef="If_8">
+            <If Condition="[item.Sender.Address.ToString.Trim = in_SenderAddress AND item.Subject.ToString.Contains(in_SubjectPrefix)]" DisplayName="Check email sender name" sap2010:WorkflowViewState.IdRef="If_8">
               <If.Then>
-                <Sequence sap2010:WorkflowViewState.IdRef="Sequence_14">
-                  <ui:SaveMailAttachments Attachments="{x:Null}" DisplayName="" Filter="EXTRACT_FOR_ROBOT*.csv" FolderPath="Data" sap2010:WorkflowViewState.IdRef="SaveMailAttachments_1" Message="[item]" />
+                <Sequence DisplayName="If email sent by PBI team" sap2010:WorkflowViewState.IdRef="Sequence_14">
+                  <Assign sap2010:WorkflowViewState.IdRef="Assign_24">
+                    <Assign.To>
+                      <OutArgument x:TypeArguments="x:String">[out_EmailSubject]</OutArgument>
+                    </Assign.To>
+                    <Assign.Value>
+                      <InArgument x:TypeArguments="x:String">[item.Subject.ToString]</InArgument>
+                    </Assign.Value>
+                  </Assign>
+                  <Assign sap2010:WorkflowViewState.IdRef="Assign_25">
+                    <Assign.To>
+                      <OutArgument x:TypeArguments="x:String">[out_AttachFileName]</OutArgument>
+                    </Assign.To>
+                    <Assign.Value>
+                      <InArgument x:TypeArguments="x:String">[item.Attachments(0).Name]</InArgument>
+                    </Assign.Value>
+                  </Assign>
+                  <ui:SaveMailAttachments Attachments="{x:Null}" DisplayName="Save email attachment " Filter="EXTRACT_FOR_ROBOT*.csv" FolderPath="[in_FileLocation]" sap2010:WorkflowViewState.IdRef="SaveMailAttachments_1" Message="[item]" />
+                  <ui:Break sap2010:WorkflowViewState.IdRef="Break_1" />
                 </Sequence>
               </If.Then>
             </If>
@@ -253,14 +274,13 @@
         </ActivityAction>
       </ui:ForEach.Body>
     </ui:ForEach>
-    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;End GetExchangeMail.xaml, got &quot; &amp; emailList.Count]" />
-    <sads:DebugSymbol.Symbol>d3JDOlxVc2Vyc1x1cW1ndXB0MVxEb2N1bWVudHNcVWlQYXRoXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXFBCSV9Mb2NhdGlvbkNoZWNrXEVtYWlsRXhjaGFuZ2VcR2V0RXhjaGFuZ2VNYWlsLnhhbWwtVwOCAg4CAQFaNFo/AgECYQVsCgIBO20FbfABAgE3bgV0HQIBL3UF0wEVAgEu1AEF2wEOAgEp3AEF4wEOAgEk5AEF5AHwAwIBGeUBBewBDgIBFe0BBf8BEgIBBoACBYACuQECAQNhE2EkAgE8YwlqEgIBPm2FAW3tAQIBOHJNclcCATVxRnFbAgEzcEZwUAIBMW6+AW7gAQIBMNkBMNkBRwIBLNYBMdYBOwIBKuEBMOEBcwIBJ94BMd4BQQIBJeQB2APkAdsDAgEj5AGLAeQBkgECASLkAeED5AHtAwIBIOQB9gLkAYMDAgEe5AHCA+QB0wMCARzkAagD5AG6AwIBGuoBMOoBOQIBGOcBMecBQQIBFu0BlwHtAaQBAgET8wEL/AEWAgEHgAJygAK2AQIBBGgzaDQCAUFlNGU/AgE/9AEN9AGMAgIBEfUBDfsBEgIBCPQBe/QBiQICARL1ARv1AWUCAQn3ARH5ARwCAQv4ARP4Ac4BAgEM+AHDAfgBywECAQ/4AVj4AXACAQ74AXz4AYIBAgEN</sads:DebugSymbol.Symbol>
+    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;End GetExchangeMail.xaml, got&quot;+ out_AttachFileName+vbTab+out_EmailSubject]" />
+    <sads:DebugSymbol.Symbol>d3JDOlxVc2Vyc1x1cW1ndXB0MVxEb2N1bWVudHNcVWlQYXRoXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXFBCSV9Mb2NhdGlvbkNoZWNrXEVtYWlsRXhjaGFuZ2VcR2V0RXhjaGFuZ2VNYWlsLnhhbWw0AakBAa4BAQMBawGCAQECXAOXAg4CAQFfNF8/AgECZgVxCgIBR3IFeB0CAT95BdcBFQIBPtgBBd8BDgIBOeABBeAB8AECATXhAQXoAQ4CATDpAQXpAfADAgEl6gEF8QEOAgEh8gEFlAISAgEFlQIFlQLNAQIBA2YTZiQCAUhoCW8SAgFKdk12VwIBRXVGdVsCAUN0RnRQAgFBcr4BcuABAgFA3QEw3QFHAgE82gEx2gE7AgE64AGFAeAB7QECATbmATDmAXMCATPjATHjAUECATHpAdgD6QHbAwIBL+kBiwHpAZIBAgEu6QHhA+kB7QMCASzpAfYC6QGDAwIBKukBwgPpAdMDAgEo6QGoA+kBugMCASbvATDvATkCASTsATHsAUECASLyAaoB8gG3AQIBH/gBC5ECFgIBBpUCcpUCygECAQRtM200AgFNajRqPwIBS/kBDZACEgIBB/kBG/kBiAECAQj7ARGOAhwCAQ38ARODAhwCARqEAhOLAhwCARWMAhOMAvEBAgEPjQITjQJJAgEOgQI+gQJVAgEd/gE//gFRAgEbiQI+iQJYAgEYhgI/hgJTAgEWjALmAYwC7gECAROMAm6MAoYBAgESjAKSAYwCpQECARA=</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
       <sap2010:ViewStateData Id="Assign_6" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="If_2" sap:VirtualizedContainerService.HintSize="502,208" />
-      <sap2010:ViewStateData Id="LogMessage_2" sap:VirtualizedContainerService.HintSize="502,91" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_2" sap:VirtualizedContainerService.HintSize="502,87" />
       <sap2010:ViewStateData Id="Assign_14" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="Assign_15" sap:VirtualizedContainerService.HintSize="242,60" />
@@ -272,7 +292,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_6" sap:VirtualizedContainerService.HintSize="200,51">
+      <sap2010:ViewStateData Id="If_6" sap:VirtualizedContainerService.HintSize="654,51">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">False</x:Boolean>
@@ -304,7 +324,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_7" sap:VirtualizedContainerService.HintSize="200,51">
+      <sap2010:ViewStateData Id="If_7" sap:VirtualizedContainerService.HintSize="654,51">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">False</x:Boolean>
@@ -312,7 +332,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_12" sap:VirtualizedContainerService.HintSize="222,323">
+      <sap2010:ViewStateData Id="Sequence_12" sap:VirtualizedContainerService.HintSize="676,633">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -329,29 +349,39 @@
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="Assign_22" sap:VirtualizedContainerService.HintSize="502,60" />
+      <sap2010:ViewStateData Id="LogMessage_2" sap:VirtualizedContainerService.HintSize="502,91" />
       <sap2010:ViewStateData Id="Assign_21" sap:VirtualizedContainerService.HintSize="502,60" />
       <sap2010:ViewStateData Id="GetExchangeMailMessages_6" sap:VirtualizedContainerService.HintSize="502,22" />
       <sap2010:ViewStateData Id="Assign_20" sap:VirtualizedContainerService.HintSize="502,60" />
-      <sap2010:ViewStateData Id="LogMessage_22" sap:VirtualizedContainerService.HintSize="464,91" />
+      <sap2010:ViewStateData Id="Assign_24" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="Assign_25" sap:VirtualizedContainerService.HintSize="314,60" />
       <sap2010:ViewStateData Id="SaveMailAttachments_1" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="Sequence_14" sap:VirtualizedContainerService.HintSize="336,211">
+      <sap2010:ViewStateData Id="Break_1" sap:VirtualizedContainerService.HintSize="314,22" />
+      <sap2010:ViewStateData Id="Sequence_14" sap:VirtualizedContainerService.HintSize="336,473">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_8" sap:VirtualizedContainerService.HintSize="464,359" />
-      <sap2010:ViewStateData Id="Sequence_13" sap:VirtualizedContainerService.HintSize="486,614">
+      <sap2010:ViewStateData Id="If_8" sap:VirtualizedContainerService.HintSize="464,621" />
+      <sap2010:ViewStateData Id="Sequence_13" sap:VirtualizedContainerService.HintSize="486,745">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="ForEach`1_1" sap:VirtualizedContainerService.HintSize="502,748" />
+      <sap2010:ViewStateData Id="ForEach`1_1" sap:VirtualizedContainerService.HintSize="502,879">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="LogMessage_1" sap:VirtualizedContainerService.HintSize="502,91" />
-      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="524,2289">
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="524,2405">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -359,7 +389,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="InitExchange_1" sap:VirtualizedContainerService.HintSize="564,2409" />
+      <sap2010:ViewStateData Id="InitExchange_1" sap:VirtualizedContainerService.HintSize="564,2485" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
