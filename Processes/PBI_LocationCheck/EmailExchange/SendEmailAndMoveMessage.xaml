@@ -13,9 +13,11 @@
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <x:Members>
     <x:Property Name="in_TransactionMessage" Type="InArgument(snm:MailMessage)" />
-    <x:Property Name="in_MailboxPath" Type="InArgument(x:String)" />
     <x:Property Name="in_ExchangeCredentials" Type="InArgument(x:String)" />
     <x:Property Name="in_ServerName" Type="InArgument(x:String)" />
+    <x:Property Name="in_FolderPath" Type="InArgument(x:String)" />
+    <x:Property Name="in_smtpServer" Type="InArgument(x:String)" />
+    <x:Property Name="in_smtpPort" Type="InArgument(x:Int32)" />
   </x:Members>
   <mva:VisualBasic.Settings>
     <x:Null />
@@ -87,6 +89,7 @@
       <AssemblyReference>System.ValueTuple</AssemblyReference>
       <AssemblyReference>System.ComponentModel.Composition</AssemblyReference>
       <AssemblyReference>Microsoft.VisualStudio.Services.Common</AssemblyReference>
+      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence sap2010:Annotation.AnnotationText="Description: Moves a mailmessage to a folder.&#xA;&#xA;Inputs: NA or&#xA;in_TransactionMessage (MailMessage): Email to move.&#xA;in_MailboxPath (String): Path to destination folder.&#xA;in_ExchangeCredentials (String): Orchestrator credentials asset.&#xA;in_ServerName (String): Exchange host.&#xA;&#xA;Outputs: NA&#xA;Pre Condition: NA&#xA;Post Condition: NA" sap2010:WorkflowViewState.IdRef="Sequence_1">
@@ -94,49 +97,40 @@
       <Variable x:TypeArguments="x:String" Name="username" />
       <Variable x:TypeArguments="x:String" Name="password" />
       <Variable x:TypeArguments="x:String" Name="mailbox" />
-      <Variable x:TypeArguments="scg:List(x:String)" Name="parts" />
+      <Variable x:TypeArguments="x:String" Name="password_plain" />
     </Sequence.Variables>
-    <Assign DisplayName="Assign mailbox folder path parts" sap2010:WorkflowViewState.IdRef="Assign_1">
-      <Assign.To>
-        <OutArgument x:TypeArguments="scg:List(x:String)">[parts]</OutArgument>
-      </Assign.To>
-      <Assign.Value>
-        <InArgument x:TypeArguments="scg:List(x:String)">[in_MailboxPath.Split({"\"c}, StringSplitOptions.RemoveEmptyEntries).ToList]</InArgument>
-      </Assign.Value>
-    </Assign>
-    <If Condition="[parts.First.Contains(&quot;@&quot;)]" DisplayName="If shared mailbox" sap2010:WorkflowViewState.IdRef="If_1">
-      <If.Then>
-        <Sequence sap2010:WorkflowViewState.IdRef="Sequence_2">
-          <Assign DisplayName="Assign shared mailbox" sap2010:WorkflowViewState.IdRef="Assign_2">
-            <Assign.To>
-              <OutArgument x:TypeArguments="x:String">[mailbox]</OutArgument>
-            </Assign.To>
-            <Assign.Value>
-              <InArgument x:TypeArguments="x:String">[parts.First]</InArgument>
-            </Assign.Value>
-          </Assign>
-          <Assign DisplayName="Assign mail folder" sap2010:WorkflowViewState.IdRef="Assign_3">
-            <Assign.To>
-              <OutArgument x:TypeArguments="scg:List(x:String)">[parts]</OutArgument>
-            </Assign.To>
-            <Assign.Value>
-              <InArgument x:TypeArguments="scg:List(x:String)">[parts.Skip(1).ToList]</InArgument>
-            </Assign.Value>
-          </Assign>
-        </Sequence>
-      </If.Then>
-    </If>
+    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;Start SendEmailAndMoveMessage.xaml&quot;]" />
     <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke GetAppCredentials workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_1" UnSafe="False" WorkflowFileName="Framework\GetAppCredentials.xaml">
       <ui:InvokeWorkflowFile.Arguments>
-        <InArgument x:TypeArguments="x:String" x:Key="in_Domain" />
-        <InArgument x:TypeArguments="x:String" x:Key="in_Host">uq.edu.au</InArgument>
-        <InArgument x:TypeArguments="x:String" x:Key="in_Credential">[in_ExchangeCredentials]</InArgument>
         <OutArgument x:TypeArguments="x:String" x:Key="out_Username">[username]</OutArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="in_Credential">[in_ExchangeCredentials]</InArgument>
         <OutArgument x:TypeArguments="ss:SecureString" x:Key="out_Password" />
-        <OutArgument x:TypeArguments="x:String" x:Key="out_Plaintext">[password]</OutArgument>
       </ui:InvokeWorkflowFile.Arguments>
     </ui:InvokeWorkflowFile>
-    <ui:MoveMessageToFolder Domain="{x:Null}" EmailAutodiscover="{x:Null}" TimeoutMS="{x:Null}" DisplayName="Move Outbox Exchange Mail Message" ExchangeVersion="Exchange2007_SP1" sap2010:WorkflowViewState.IdRef="MoveMessageToFolder_1" MailFolder="[String.Join(&quot;\&quot;, parts)]" MailMessage="[in_TransactionMessage]" Password="[password]" Server="[in_ServerName]" SharedMailbox="[mailbox]" User="[username]" />
+    <Assign DisplayName="Append username with UQ domain " sap2010:WorkflowViewState.IdRef="Assign_5">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">[username]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">[username+"@uq.edu.au"]</InArgument>
+      </Assign.Value>
+    </Assign>
+    <Assign DisplayName="Private: Assign password to plain text " sap2010:WorkflowViewState.IdRef="Assign_6">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">[password_plain]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">[new System.Net.NetworkCredential(string.Empty, password).Password]</InArgument>
+      </Assign.Value>
+    </Assign>
+    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_4" Level="Info" Message="[in_TransactionMessage.Sender.ToString]" />
+    <ui:SendMail Bcc="{x:Null}" Cc="{x:Null}" TimeoutMS="{x:Null}" Body="Hi Team, Please find updated csv attached" DisplayName="Send SMTP Mail Message" Email="[username]" EnableSSL="True" From="rpa00001@uq.edu.au" sap2010:WorkflowViewState.IdRef="SendMail_1" IsBodyHtml="False" MailMessage="[in_TransactionMessage]" Name="RPA - Bot" Password="[password_plain]" Port="[in_smtpPort]" SecureConnection="None" Server="[in_smtpServer]" Subject="[&quot;Re : &quot;+ in_TransactionMessage.Subject.ToString]" To="[in_TransactionMessage.Sender.ToString]">
+      <ui:SendMail.Files>
+        <scg:List x:TypeArguments="InArgument(x:String)" Capacity="0" />
+      </ui:SendMail.Files>
+    </ui:SendMail>
+    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_3" Level="Info" Message="[&quot;Email sent succesfully, movin '&quot;+ in_TransactionMessage.Subject.ToString+&quot;' to '&quot;+in_FolderPath+&quot;' folder&quot;]" />
+    <ui:MoveMessageToFolder Domain="{x:Null}" EmailAutodiscover="{x:Null}" SharedMailbox="{x:Null}" TimeoutMS="{x:Null}" DisplayName="Move Exchange Mail Message" ExchangeVersion="Exchange2007_SP1" sap2010:WorkflowViewState.IdRef="MoveMessageToFolder_2" MailFolder="[in_FolderPath]" MailMessage="[in_TransactionMessage]" Password="[password_plain]" Server="[in_ServerName]" User="[username]" />
     <Assign DisplayName="Reset password" sap2010:WorkflowViewState.IdRef="Assign_4">
       <Assign.To>
         <OutArgument x:TypeArguments="x:String">[password]</OutArgument>
@@ -145,32 +139,22 @@
         <InArgument x:TypeArguments="x:String">[Nothing]</InArgument>
       </Assign.Value>
     </Assign>
-    <sads:DebugSymbol.Symbol>d3ZDOlxVc2Vyc1x1cW1ndXB0MVxEb2N1bWVudHNcVWlQYXRoXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXFBCSV9Mb2NhdGlvbkNoZWNrXEVtYWlsRXhjaGFuZ2VcTW92ZUV4Y2hhbmdlTWVzc2FnZS54YW1sHVwDlQEOAgEBYwVqDgIBJ2sFgAEKAgEcgQEFigEdAgETiwEFiwGgAwIBBowBBZMBDgIBAmg6aIYBAgEqZTtlQgIBKGsTazoCAR1tCX4UAgEehQFGhQFeAgEahgFGhgFQAgEYhAFAhAFJAgEXiAFHiAFRAgEVgQG+AYEB4AECARSLAZEDiwGdAwIBEYsBgAOLAYsDAgEPiwHgAosB8QICAQ2LAcwCiwHYAgIBC4sBqQKLAcICAgEJiwH3AYsBnAICAQeRATCRATkCAQWOATGOATsCAQNuC3UUAgEjdgt9FAIBH3M2c0MCASZwN3BAAgEke0B7VgIBInhBeEgCASA=</sads:DebugSymbol.Symbol>
+    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[&quot;End SendEmailAndMoveMessage.xaml&quot;]" />
+    <sads:DebugSymbol.Symbol>d3pDOlxVc2Vyc1x1cW1ndXB0MVxEb2N1bWVudHNcVWlQYXRoXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXFBCSV9Mb2NhdGlvbkNoZWNrXEVtYWlsRXhjaGFuZ2VcU2VuZEVtYWlsQW5kTW92ZU1lc3NhZ2UueGFtbCdfA5ABDgIBAWYFZqcBAgE8ZwVtHQIBNm4FdQ4CATF2BX0OAgEsfgV+ngECASl/BYMBEwIBF4QBBYQBggICAROFAQWFAYoDAgEIhgEFjQEOAgEEjgEFjgGlAQIBAmZyZqQBAgE9akZqXgIBOmlGaVACAThnvgFn4AECATdzMHNHAgE0cDFwOwIBMnswe3MCAS94MXhBAgEtfnJ+mwECASp/+gN/owQCASd/SX90AgEmf7kDf/YDAgEkf8MBf9cBAgEjf6ABf6wBAgEhf/ACf/8CAgEff58Df7ADAgEdf9gCf+oCAgEbf6QCf70CAgEZf8MCf84CAgEYhAFyhAH/AQIBFIUB+wKFAYcDAgERhQHkAoUB9QICAQ+FAcoChQHcAgIBDYUBpwKFAcACAgELhQGJAoUBmgICAQmLATCLATkCAQeIATGIATsCAQWOAXKOAaIBAgED</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
-      <sap2010:ViewStateData Id="Assign_1" sap:VirtualizedContainerService.HintSize="464,60" />
-      <sap2010:ViewStateData Id="Assign_2" sap:VirtualizedContainerService.HintSize="242,60" />
-      <sap2010:ViewStateData Id="Assign_3" sap:VirtualizedContainerService.HintSize="242,60" />
-      <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="264,284">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="464,432">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-            <x:Boolean x:Key="IsPinned">False</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_1" sap:VirtualizedContainerService.HintSize="464,87" />
-      <sap2010:ViewStateData Id="MoveMessageToFolder_1" sap:VirtualizedContainerService.HintSize="464,87" />
-      <sap2010:ViewStateData Id="Assign_4" sap:VirtualizedContainerService.HintSize="464,60" />
-      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="486,1187">
+      <sap2010:ViewStateData Id="LogMessage_1" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_1" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="Assign_5" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="Assign_6" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="LogMessage_4" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="SendMail_1" sap:VirtualizedContainerService.HintSize="314,145" />
+      <sap2010:ViewStateData Id="LogMessage_3" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="MoveMessageToFolder_2" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="Assign_4" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="LogMessage_2" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="336,1539">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -178,7 +162,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="MoveExchangeMessage_1" sap:VirtualizedContainerService.HintSize="526,1267" />
+      <sap2010:ViewStateData Id="MoveExchangeMessage_1" sap:VirtualizedContainerService.HintSize="376,1619" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>

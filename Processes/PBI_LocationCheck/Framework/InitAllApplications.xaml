@@ -7,10 +7,12 @@
  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
  xmlns:scg="clr-namespace:System.Collections.Generic;assembly=mscorlib"
  xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=mscorlib"
+ xmlns:snm="clr-namespace:System.Net.Mail;assembly=System"
  xmlns:ui="http://schemas.uipath.com/workflow/activities"
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <x:Members>
     <x:Property Name="in_Config" Type="InArgument(scg:Dictionary(x:String, x:Object))" />
+    <x:Property Name="out_emailMessage" Type="OutArgument(snm:MailMessage)" />
   </x:Members>
   <mva:VisualBasic.Settings>
     <x:Null />
@@ -65,8 +67,8 @@
       <AssemblyReference>UiPath.UiAutomation.Activities</AssemblyReference>
       <AssemblyReference>System.ValueTuple</AssemblyReference>
       <AssemblyReference>UiPath.Excel</AssemblyReference>
-      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
       <AssemblyReference>UiPath.Studio.Plugin.Workflow</AssemblyReference>
+      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence sap2010:Annotation.AnnotationText="Description: Open and initialize application as needed.&#xA;&#xA;Pre Condition: N/A&#xA;Post Condtion: Applications opened" DisplayName="Initialization Sequence" sap2010:WorkflowViewState.IdRef="Sequence_9">
@@ -80,10 +82,11 @@
         <InArgument x:TypeArguments="x:String" x:Key="in_ServerName">[in_Config("EmailExchangeServer").ToString]</InArgument>
         <InArgument x:TypeArguments="x:Int32" x:Key="in_Number">[CInt(in_Config("NumberOfEmails"))]</InArgument>
         <InArgument x:TypeArguments="x:String" x:Key="in_SenderAddress">[in_Config("PBI_LocationCheck_SenderEmail").ToString]</InArgument>
-        <InArgument x:TypeArguments="x:String" x:Key="in_FileLocation">[in_Config("CSVFolder_Location").ToString]</InArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="in_FileLocation">[in_Config("Folder_Location").ToString]</InArgument>
         <OutArgument x:TypeArguments="x:String" x:Key="out_AttachFileName" />
         <OutArgument x:TypeArguments="x:String" x:Key="out_EmailSubject" />
         <InArgument x:TypeArguments="x:String" x:Key="in_SubjectPrefix">[in_Config("Subject_Prefix").ToString]</InArgument>
+        <OutArgument x:TypeArguments="snm:MailMessage" x:Key="out_MailMessage">[out_emailMessage]</OutArgument>
       </ui:InvokeWorkflowFile.Arguments>
     </ui:InvokeWorkflowFile>
     <ui:PathExists DisplayName="Path Exists" Exists="[fileExits]" sap2010:WorkflowViewState.IdRef="PathExists_1" Path="Data/EXTRACT_FOR_ROBOT.csv" PathType="File" />
@@ -91,7 +94,7 @@
       <If.Then>
         <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke LoginImmiPortal workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_2" UnSafe="False" WorkflowFileName="ImmiPortal\LoginImmiPortal.xaml">
           <ui:InvokeWorkflowFile.Arguments>
-            <InArgument x:TypeArguments="x:String" x:Key="in_ImmiPortal_URL">[in_Config("Immi_Website1").ToString]</InArgument>
+            <InArgument x:TypeArguments="x:String" x:Key="in_ImmiPortal_URL">[in_Config("Immi_Website").ToString]</InArgument>
             <InArgument x:TypeArguments="x:String" x:Key="in_CredentialsAsset">[in_Config("IAA_Vevo_ImmiAccount").ToString]</InArgument>
           </ui:InvokeWorkflowFile.Arguments>
         </ui:InvokeWorkflowFile>
@@ -100,7 +103,7 @@
         <Throw DisplayName="Throw NoEmailToProcess" Exception="[new BusinessRuleException(&quot;No new email found in mailbox to process&quot;)]" sap2010:WorkflowViewState.IdRef="Throw_1" />
       </If.Else>
     </If>
-    <sads:DebugSymbol.Symbol>d3JDOlxVc2Vyc1x1cW1ndXB0MVxEb2N1bWVudHNcVWlQYXRoXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXFBCSV9Mb2NhdGlvbkNoZWNrXEZyYW1ld29ya1xJbml0QWxsQXBwbGljYXRpb25zLnhhbWwWSANoDgIBAUwFTK8BAgEfTQVYHQIBEVkFWaYBAgENWgVmCgIBAkyFAUysAQIBIFBGUHECAR1WSVZvAgEbUUFRZAIBGVNIU3ICARdPTE9wAgEVUklSfgIBE028AU3gAQIBElk1WUICAQ9Zd1mTAQIBDloTWiACAQNcCWEhAgEHZAlkvwECAQVfUF98AgELXk5ecwIBCVzAAVzhAQIBCGQ/ZJIBAgEG</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d3JDOlxVc2Vyc1x1cW1ndXB0MVxEb2N1bWVudHNcVWlQYXRoXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXFBCSV9Mb2NhdGlvbkNoZWNrXEZyYW1ld29ya1xJbml0QWxsQXBwbGljYXRpb25zLnhhbWwXSgNrDgIBAU4FTq8BAgEhTwVbHQIBEVwFXKYBAgENXQVpCgIBAk6FAU6sAQIBIlJGUnECAR9YSVhvAgEdU0FTZAIBG1VIVW8CARlRTFFwAgEXVElUfgIBFVlQWWICARNPvAFP4AECARJcNVxCAgEPXHdckwECAQ5dE10gAgEDXwlkIQIBB2cJZ78BAgEFYlBifAIBC2FOYXICAQlfwAFf4QECAQhnP2eSAQIBBg==</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>

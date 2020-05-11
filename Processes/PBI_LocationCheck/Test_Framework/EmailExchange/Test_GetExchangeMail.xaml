@@ -9,6 +9,8 @@
  xmlns:scg="clr-namespace:System.Collections.Generic;assembly=mscorlib"
  xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=mscorlib"
  xmlns:sd="clr-namespace:System.Data;assembly=System.Data"
+ xmlns:snm="clr-namespace:System.Net.Mail;assembly=System"
+ xmlns:ss="clr-namespace:System.Security;assembly=mscorlib"
  xmlns:ui="http://schemas.uipath.com/workflow/activities"
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <x:Members>
@@ -75,12 +77,17 @@
       <AssemblyReference>UiPath.Mail</AssemblyReference>
       <AssemblyReference>UiPath.PDF</AssemblyReference>
       <AssemblyReference>UiPath.Word</AssemblyReference>
+      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence DisplayName="Test Getting Exchange Mail" sap2010:WorkflowViewState.IdRef="Sequence_1">
     <Sequence.Variables>
       <Variable x:TypeArguments="s:String[]" Name="testArguments" />
       <Variable x:TypeArguments="x:String" Name="root" />
+      <Variable x:TypeArguments="snm:MailMessage" Name="mailMessage" />
+      <Variable x:TypeArguments="x:String" Name="username" />
+      <Variable x:TypeArguments="ss:SecureString" Name="password" />
+      <Variable x:TypeArguments="ui:GenericValue" Name="password_plain" />
     </Sequence.Variables>
     <If Condition="[in_TestingRow IsNot Nothing]" sap2010:WorkflowViewState.IdRef="If_4">
       <If.Then>
@@ -104,15 +111,45 @@
         </Assign>
       </If.Else>
     </If>
-    <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke GetExchangeMail workflow" UnSafe="False" WorkflowFileName="EmailExchange\GetExchangeMail.xaml">
+    <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke GetExchangeMail workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_5" UnSafe="False" WorkflowFileName="EmailExchange\GetExchangeMail.xaml">
       <ui:InvokeWorkflowFile.Arguments>
         <InArgument x:TypeArguments="x:String" x:Key="in_CredentialsAsset">[testArguments.first]</InArgument>
         <InArgument x:TypeArguments="x:String" x:Key="in_ServerName">[testArguments.last]</InArgument>
         <InArgument x:TypeArguments="x:Int32" x:Key="in_Number">1</InArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="in_SenderAddress" />
+        <InArgument x:TypeArguments="x:String" x:Key="in_FileLocation" />
+        <OutArgument x:TypeArguments="x:String" x:Key="out_AttachFileName" />
+        <OutArgument x:TypeArguments="x:String" x:Key="out_EmailSubject" />
+        <InArgument x:TypeArguments="x:String" x:Key="in_SubjectPrefix" />
+        <OutArgument x:TypeArguments="snm:MailMessage" x:Key="out_MailMessage">[mailMessage]</OutArgument>
       </ui:InvokeWorkflowFile.Arguments>
-      <sap2010:WorkflowViewState.IdRef>InvokeWorkflowFile_5</sap2010:WorkflowViewState.IdRef>
     </ui:InvokeWorkflowFile>
-    <sads:DebugSymbol.Symbol>d4YBQzpcVXNlcnNcdXFtZ3VwdDFcRG9jdW1lbnRzXFVpUGF0aFxScGFVaVBhdGhQcm9jZXNzXFByb2Nlc3Nlc1xQQklfTG9jYXRpb25DaGVja1xUZXN0X0ZyYW1ld29ya1xFbWFpbEV4Y2hhbmdlXFRlc3RfR2V0RXhjaGFuZ2VNYWlsLnhhbWwOUAN0DgIBAVUFagoCAQdrBXIdAgECVRNVMgIBCFcJXhICAQ1hCWgSAgEJbkZuWgIBBm9Bb0ICAQVtTG1hAgEEa4UBa6kBAgEDXDZcZwIBEFk3WUYCAQ5mNmZ7AgEMYzdjRgIBCg==</sads:DebugSymbol.Symbol>
+    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[mailMessage.Subject.ToString+vbTab+mailMessage.Attachments.Any.ToString]" />
+    <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke GetAppCredentials workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_6" UnSafe="False" WorkflowFileName="Framework\GetAppCredentials.xaml">
+      <ui:InvokeWorkflowFile.Arguments>
+        <OutArgument x:TypeArguments="x:String" x:Key="out_Username">[username]</OutArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="in_Credential">[testArguments.first]</InArgument>
+        <OutArgument x:TypeArguments="ss:SecureString" x:Key="out_Password">[password]</OutArgument>
+      </ui:InvokeWorkflowFile.Arguments>
+    </ui:InvokeWorkflowFile>
+    <Assign DisplayName="Append username with UQ domain " sap2010:WorkflowViewState.IdRef="Assign_7">
+      <Assign.To>
+        <OutArgument x:TypeArguments="x:String">[username]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="x:String">[username+"@uq.edu.au"]</InArgument>
+      </Assign.Value>
+    </Assign>
+    <Assign DisplayName="Private: Assign password to plain text " sap2010:WorkflowViewState.IdRef="Assign_8">
+      <Assign.To>
+        <OutArgument x:TypeArguments="ui:GenericValue">[password_plain]</OutArgument>
+      </Assign.To>
+      <Assign.Value>
+        <InArgument x:TypeArguments="ui:GenericValue">[new System.Net.NetworkCredential(string.Empty, password).Password]</InArgument>
+      </Assign.Value>
+    </Assign>
+    <ui:MoveMessageToFolder Domain="{x:Null}" EmailAutodiscover="{x:Null}" SharedMailbox="{x:Null}" TimeoutMS="{x:Null}" DisplayName="Move Exchange Mail Message" ExchangeVersion="Exchange2007_SP1" sap2010:WorkflowViewState.IdRef="MoveMessageToFolder_1" MailFolder="PBI_Archive" MailMessage="[mailMessage]" Password="[password_plain]" Server="[testArguments.last]" User="[username]" />
+    <sads:DebugSymbol.Symbol>d4YBQzpcVXNlcnNcdXFtZ3VwdDFcRG9jdW1lbnRzXFVpUGF0aFxScGFVaVBhdGhQcm9jZXNzXFByb2Nlc3Nlc1xQQklfTG9jYXRpb25DaGVja1xUZXN0X0ZyYW1ld29ya1xFbWFpbEV4Y2hhbmdlXFRlc3RfR2V0RXhjaGFuZ2VNYWlsLnhhbWwiUwOZAQ4CAQFcBXEKAgEkcgV+HQIBHX8Ff8ABAgEbgAEFhgEdAgEUhwEFjgEOAgEPjwEFlgEOAgEKlwEFlwGBAwIBAlwTXDICASVeCWUSAgEqaAlvEgIBJnVGdVoCASN2QXZCAgEidEx0YQIBIXxQfF0CAR9yvAFy4AECAR5/cn+9AQIBHIQBTYQBVwIBGYMBRoMBWwIBGIIBRoIBUAIBFoABvgGAAeABAgEVjAEwjAFHAgESiQExiQE7AgEQlAE3lAF6AgENkQE4kQFIAgELlwHyApcB/gICAQiXAdYClwHsAgIBB5cBvAKXAc4CAgEGlwGjApcBsgICAQSXAYkClwGWAgIBA2M2Y2cCAS1gN2BGAgErbTZtewIBKWo3akYCASc=</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -120,14 +157,19 @@
       <sap2010:ViewStateData Id="Assign_6" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="If_4" sap:VirtualizedContainerService.HintSize="509,208" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_5" sap:VirtualizedContainerService.HintSize="509,87" />
-      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="531,459">
+      <sap2010:ViewStateData Id="LogMessage_1" sap:VirtualizedContainerService.HintSize="509,91" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_6" sap:VirtualizedContainerService.HintSize="509,87" />
+      <sap2010:ViewStateData Id="Assign_7" sap:VirtualizedContainerService.HintSize="509,60" />
+      <sap2010:ViewStateData Id="Assign_8" sap:VirtualizedContainerService.HintSize="509,60" />
+      <sap2010:ViewStateData Id="MoveMessageToFolder_1" sap:VirtualizedContainerService.HintSize="509,87" />
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="531,1044">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Test_AppOutlook_1" sap:VirtualizedContainerService.HintSize="571,579" />
+      <sap2010:ViewStateData Id="Test_AppOutlook_1" sap:VirtualizedContainerService.HintSize="571,1124" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>

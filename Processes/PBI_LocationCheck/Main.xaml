@@ -10,6 +10,7 @@
  xmlns:scg="clr-namespace:System.Collections.Generic;assembly=mscorlib"
  xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=mscorlib"
  xmlns:sd="clr-namespace:System.Data;assembly=System.Data"
+ xmlns:snm="clr-namespace:System.Net.Mail;assembly=System"
  xmlns:ui="http://schemas.uipath.com/workflow/activities"
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <TextExpression.NamespacesForImplementation>
@@ -73,7 +74,7 @@
       <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
-  <StateMachine sap2010:Annotation.AnnotationText="-- ReFrameWork - Robotic Enterprise Framework --&#xA;-- TEMPLATE--" DisplayName="General Business Process" sap2010:WorkflowViewState.IdRef="StateMachine_1">
+  <StateMachine sap2010:Annotation.AnnotationText="This process determine the numbers of International students that are here in Australia vs those offshore via performing VEVO check on Immi website, which includes read email, download input csv and perform VEVO check, update location and send back csv file to sender. " DisplayName="PBI_LocationCheck " sap2010:WorkflowViewState.IdRef="StateMachine_1">
     <StateMachine.InitialState>
       <State x:Name="__ReferenceID0" sap2010:Annotation.AnnotationText="Read Config, Init Applications" DisplayName="Init" sap2010:WorkflowViewState.IdRef="State_2">
         <State.Entry>
@@ -114,6 +115,7 @@
                 <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke InitiAllApplications workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_5" UnSafe="False" WorkflowFileName="Framework\InitAllApplications.xaml">
                   <ui:InvokeWorkflowFile.Arguments>
                     <InArgument x:TypeArguments="scg:Dictionary(x:String, x:Object)" x:Key="in_Config">[Config]</InArgument>
+                    <OutArgument x:TypeArguments="snm:MailMessage" x:Key="out_emailMessage">[emailMessage]</OutArgument>
                   </ui:InvokeWorkflowFile.Arguments>
                 </ui:InvokeWorkflowFile>
               </Sequence>
@@ -309,9 +311,18 @@
                               <Sequence DisplayName="End of process activities" sap2010:WorkflowViewState.IdRef="Sequence_20">
                                 <If Condition="[SystemError is nothing]" DisplayName="Check if System error " sap2010:WorkflowViewState.IdRef="If_9">
                                   <If.Then>
-                                    <Sequence>
+                                    <Sequence sap2010:WorkflowViewState.IdRef="Sequence_22">
                                       <ui:WriteCsvFile Encoding="{x:Null}" AddHeaders="True" DataTable="[TransactionData]" Delimitator="Comma" DisplayName="Write CSV" FilePath="Data\EXTRACT_FOR_ROBOT.csv" sap2010:WorkflowViewState.IdRef="WriteCsvFile_1" />
-                                      <sap2010:WorkflowViewState.IdRef>Sequence_22</sap2010:WorkflowViewState.IdRef>
+                                      <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke SendEmailAndMoveMessage workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_19" UnSafe="False" WorkflowFileName="EmailExchange\SendEmailAndMoveMessage.xaml">
+                                        <ui:InvokeWorkflowFile.Arguments>
+                                          <InArgument x:TypeArguments="snm:MailMessage" x:Key="in_TransactionMessage">[emailMessage]</InArgument>
+                                          <InArgument x:TypeArguments="x:String" x:Key="in_ExchangeCredentials">[Config("SSO_rpa00001").ToString]</InArgument>
+                                          <InArgument x:TypeArguments="x:String" x:Key="in_ServerName">[Config("EmailExchangeServer").ToString]</InArgument>
+                                          <InArgument x:TypeArguments="x:String" x:Key="in_FolderPath">[Config("Folder_Location").ToString]</InArgument>
+                                          <InArgument x:TypeArguments="x:String" x:Key="in_smtpServer">[Config("UQ_SMTP_SERVER").ToString]</InArgument>
+                                          <InArgument x:TypeArguments="x:Int32" x:Key="in_smtpPort">[CInt(Config("UQ_SMTP_PORT"))]</InArgument>
+                                        </ui:InvokeWorkflowFile.Arguments>
+                                      </ui:InvokeWorkflowFile>
                                     </Sequence>
                                   </If.Then>
                                 </If>
@@ -381,8 +392,9 @@
       <Variable x:TypeArguments="x:String" Name="TransactionField1" />
       <Variable x:TypeArguments="x:String" Name="TransactionID" />
       <Variable x:TypeArguments="sd:DataTable" Name="TransactionData" />
+      <Variable x:TypeArguments="snm:MailMessage" Name="emailMessage" />
     </StateMachine.Variables>
-    <sads:DebugSymbol.Symbol>d1lDOlxVc2Vyc1x1cW1ndXB0MVxEb2N1bWVudHNcVWlQYXRoXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXFBCSV9Mb2NhdGlvbkNoZWNrXE1haW4ueGFtbHRMA4IDEgIBAfkCM/kCNgMBrgH7AjP7AjYDAa0BjwEP4QIXAgF4zwEXqAIfAgFCsQIX2QIfAgEsTgfvAg8CAQKRARPKAR4DAYMBrQIrrQJKAwGBAasCF6sC4QECAX3eAiveAkcCAXzcAhfcAsgBAgF60QEboQImAgFJpAKWAaQCswECAUalAp8BpQLGAQIBRaYCigKmAskCAgFEswIb1wImAgEuUAuKARYCAQ7mAiPmAjsCAQvkAg/kAp0BAgEK7AIj7AI+AgEI6gIP6gL2AQIBBJUBFZUBiwEDAaoBlgEVyQEaAwGEAasChQGrAt4BAgF+3AKFAdwCxQECAXvTAR/iASoCAW2FAh+fAioCAVTqASPxASwCAU/5ASOAAiwCAUq1Ah/EAioCATbMAiPTAi4CAS9SD3caAgEUfxOGARwCAQ/qAn3qAvMBAgEFlQF6lQGIAQMBqwGWASOWATEDAYUBmAEZogEkAwGjAaUBGccBJAMBhwHUASHbASoCAXTcASHhATkCAW6HAiOTAjsCAVmbAiebAocCAgFV7wFe7wFpAgFS7AFf7AF2AgFQ/gFR/gFcAgFN+wFS+wFfAgFLtgIhvQImAgE6vgIhvgKNAgIBOb8CIcMCOQIBN80CJc0CiQICATLOAiXSAj0CATBTEVoaAgEoWxFxFgIBGXIRdikCARWEAUGEAUwCARKBAUKBAU8CARCZARuZAbcBAwGoAZoBG6EBJAMBpAGnAR2xATUDAZMBuQEhwwEsAwGIAdkBXNkBZQIBd9YBXdYBdAIBdd8BeN8BgAECAXLeAWneAXoCAXDcAdsB3AHpAQIBb4oCaIoCdQIBa4sCf4sClgECAWmQAmuQAn4CAWePAmuPAn4CAWWNAmeNAnQCAWOJAnqJAoIBAgFhjAJrjAJ8AgFfjgJtjgKAAQIBXZECZ5ECdgIBW4cC4AGHAoUCAgFamwKWAZsChAICAVa2Ai+2AkkCATu4AiW7AjACAT2/At0BvwKCAgIBOM0CkwHNAoYCAgEzzgLdAc4C/gECATFYP1hIAgErVUBVTQIBKVsfWzQCARpdFW8gAgEcdGh0cAIBF3LNAXLxAQIBFpkBjgGZAbQBAwGpAZ8BSJ8BUQMBpwGcAUmcAVoDAaUBrQFnrQF6AwGhAawBZ6wBegMBnwGuAWOuAXIDAZ0BqwFnqwF4AwGbAakBZKkBdwMBmQGqAXSqAXwDAZcBrwFqrwF7AwGVAacB2AGnAfsBAwGUAboBI7oBvgIDAY0BuwEjwgEsAwGJAbkCJ7kCgQICAT5eF2QvAgEiZRdpLwIBIGoXbikCAR26AZIBugG7AgMBjgHAAVDAAVkDAYwBvQFRvQFiAwGKAbkCaLkCewIBQLkCsQG5As0BAgE/YnBieAIBJl7PAV7vAQIBJWFcYXcCASRgWGBoAgEjZdABZfEBAgEhbGNskAECAR4=</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d1lDOlxVc2Vyc1x1cW1ndXB0MVxEb2N1bWVudHNcVWlQYXRoXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXFBCSV9Mb2NhdGlvbkNoZWNrXE1haW4ueGFtbH1NA44DEgIBAYQDM4QDNgMBvgGGAzOGAzYDAb0BkQEP7AIXAwGIAdEBF6oCHwIBUrMCF+QCHwIBLk8H+gIPAgECkwETzAEeAwGTAa8CK68CSgMBkQGtAhetAuEBAwGNAekCK+kCRwMBjAHnAhfnAsgBAwGKAdMBG6MCJgIBWaYClgGmArMBAgFWpwKfAacCxgECAVWoAooCqALJAgIBVLUCG+ICJgIBMFELjAEWAgEO8QIj8QI7AgEL7wIP7wKdAQIBCvcCI/cCPgIBCPUCD/UC9gECAQSXARWXAYsBAwG6AZgBFcsBGgMBlAGtAoUBrQLeAQMBjgHnAoUB5wLFAQMBiwHVAR/kASoCAX2HAh+hAioCAWTsASPzASwCAV/7ASOCAiwCAVq3Ah/PAioCATjXAiPeAi4CATFTD3kaAgEUgQETiAEcAgEP9QJ99QLzAQIBBZcBepcBiAEDAbsBmAEjmAExAwGVAZoBGaQBJAMBswGnARnJASQDAZcB1gEh3QEqAwGEAd4BIeMBOQIBfokCI5UCOwIBaZ0CJ50ChwICAWXxAV7xAWkCAWLuAV/uAXYCAWCAAlGAAlwCAV39AVL9AV8CAVu4AiHIAiYCATzJAiHJAo0CAgE7ygIhzgI5AgE52AIl2AKJAgIBNNkCJd0CPQIBMlQRWxoCASpcEXIWAgEbcxF4KQIBFYYBQYYBTAIBEoMBQoMBTwIBEJsBG5sBtwEDAbgBnAEbowEkAwG0AakBHbMBNQMBowG7ASHFASwDAZgB2wFc2wFlAwGHAdgBXdgBdAMBhQHhAXjhAYABAwGCAeABaeABegMBgAHeAdsB3gHpAQIBf4wCaIwCdQIBe40Cf40ClgECAXmSAmuSAn4CAXeRAmuRAn4CAXWPAmePAnQCAXOLAnqLAoIBAgFxjgJrjgJ8AgFvkAJtkAKAAQIBbZMCZ5MCdgIBa4kC4AGJAoUCAgFqnQKWAZ0ChAICAWa4Ai+4AkkCAT26AiXGAjACAT/KAt0BygKCAgIBOtgCkwHYAoYCAgE12QLdAdkC/gECATNZP1lIAgEtVkBWTQIBK1wfXDQCARxeFXAgAgEedl12awIBGXVodXACARdzzQFz8QECARabAY4BmwG0AQMBuQGhAUihAVEDAbcBngFJngFaAwG1Aa8BZ68BegMBsQGuAWeuAXoDAa8BsAFjsAFyAwGtAa0BZ60BeAMBqwGrAWSrAXcDAakBrAF0rAF8AwGnAbEBarEBewMBpQGpAdgBqQH7AQMBpAG8ASO8Ab4CAwGdAb0BI8QBLAMBmQG7Aie7AoECAgFOvAInxQI/AgFAXxdlLwIBJGYXai8CASJrF28pAgEfvAGSAbwBuwIDAZ4BwgFQwgFZAwGcAb8BUb8BYgMBmgG7Ami7AnsCAVC7ArEBuwLNAQIBT8ICaMICiwECAUzAAmjAApABAgFKwwJlwwKDAQIBSL4Cd74ChQECAUa/AnG/ApIBAgFEvALnAbwCkwICAUPBAmjBAowBAgFBY3BjeAIBKF/PAV/vAQIBJ2JcYncCASZhWGFoAgElZtABZvEBAgEjbWNtkAECASA=</sads:DebugSymbol.Symbol>
   </StateMachine>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -585,17 +597,18 @@
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="WriteCsvFile_1" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="Sequence_22" sap:VirtualizedContainerService.HintSize="336,211">
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_19" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="Sequence_22" sap:VirtualizedContainerService.HintSize="336,338">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_9" sap:VirtualizedContainerService.HintSize="464,359" />
+      <sap2010:ViewStateData Id="If_9" sap:VirtualizedContainerService.HintSize="464,486" />
       <sap2010:ViewStateData Id="Comment_2" sap:VirtualizedContainerService.HintSize="464,112" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_6" sap:VirtualizedContainerService.HintSize="464,87" />
-      <sap2010:ViewStateData Id="Sequence_20" sap:VirtualizedContainerService.HintSize="486,762">
+      <sap2010:ViewStateData Id="Sequence_20" sap:VirtualizedContainerService.HintSize="486,889">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -619,8 +632,8 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_4" sap:VirtualizedContainerService.HintSize="504,989" />
-      <sap2010:ViewStateData Id="State_1" sap:VirtualizedContainerService.HintSize="530,1129">
+      <sap2010:ViewStateData Id="TryCatch_4" sap:VirtualizedContainerService.HintSize="504,1116" />
+      <sap2010:ViewStateData Id="State_1" sap:VirtualizedContainerService.HintSize="530,1256">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <av:Point x:Key="ShapeLocation">73,188.5</av:Point>
