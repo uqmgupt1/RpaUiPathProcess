@@ -9,9 +9,10 @@
  xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=mscorlib"
  xmlns:snm="clr-namespace:System.Net.Mail;assembly=System"
  xmlns:ui="http://schemas.uipath.com/workflow/activities"
+ xmlns:um="clr-namespace:UiPath.Mail;assembly=UiPath.Mail"
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <x:Members>
-    <x:Property Name="in_Config" Type="InArgument(scg:Dictionary(x:String, x:Object))" />
+    <x:Property Name="in_Config" Type="InArgument(scg:Dictionary(x:String, x:String))" />
     <x:Property Name="out_emailMessage" Type="OutArgument(snm:MailMessage)" />
   </x:Members>
   <mva:VisualBasic.Settings>
@@ -42,6 +43,7 @@
       <x:String>UiPath.Core</x:String>
       <x:String>System.Security</x:String>
       <x:String>UiPath.Core.Activities</x:String>
+      <x:String>Microsoft.VisualBasic.CompilerServices</x:String>
     </sco:Collection>
   </TextExpression.NamespacesForImplementation>
   <TextExpression.ReferencesForImplementation>
@@ -68,52 +70,81 @@
       <AssemblyReference>System.ValueTuple</AssemblyReference>
       <AssemblyReference>UiPath.Excel</AssemblyReference>
       <AssemblyReference>UiPath.Studio.Plugin.Workflow</AssemblyReference>
+      <AssemblyReference>System.Collections.Immutable</AssemblyReference>
+      <AssemblyReference>Microsoft.VisualStudio.Services.Common</AssemblyReference>
       <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence sap2010:Annotation.AnnotationText="Description: Open and initialize application as needed.&#xA;&#xA;Pre Condition: N/A&#xA;Post Condtion: Applications opened" DisplayName="Initialization Sequence" sap2010:WorkflowViewState.IdRef="Sequence_9">
     <Sequence.Variables>
-      <Variable x:TypeArguments="x:Boolean" Name="fileExits" />
+      <Variable x:TypeArguments="x:String" Name="attachFileName" />
     </Sequence.Variables>
     <ui:LogMessage DisplayName="Log App Initialization message" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;Opening applications...&quot;]" />
-    <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke GetExchangeMail workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_1" UnSafe="False" WorkflowFileName="EmailExchange\GetExchangeMail.xaml">
-      <ui:InvokeWorkflowFile.Arguments>
-        <InArgument x:TypeArguments="x:String" x:Key="in_CredentialsAsset">[in_Config("SSO_rpa00001").ToString]</InArgument>
-        <InArgument x:TypeArguments="x:String" x:Key="in_ServerName">[in_Config("EmailExchangeServer").ToString]</InArgument>
-        <InArgument x:TypeArguments="x:Int32" x:Key="in_Number">[CInt(in_Config("NumberOfEmails"))]</InArgument>
-        <InArgument x:TypeArguments="x:String" x:Key="in_SenderAddress">[in_Config("PBI_LocationCheck_SenderEmail").ToString]</InArgument>
-        <InArgument x:TypeArguments="x:String" x:Key="in_FileLocation">[in_Config("Folder_Location").ToString]</InArgument>
-        <OutArgument x:TypeArguments="x:String" x:Key="out_AttachFileName" />
-        <OutArgument x:TypeArguments="x:String" x:Key="out_EmailSubject" />
-        <InArgument x:TypeArguments="x:String" x:Key="in_SubjectPrefix">[in_Config("Subject_Prefix").ToString]</InArgument>
-        <OutArgument x:TypeArguments="snm:MailMessage" x:Key="out_MailMessage">[out_emailMessage]</OutArgument>
-      </ui:InvokeWorkflowFile.Arguments>
-    </ui:InvokeWorkflowFile>
-    <ui:PathExists DisplayName="Path Exists" Exists="[fileExits]" sap2010:WorkflowViewState.IdRef="PathExists_1" Path="Data/EXTRACT_FOR_ROBOT.csv" PathType="File" />
-    <If Condition="[fileExits]" sap2010:WorkflowViewState.IdRef="If_1">
+    <TryCatch DisplayName="Try Catch" sap2010:WorkflowViewState.IdRef="TryCatch_1">
+      <TryCatch.Try>
+        <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke GetExchangeMail workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_1" UnSafe="False" WorkflowFileName="EmailExchange\GetExchangeMail.xaml">
+          <ui:InvokeWorkflowFile.Arguments>
+            <InArgument x:TypeArguments="x:String" x:Key="in_CredentialsAsset">[in_Config("SSO_rpa00001")]</InArgument>
+            <InArgument x:TypeArguments="x:String" x:Key="in_ServerName">[in_Config("EmailExchangeServer")]</InArgument>
+            <InArgument x:TypeArguments="x:Int32" x:Key="in_Number">[CInt(in_Config("NumberOfEmails"))]</InArgument>
+            <InArgument x:TypeArguments="x:String" x:Key="in_SenderAddress">[in_Config("PBI_LocationCheck_SenderEmail")]</InArgument>
+            <InArgument x:TypeArguments="x:String" x:Key="in_FileLocation">[in_Config("Folder_Location")]</InArgument>
+            <OutArgument x:TypeArguments="x:String" x:Key="out_AttachFileName">[attachFileName]</OutArgument>
+            <OutArgument x:TypeArguments="x:String" x:Key="out_EmailSubject" />
+            <InArgument x:TypeArguments="x:String" x:Key="in_SubjectPrefix">[in_Config("Subject_Prefix")]</InArgument>
+            <OutArgument x:TypeArguments="snm:MailMessage" x:Key="out_MailMessage">[out_emailMessage]</OutArgument>
+          </ui:InvokeWorkflowFile.Arguments>
+        </ui:InvokeWorkflowFile>
+      </TryCatch.Try>
+      <TryCatch.Catches>
+        <Catch x:TypeArguments="um:ExchangeException" sap2010:WorkflowViewState.IdRef="Catch`1_1">
+          <ActivityAction x:TypeArguments="um:ExchangeException">
+            <ActivityAction.Argument>
+              <DelegateInArgument x:TypeArguments="um:ExchangeException" Name="exception" />
+            </ActivityAction.Argument>
+          </ActivityAction>
+        </Catch>
+      </TryCatch.Catches>
+    </TryCatch>
+    <If Condition="[out_emailMessage.Attachments.Any AndAlso attachFileName = in_Config(&quot;File_Name&quot;).ToString]" DisplayName="Check if new email found and input CSV downloaded successfully " sap2010:WorkflowViewState.IdRef="If_1">
       <If.Then>
         <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke LoginImmiPortal workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_2" UnSafe="False" WorkflowFileName="ImmiPortal\LoginImmiPortal.xaml">
           <ui:InvokeWorkflowFile.Arguments>
-            <InArgument x:TypeArguments="x:String" x:Key="in_ImmiPortal_URL">[in_Config("Immi_Website").ToString]</InArgument>
-            <InArgument x:TypeArguments="x:String" x:Key="in_CredentialsAsset">[in_Config("IAA_Vevo_ImmiAccount").ToString]</InArgument>
+            <InArgument x:TypeArguments="x:String" x:Key="in_ImmiPortal_URL">[in_Config("Immi_Website")]</InArgument>
+            <InArgument x:TypeArguments="x:String" x:Key="in_CredentialsAsset">[in_Config("IAA_Vevo_ImmiAccount")]</InArgument>
           </ui:InvokeWorkflowFile.Arguments>
         </ui:InvokeWorkflowFile>
       </If.Then>
       <If.Else>
-        <Throw DisplayName="Throw NoEmailToProcess" Exception="[new BusinessRuleException(&quot;No new email found in mailbox to process&quot;)]" sap2010:WorkflowViewState.IdRef="Throw_1" />
+        <Throw DisplayName="Throw NoEmailToProcess" Exception="[new BusinessRuleException(&quot;No new email/attachment found in mailbox to process&quot;)]" sap2010:WorkflowViewState.IdRef="Throw_1" />
       </If.Else>
     </If>
-    <sads:DebugSymbol.Symbol>d3JDOlxVc2Vyc1x1cW1ndXB0MVxEb2N1bWVudHNcVWlQYXRoXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXFBCSV9Mb2NhdGlvbkNoZWNrXEZyYW1ld29ya1xJbml0QWxsQXBwbGljYXRpb25zLnhhbWwXSgNrDgIBAU4FTq8BAgEhTwVbHQIBEVwFXKYBAgENXQVpCgIBAk6FAU6sAQIBIlJGUnECAR9YSVhvAgEdU0FTZAIBG1VIVW8CARlRTFFwAgEXVElUfgIBFVlQWWICARNPvAFP4AECARJcNVxCAgEPXHdckwECAQ5dE10gAgEDXwlkIQIBB2cJZ78BAgEFYlBifAIBC2FOYXICAQlfwAFf4QECAQhnP2eSAQIBBg==</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d3JDOlxVc2Vyc1x1cW1ndXB0MVxEb2N1bWVudHNcVWlQYXRoXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXFBCSV9Mb2NhdGlvbkNoZWNrXEZyYW1ld29ya1xJbml0QWxsQXBwbGljYXRpb25zLnhhbWwWTgN7DgIBAVIFUq8BAgEfUwVsEAIBDG0FeQoCAQJShQFSrAECASBVCWEhAgENbRNtegIBA28JdCECAQZ3CXfKAQIBBFxQXGACAR1YSlhsAgEbXk1eagIBGVlFWWgCARdbTFtqAgEVV1BXawIBE1pNWnkCARFfVF9mAgEPVcABVeQBAgEOclBycwIBCnFOcWkCAQhvwAFv4QECAQd3P3edAQIBBQ==</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
       <sap2010:ViewStateData Id="LogMessage_1" sap:VirtualizedContainerService.HintSize="539,91" />
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_1" sap:VirtualizedContainerService.HintSize="539,87" />
-      <sap2010:ViewStateData Id="PathExists_1" sap:VirtualizedContainerService.HintSize="539,89" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_1" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="Catch`1_1" sap:VirtualizedContainerService.HintSize="404,21">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="539,314">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="InvokeWorkflowFile_2" sap:VirtualizedContainerService.HintSize="314,87" />
       <sap2010:ViewStateData Id="Throw_1" sap:VirtualizedContainerService.HintSize="200,22" />
       <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="539,235" />
-      <sap2010:ViewStateData Id="Sequence_9" sap:VirtualizedContainerService.HintSize="561,818">
+      <sap2010:ViewStateData Id="Sequence_9" sap:VirtualizedContainerService.HintSize="561,916">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -121,7 +152,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Initialization_1" sap:VirtualizedContainerService.HintSize="601,898" />
+      <sap2010:ViewStateData Id="Initialization_1" sap:VirtualizedContainerService.HintSize="601,996" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>

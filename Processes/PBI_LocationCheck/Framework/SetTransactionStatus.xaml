@@ -14,7 +14,7 @@
  xmlns:ui="http://schemas.uipath.com/workflow/activities"
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <x:Members>
-    <x:Property Name="in_Config" Type="InArgument(scg:Dictionary(x:String, x:Object))" />
+    <x:Property Name="in_Config" Type="InArgument(scg:Dictionary(x:String, x:String))" />
     <x:Property Name="in_SystemError" Type="InArgument(s:Exception)" />
     <x:Property Name="in_BusinessRuleException" Type="InArgument(ui:BusinessRuleException)" />
     <x:Property Name="in_TransactionItem" Type="InArgument(sd:DataRow)" />
@@ -64,8 +64,6 @@
       <AssemblyReference>System.Core</AssemblyReference>
       <AssemblyReference>System.Xml</AssemblyReference>
       <AssemblyReference>System.Xml.Linq</AssemblyReference>
-      <AssemblyReference>UiPath.Core</AssemblyReference>
-      <AssemblyReference>UiPath.Core.Activities</AssemblyReference>
       <AssemblyReference>PresentationFramework</AssemblyReference>
       <AssemblyReference>WindowsBase</AssemblyReference>
       <AssemblyReference>PresentationCore</AssemblyReference>
@@ -73,8 +71,10 @@
       <AssemblyReference>System.ServiceModel</AssemblyReference>
       <AssemblyReference>Microsoft.VisualStudio.Services.Common</AssemblyReference>
       <AssemblyReference>System.ComponentModel.Composition</AssemblyReference>
-      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
       <AssemblyReference>System.Data.DataSetExtensions</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.UiAutomation.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.Excel</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Flowchart sap2010:Annotation.AnnotationText="This workflow sets the TransactionStatus and Logs that status and details in extra Logging Fields. &#xA;The flowchart branches out into the three possible Transaction Statuses: Success, Business Exception and Application Exception. &#xA;&#xA;Each branch analyzes the type of content of TransactionItem. If its not empty and is a QueueItem, then it means we are using a Orchestrator queue, so we must call the “Set Transaction Status” activity to inform Orchestrator about the outcome of our transaction. If TransactionItem is not a QueueItem, we can skip passing it and the “Set Transaction Status” activity will not be triggered. &#xA;&#xA;After that we log the result of the transaction within custom log fields to make it easier to search for within results. &#xA;&#xA;This workflow is also where incrementing of the io_TransactionNumber variable takes place. If we have an application exception and our MaxRetryNumber has not been reached, we increment the io_RetryNumber variable and not the io_TransactionNumber variables. This is done in the Robot Retry flowchart, which manages the retry mechanism of the framework and which is part of the &quot;Handle System Error&quot; sequence." DisplayName="SetTransactionStatus" sap2010:WorkflowViewState.IdRef="Flowchart_2">
@@ -88,7 +88,7 @@
                   <Sequence DisplayName="Ignored Activities" sap2010:WorkflowViewState.IdRef="Sequence_8">
                     <If Condition="[in_TransactionItem isNot Nothing AndAlso (in_TransactionItem.GetType is GetType(Uipath.Core.QueueItem))]" DisplayName="If TransactionItem is a QueueItem" sap2010:WorkflowViewState.IdRef="If_2">
                       <If.Then>
-                        <ui:SetTransactionStatus ContinueOnError="{x:Null}" Reason="{x:Null}" ServiceBaseAddress="{x:Null}" TimeoutMS="{x:Null}" sap2010:Annotation.AnnotationText="Successful" DisplayName="Set transaction status" ErrorType="Application" sap2010:WorkflowViewState.IdRef="SetTransactionStatus_1" Status="Successful" TransactionItem="[in_TransactionItem]">
+                        <ui:SetTransactionStatus ContinueOnError="{x:Null}" Reason="{x:Null}" ServiceBaseAddress="{x:Null}" TimeoutMS="{x:Null}" sap2010:Annotation.AnnotationText="Successful" DisplayName="Set transaction status" ErrorType="Application" Status="Successful" TransactionItem="[in_TransactionItem]">
                           <ui:SetTransactionStatus.Output>
                             <scg:Dictionary x:TypeArguments="x:String, InArgument" />
                           </ui:SetTransactionStatus.Output>
@@ -204,9 +204,9 @@
                   <Sequence.Variables>
                     <Variable x:TypeArguments="x:Boolean" Name="queueRetry" />
                   </Sequence.Variables>
-                  <ui:CommentOut DisplayName="Comment out">
+                  <ui:CommentOut DisplayName="Comment out" sap2010:WorkflowViewState.IdRef="CommentOut_3">
                     <ui:CommentOut.Body>
-                      <Sequence DisplayName="Ignored Activities">
+                      <Sequence DisplayName="Ignored Activities" sap2010:WorkflowViewState.IdRef="Sequence_10">
                         <If Condition="[in_TransactionItem isNot Nothing AndAlso (in_TransactionItem.GetType is GetType(Uipath.Core.QueueItem))]" DisplayName="If TransactionItem is a QueueItem" sap2010:WorkflowViewState.IdRef="If_4">
                           <If.Then>
                             <Sequence sap2010:WorkflowViewState.IdRef="Sequence_7">
@@ -244,10 +244,8 @@
                             </Assign>
                           </If.Else>
                         </If>
-                        <sap2010:WorkflowViewState.IdRef>Sequence_10</sap2010:WorkflowViewState.IdRef>
                       </Sequence>
                     </ui:CommentOut.Body>
-                    <sap2010:WorkflowViewState.IdRef>CommentOut_3</sap2010:WorkflowViewState.IdRef>
                   </ui:CommentOut>
                   <ui:AddLogFields DisplayName="Add Transaction log fields" sap2010:WorkflowViewState.IdRef="AddLogFields_2">
                     <ui:AddLogFields.Fields>
@@ -441,11 +439,10 @@
     <x:Reference>__ReferenceID13</x:Reference>
     <x:Reference>__ReferenceID14</x:Reference>
     <x:Reference>__ReferenceID15</x:Reference>
-    <sads:DebugSymbol.Symbol>d19DOlxVc2Vyc1xMb2dpbkVycm9yXERyb3Bib3hcIUxlYXJuaW5nXEZyYW1ld29ya0V4Y2VsQXNJbnB1dFxGcmFtZXdvcmtcU2V0VHJhbnNhY3Rpb25TdGF0dXMueGFtbGgBdwGBAQECUAO9Aw8CAQFSOFJ9AwGYAY4BPI4BZgMBlwHLARGwAxwCAT2RARHGARwCASBVDYoBGAIBAs8BE/sBIwMBlgH8AROEAiUDAYwBhQIT6AIfAgFc6QIT8wIoAgFW9AIThwMeAgFNiAMTrwMeAgE+kgEToAEjAgE8oQETqQElAgEyqgETqgHrAQIBMKsBE7UBKAIBKrYBE70BHAIBJb4BE8UBHAIBIVYPZB8CAR9lD20hAgEVbg9utQECARJvD3kkAgEMeg+BARgCAQeCAQ+JARgCAQOBAl2BAnMDAZQBggJdggJzAwGSAf8BXf8BfAMBkAGAAlmAAmsDAY4B/gFd/gFxAwGNAYcCR4cCewMBigHMAh3MAp8CAwGFAc8CIdYCKgMBgAGJAkuJAo0BAgF9qQIhqQLmAgIBd6sCU6sCYQIBdboCKcECMgIBcK4CKbUCMgIBa4wCIYwC2QICAWaPAiWWAi4CAWGZAimgAjICAV3sAkDsAlYCAVvtAkDtAlYCAVruAkDuAlICAVnvAkDvAlYCAVjwAkDwAlYCAVf2Ahf7Ai8CAVKDAxuDA/oBAgFOigMXjgMvAgFLlgMbqwMmAgE/pgFdpgFzAgE6pwFdpwFzAgE4pAFdpAF8AgE2pQFZpQFrAgE0owFdowFuAgEzqgGBAaoB6AECATGuAUCuAVYCAS+vAUCvAVYCAS6wAUCwAVICAS2xAUCxAVYCASyyAUCyAVYCASu7AT27AVUCASi4AT64AVQCASbDAT3DAT4CASTAAT7AAU4CASJqWWpvAgEda1lrbwIBG2hZaHgCARlpVWlnAgEXZ1lnYAIBFm58brIBAgETcjxyUgIBEXM8c1ICARB0PHROAgEPdTx1UgIBDnY8dlICAQ1/OX9RAgEKfDp8UAIBCIcBOYcBOgIBBoQBOoQBSgIBBMwCkwHMApwCAwGGAdQCS9QCYwMBgwHRAkzRAmIDAYEBqQKeAakC4wICAXi/AlO/AmUCAXO8AlS8AmQCAXGzAlOzAmsCAW6wAlSwAmoCAWyMAqABjALWAgIBZ5QCT5QCZwIBZJECUJECZgIBYp4CU54CVAIBYJsCVJsCZAIBXvgCVPgCgwECAVT2As0B9gLsAQIBU4MDiAGDA/cBAgFPigPTAYoD+AECAUyXAx2XA/YBAgFHmAMdqgMoAgFAlwOKAZcD8wECAUiaAyGeAzkCAUWmAyWmA/oBAgFBmgPZAZoD+gECAUamA5IBpgP3AQIBQg==</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d3NDOlxVc2Vyc1x1cW1ndXB0MVxEb2N1bWVudHNcVWlQYXRoXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXFBCSV9Mb2NhdGlvbkNoZWNrXEZyYW1ld29ya1xTZXRUcmFuc2FjdGlvblN0YXR1cy54YW1saAF3AYEBAQJQA7sDDwIBAVI4Un0DAZgBjgE8jgFmAwGXAcsBEa4DHAIBPZEBEcYBHAIBIFUNigEYAgECzwET+QEjAwGWAfoBE4ICJQMBjAGDAhPmAh8CAVznAhPxAigCAVbyAhOFAx4CAU2GAxOtAx4CAT6SAROgASMCATyhAROpASUCATKqAROqAesBAgEwqwETtQEoAgEqtgETvQEcAgElvgETxQEcAgEhVg9kHwIBH2UPbSECARVuD261AQIBEm8PeSQCAQx6D4EBGAIBB4IBD4kBGAIBA/8BXf8BcwMBlAGAAl2AAnMDAZIB/QFd/QF8AwGQAf4BWf4BawMBjgH8AV38AXEDAY0BhQJHhQJ7AwGKAcoCHcoCnwIDAYUBzQIh1AIqAwGAAYcCS4cCjQECAX2nAiGnAuYCAgF3qQJTqQJhAgF1uAIpvwIyAgFwrAIpswIyAgFrigIhigLZAgIBZo0CJZQCLgIBYZcCKZ4CMgIBXeoCQOoCVgIBW+sCQOsCVgIBWuwCQOwCUgIBWe0CQO0CVgIBWO4CQO4CVgIBV/QCF/kCLwIBUoEDG4ED+gECAU6IAxeMAy8CAUuUAxupAyYCAT+mAV2mAXMCATqnAV2nAXMCATikAV2kAXwCATalAVmlAWsCATSjAV2jAW4CATOqAYEBqgHoAQIBMa4BQK4BVgIBL68BQK8BVgIBLrABQLABUgIBLbEBQLEBVgIBLLIBQLIBVgIBK7sBPbsBVQIBKLgBPrgBVAIBJsMBPcMBPgIBJMABPsABTgIBImpZam8CAR1rWWtvAgEbaFloeAIBGWlVaWcCARdnWWdgAgEWbnxusgECARNyPHJSAgERczxzUgIBEHQ8dE4CAQ91PHVSAgEOdjx2UgIBDX85f1ECAQp8OnxQAgEIhwE5hwE6AgEGhAE6hAFKAgEEygKTAcoCnAIDAYYB0gJL0gJjAwGDAc8CTM8CYgMBgQGnAp4BpwLjAgIBeL0CU70CZQIBc7oCVLoCZAIBcbECU7ECawIBbq4CVK4CagIBbIoCoAGKAtYCAgFnkgJPkgJnAgFkjwJQjwJmAgFinAJTnAJUAgFgmQJUmQJkAgFe9gJU9gKDAQIBVPQCzQH0AuwBAgFTgQOIAYED9wECAU+IA9MBiAP4AQIBTJUDHZUD9gECAUeWAx2oAygCAUCVA4oBlQPzAQIBSJgDIZwDOQIBRaQDJaQD+gECAUGYA9kBmAP6AQIBRqQDkgGkA/cBAgFC</sads:DebugSymbol.Symbol>
   </Flowchart>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
-      <sap2010:ViewStateData Id="SetTransactionStatus_1" sap:VirtualizedContainerService.HintSize="694,1001" />
       <sap2010:ViewStateData Id="If_2" sap:VirtualizedContainerService.HintSize="464,207" />
       <sap2010:ViewStateData Id="Sequence_8" sap:VirtualizedContainerService.HintSize="486,331">
         <sap:WorkflowViewStateService.ViewState>
@@ -739,7 +736,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_5" sap:VirtualizedContainerService.HintSize="591,1796">
+      <sap2010:ViewStateData Id="Sequence_5" sap:VirtualizedContainerService.HintSize="200,93">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">False</x:Boolean>
@@ -756,12 +753,12 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="FlowDecision_2" sap:VirtualizedContainerService.HintSize="102,87">
+      <sap2010:ViewStateData Id="FlowDecision_2" sap:VirtualizedContainerService.HintSize="103,87">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
             <av:Point x:Key="ShapeLocation">378,266.4</av:Point>
-            <av:Size x:Key="ShapeSize">102,87</av:Size>
+            <av:Size x:Key="ShapeSize">103,87</av:Size>
             <av:PointCollection x:Key="TrueConnector">378,310 330,310 330,473.6</av:PointCollection>
             <av:PointCollection x:Key="FalseConnector">480,309.9 540,309.9 540,471.6</av:PointCollection>
           </scg:Dictionary>
@@ -791,6 +788,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="SetTransactionStatus_1" sap:VirtualizedContainerService.HintSize="694,1001" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
