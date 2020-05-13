@@ -141,6 +141,63 @@
             </TryCatch.Catches>
           </TryCatch>
         </State.Entry>
+        <State.Exit>
+          <If Condition="[SystemError IsNot Nothing AndAlso SystemError.Message.ToString &lt;&gt; Config(&quot;NoEmail_Message&quot;)]" DisplayName="If exception set" sap2010:WorkflowViewState.IdRef="If_11">
+            <If.Then>
+              <TryCatch DisplayName="Try catch - TakeScreenshot and Send email " sap2010:WorkflowViewState.IdRef="TryCatch_7">
+                <TryCatch.Variables>
+                  <Variable x:TypeArguments="x:String" Name="FilePath" />
+                </TryCatch.Variables>
+                <TryCatch.Try>
+                  <Sequence DisplayName="Send email if SignInError " sap2010:WorkflowViewState.IdRef="Sequence_23">
+                    <Sequence.Variables>
+                      <Variable x:TypeArguments="x:String" Name="distributionList" />
+                    </Sequence.Variables>
+                    <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke TakeScreenshot workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_22" UnSafe="False" WorkflowFileName="Framework\TakeScreenshot.xaml">
+                      <ui:InvokeWorkflowFile.Arguments>
+                        <InArgument x:TypeArguments="x:String" x:Key="in_Folder">Exceptions_Screenshots</InArgument>
+                        <InOutArgument x:TypeArguments="x:String" x:Key="io_FilePath">[FilePath]</InOutArgument>
+                      </ui:InvokeWorkflowFile.Arguments>
+                    </ui:InvokeWorkflowFile>
+                    <If Condition="[File.Exists(FilePath)]" DisplayName="If screen capture file exists" sap2010:WorkflowViewState.IdRef="If_10">
+                      <If.Then>
+                        <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke SendEmail with attachment" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_23" UnSafe="False" WorkflowFileName="EmailExchange\SendEmail.xaml">
+                          <ui:InvokeWorkflowFile.Arguments>
+                            <InArgument x:TypeArguments="x:String" x:Key="in_ServerName">[Config("EmailExchangeServer")]</InArgument>
+                            <InArgument x:TypeArguments="x:String" x:Key="in_MessageBody">[Config("EmailMsg_InitError") + SystemError.Message.ToString]</InArgument>
+                            <InArgument x:TypeArguments="x:String" x:Key="in_ReceipentEmail">[Config("Email_AlertRecipient")]</InArgument>
+                            <InArgument x:TypeArguments="x:String" x:Key="in_FileAttachment">[FilePath]</InArgument>
+                            <InArgument x:TypeArguments="x:String" x:Key="in_EmailSubject">[Config("Email_Alert_Subject")]</InArgument>
+                          </ui:InvokeWorkflowFile.Arguments>
+                        </ui:InvokeWorkflowFile>
+                      </If.Then>
+                      <If.Else>
+                        <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke SendEmail without attachment" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_24" UnSafe="False" WorkflowFileName="SendEmail.xaml">
+                          <ui:InvokeWorkflowFile.Arguments>
+                            <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)" x:Key="in_Config">[Config]</InArgument>
+                            <InArgument x:TypeArguments="x:String" x:Key="receiverAddress">[distributionList]</InArgument>
+                            <InArgument x:TypeArguments="x:String" x:Key="body">[Config("VevoInitErrorEmailMsg") +vbNewLine +SystemError.Message.ToString]</InArgument>
+                            <InArgument x:TypeArguments="x:String" x:Key="attachmentPath" />
+                          </ui:InvokeWorkflowFile.Arguments>
+                        </ui:InvokeWorkflowFile>
+                      </If.Else>
+                    </If>
+                  </Sequence>
+                </TryCatch.Try>
+                <TryCatch.Catches>
+                  <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch`1_8">
+                    <ActivityAction x:TypeArguments="s:Exception">
+                      <ActivityAction.Argument>
+                        <DelegateInArgument x:TypeArguments="s:Exception" Name="exception" />
+                      </ActivityAction.Argument>
+                      <ui:LogMessage DisplayName="Log message" sap2010:WorkflowViewState.IdRef="LogMessage_26" Level="Warn" Message="[&quot;Take screenshot failed with error: &quot;+exception.Message+&quot; at Source: &quot;+exception.Source]" />
+                    </ActivityAction>
+                  </Catch>
+                </TryCatch.Catches>
+              </TryCatch>
+            </If.Then>
+          </If>
+        </State.Exit>
         <State.Transitions>
           <Transition DisplayName="Success" sap2010:WorkflowViewState.IdRef="Transition_2">
             <Transition.To>
@@ -323,7 +380,104 @@
                                       <Sequence.Variables>
                                         <Variable x:TypeArguments="x:String" Name="msgBody" />
                                       </Sequence.Variables>
-                                      <ui:WriteCsvFile Encoding="{x:Null}" AddHeaders="True" DataTable="[TransactionData]" Delimitator="Comma" DisplayName="Write output to CSV" FilePath="[Config(&quot;Folder_Location&quot;)+&quot;/&quot;+Config(&quot;File_Name&quot;)]" sap2010:WorkflowViewState.IdRef="WriteCsvFile_1" />
+                                      <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_27" Level="Info" Message="[&quot;Start writing data to output file&quot;]" />
+                                      <ui:WriteTextFile DisplayName="Write Text File" FileName="[Config(&quot;Folder_Location&quot;)+&quot;/&quot;+Config(&quot;File_Name&quot;)]" sap2010:WorkflowViewState.IdRef="WriteTextFile_1" Text="[Config(&quot;Output_Header&quot;)]" />
+                                      <ui:ForEachRow CurrentIndex="{x:Null}" DataTable="[TransactionData]" DisplayName="For Each Row - Add quotes and write to CSV" sap2010:WorkflowViewState.IdRef="ForEachRow_1">
+                                        <ui:ForEachRow.Body>
+                                          <ActivityAction x:TypeArguments="sd:DataRow">
+                                            <ActivityAction.Argument>
+                                              <DelegateInArgument x:TypeArguments="sd:DataRow" Name="row" />
+                                            </ActivityAction.Argument>
+                                            <Sequence DisplayName="Append double quotes " sap2010:WorkflowViewState.IdRef="Sequence_24">
+                                              <Sequence.Variables>
+                                                <Variable x:TypeArguments="x:String" Name="emplID" />
+                                                <Variable x:TypeArguments="x:String" Name="familyName" />
+                                                <Variable x:TypeArguments="x:String" Name="givenName" />
+                                                <Variable x:TypeArguments="x:String" Name="birthDate" />
+                                                <Variable x:TypeArguments="x:String" Name="passportNumber" />
+                                                <Variable x:TypeArguments="x:String" Name="passportCountry" />
+                                                <Variable x:TypeArguments="x:String" Name="location" />
+                                                <Variable x:TypeArguments="x:String" Name="updateDateTime" />
+                                                <Variable x:TypeArguments="x:String" Name="errorMsg" />
+                                              </Sequence.Variables>
+                                              <Assign DisplayName="EMPLID" sap2010:WorkflowViewState.IdRef="Assign_18">
+                                                <Assign.To>
+                                                  <OutArgument x:TypeArguments="x:String">[emplID]</OutArgument>
+                                                </Assign.To>
+                                                <Assign.Value>
+                                                  <InArgument x:TypeArguments="x:String">[row.Item("EMPLID").tostring]</InArgument>
+                                                </Assign.Value>
+                                              </Assign>
+                                              <Assign DisplayName="FAMILY_NAME" sap2010:WorkflowViewState.IdRef="Assign_19">
+                                                <Assign.To>
+                                                  <OutArgument x:TypeArguments="x:String">[familyName]</OutArgument>
+                                                </Assign.To>
+                                                <Assign.Value>
+                                                  <InArgument x:TypeArguments="x:String">[row.Item("FAMILY_NAME").ToString]</InArgument>
+                                                </Assign.Value>
+                                              </Assign>
+                                              <Assign DisplayName="GIVEN_NAMES" sap2010:WorkflowViewState.IdRef="Assign_21">
+                                                <Assign.To>
+                                                  <OutArgument x:TypeArguments="x:String">[givenName]</OutArgument>
+                                                </Assign.To>
+                                                <Assign.Value>
+                                                  <InArgument x:TypeArguments="x:String">[row.Item("GIVEN_NAMES").ToString]</InArgument>
+                                                </Assign.Value>
+                                              </Assign>
+                                              <Assign DisplayName="BIRTH_DATE" sap2010:WorkflowViewState.IdRef="Assign_22">
+                                                <Assign.To>
+                                                  <OutArgument x:TypeArguments="x:String">[birthDate]</OutArgument>
+                                                </Assign.To>
+                                                <Assign.Value>
+                                                  <InArgument x:TypeArguments="x:String">[row.Item("BIRTH_DATE").ToString]</InArgument>
+                                                </Assign.Value>
+                                              </Assign>
+                                              <Assign DisplayName="PASSPORT_NUMBER" sap2010:WorkflowViewState.IdRef="Assign_23">
+                                                <Assign.To>
+                                                  <OutArgument x:TypeArguments="x:String">[passportNumber]</OutArgument>
+                                                </Assign.To>
+                                                <Assign.Value>
+                                                  <InArgument x:TypeArguments="x:String">[row.Item("PASSPORT_NUMBER").ToString]</InArgument>
+                                                </Assign.Value>
+                                              </Assign>
+                                              <Assign DisplayName="PASSPORT_COUNTRY" sap2010:WorkflowViewState.IdRef="Assign_24">
+                                                <Assign.To>
+                                                  <OutArgument x:TypeArguments="x:String">[passportCountry]</OutArgument>
+                                                </Assign.To>
+                                                <Assign.Value>
+                                                  <InArgument x:TypeArguments="x:String">[row.Item("PASSPORT_COUNTRY").ToString]</InArgument>
+                                                </Assign.Value>
+                                              </Assign>
+                                              <Assign DisplayName="LOCATION" sap2010:WorkflowViewState.IdRef="Assign_20">
+                                                <Assign.To>
+                                                  <OutArgument x:TypeArguments="x:String">[location]</OutArgument>
+                                                </Assign.To>
+                                                <Assign.Value>
+                                                  <InArgument x:TypeArguments="x:String">[row.Item("LOCATION").ToString]</InArgument>
+                                                </Assign.Value>
+                                              </Assign>
+                                              <Assign DisplayName="UPDATETIMESTAMP" sap2010:WorkflowViewState.IdRef="Assign_25">
+                                                <Assign.To>
+                                                  <OutArgument x:TypeArguments="x:String">[updateDateTime]</OutArgument>
+                                                </Assign.To>
+                                                <Assign.Value>
+                                                  <InArgument x:TypeArguments="x:String">[row.Item("UPDATETIMESTAMP").ToString]</InArgument>
+                                                </Assign.Value>
+                                              </Assign>
+                                              <Assign DisplayName="ERROR" sap2010:WorkflowViewState.IdRef="Assign_26">
+                                                <Assign.To>
+                                                  <OutArgument x:TypeArguments="x:String">[errorMsg]</OutArgument>
+                                                </Assign.To>
+                                                <Assign.Value>
+                                                  <InArgument x:TypeArguments="x:String">[row.Item("ERROR").ToString]</InArgument>
+                                                </Assign.Value>
+                                              </Assign>
+                                              <ui:AppendLine DisplayName="Append Line" FileName="[Config(&quot;Folder_Location&quot;)+&quot;/&quot;+Config(&quot;File_Name&quot;)]" sap2010:WorkflowViewState.IdRef="AppendLine_1" Text="[Chr(34)+emplID+Chr(34)+&quot;,&quot;+Chr(34)+familyName+Chr(34)+&quot;,&quot;+Chr(34)+givenName+Chr(34)+&quot;,&quot;+Chr(34)+birthDate+Chr(34)+&quot;,&quot;+Chr(34)+passportNumber+Chr(34)+&quot;,&quot;+Chr(34)+passportCountry+Chr(34)+&quot;,&quot;+Chr(34)+location+Chr(34)+&quot;,&quot;+Chr(34)+updateDateTime+Chr(34)+&quot;,&quot;+Chr(34)+errorMsg+Chr(34)]" />
+                                            </Sequence>
+                                          </ActivityAction>
+                                        </ui:ForEachRow.Body>
+                                      </ui:ForEachRow>
+                                      <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_28" Level="Info" Message="[&quot;Complete writing data to output file&quot;]" />
                                       <Assign sap2010:WorkflowViewState.IdRef="Assign_17">
                                         <Assign.To>
                                           <OutArgument x:TypeArguments="x:String">[msgBody]</OutArgument>
@@ -334,11 +488,11 @@
                                       </Assign>
                                       <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke SendEmail workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_21" UnSafe="False" WorkflowFileName="EmailExchange\SendEmail.xaml">
                                         <ui:InvokeWorkflowFile.Arguments>
-                                          <InArgument x:TypeArguments="snm:MailMessage" x:Key="in_TransactionMessage">[emailMessage]</InArgument>
                                           <InArgument x:TypeArguments="x:String" x:Key="in_ServerName">[Config("EmailExchangeServer")]</InArgument>
                                           <InArgument x:TypeArguments="x:String" x:Key="in_MessageBody">[msgBody]</InArgument>
                                           <InArgument x:TypeArguments="x:String" x:Key="in_ReceipentEmail">[Config("PBI_LocationCheck_SenderEmail")]</InArgument>
                                           <InArgument x:TypeArguments="x:String" x:Key="in_FileAttachment">[Config("Folder_Location")+"/"+Config("File_Name")]</InArgument>
+                                          <InArgument x:TypeArguments="x:String" x:Key="in_EmailSubject">["RE: "+emailMessage.Subject.ToString]</InArgument>
                                         </ui:InvokeWorkflowFile.Arguments>
                                       </ui:InvokeWorkflowFile>
                                       <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke MoveEmailToArchive workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_20" UnSafe="False" WorkflowFileName="EmailExchange\MoveEmailToArchive.xaml">
@@ -347,9 +501,9 @@
                                           <InArgument x:TypeArguments="x:String" x:Key="in_ServerName">[Config("EmailExchangeServer")]</InArgument>
                                           <InArgument x:TypeArguments="x:String" x:Key="in_ExchangeCredentials">[Config("SSO_rpa00001")]</InArgument>
                                           <InArgument x:TypeArguments="snm:MailMessage" x:Key="in_TransactionMessage">[emailMessage]</InArgument>
-                                          <InArgument x:TypeArguments="x:String" x:Key="in_EmailAlertRecipient">[Config("Email_AlertRecipient")]</InArgument>
+                                          <InArgument x:TypeArguments="x:String" x:Key="in_EmailAlertRecipient">[Config("Email_Alert_Subject")]</InArgument>
                                           <InArgument x:TypeArguments="x:String" x:Key="in_EmailAlertSubject">[Config("Email_Alert_Subject")]</InArgument>
-                                          <InArgument x:TypeArguments="x:String" x:Key="in_EmailAlertMessageBody">[Config("Email_Alert_MessageBody")]</InArgument>
+                                          <InArgument x:TypeArguments="x:String" x:Key="in_EmailAlertMessageBody">[Config("EmailMsg_MoveFolder")]</InArgument>
                                         </ui:InvokeWorkflowFile.Arguments>
                                       </ui:InvokeWorkflowFile>
                                     </Sequence>
@@ -417,7 +571,7 @@
       <Variable x:TypeArguments="sd:DataTable" Name="TransactionData" />
       <Variable x:TypeArguments="snm:MailMessage" Name="emailMessage" />
     </StateMachine.Variables>
-    <sads:DebugSymbol.Symbol>d1lDOlxVc2Vyc1x1cW1ndXB0MVxEb2N1bWVudHNcVWlQYXRoXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXFBCSV9Mb2NhdGlvbkNoZWNrXE1haW4ueGFtbIcBTwOlAxICAQGbAzObAzYDAdIBnQMznQM2AwHRAZMBD4MDFwMBnAHUARetAh8CAWa2Ahf7Ah8CAS5RB5EDDwIBApUBE88BHgMBpwGyAiuyAkoDAaUBsAIXsALhAQMBoQGAAyuAA0cDAaAB/gIX/gLIAQMBngHWARumAiYCAW2pApYBqQKzAQIBaqoCnwGqAsYBAgFpqwKKAqsCyQICAWi4Ahv5AiYCATBTC44BFgIBDogDI4gDOwIBC4YDD4YDnQECAQqOAyOOAz4CAQiMAw+MA/YBAgEEmQEVmQGLAQMBzgGaARXOARoDAagBsAKFAbAC3gEDAaIB/gKFAf4CxQEDAZ8B2AEf5wEqAwGRAYoCH6QCKgIBeO8BI/YBLAIBc/4BI4UCLAIBbroCH+YCKgIBOO4CI/UCLgIBMVUPexoCARSDAROKARwCAQ+MA32MA/MBAgEFmQF6mQGIAQMBzwGaASOaATEDAakBnAEZpgEkAwHHAakBGcwBJAMBqwHZASHgASoDAZgB4QEh5gE5AwGSAYwCI5gCOwIBfaACJ6AChwICAXn0AV70AWkCAXbxAV/xAXYCAXSDAlGDAlwCAXGAAlKAAl8CAW+7AiG/AjkCAWTAAiHlAiYCATnvAiXvAokCAgE08AIl9AI9AgEyVhFdGgIBKl4RdBYCARt1EXopAgEViAFBiAFMAgEShQFChQFPAgEQnQEbnQG3AQMBzAGeARulASQDAcgBqwEdtgE1AwG3Ab4BIcgBLAMBrAHeAVzeAWUDAZsB2wFd2wF0AwGZAeQBeOQBgAEDAZYB4wFp4wF6AwGUAeEB2wHhAekBAwGTAY8CaI8CdQMBjwGQAn+QApYBAwGNAZUCa5UCfgMBiwGUAmuUAn4DAYkBkgJnkgJ0AwGHAY4Ceo4CggEDAYUBkQJrkQJ8AwGDAZMCbZMCgAEDAYEBlgJnlgJ2AgF/jALgAYwChQICAX6gApYBoAKEAgIBersC3QG7AoICAgFlwAIvwAJJAgE6wgIl4wIwAgE87wKTAe8ChgICATXwAt0B8AL+AQIBM1s/W0gCAS1YQFhNAgErXh9eNAIBHGAVciACAR54XXhrAgEZd2h3cAIBF3XNAXXxAQIBFp0BjgGdAbQBAwHNAaMBSKMBUQMBywGgAUmgAVoDAckBsQFnsQF6AwHFAbABZ7ABegMBwwGyAWOyAXIDAcEBrwFnrwF4AwG/Aa0BZK0BdwMBvQGuAXSuAXwDAbsBswFqswF7AwG5AasB2AGrAfsBAwG4Ab8BI78BvgIDAbEBwAEjxwEsAwGtAcYCJ8YCwgICAV7HAifOAjACAVrPAifXAj8CAU3YAifiAj8CAT1hF2cvAgEkaBdsLwIBIm0XcSkCAR+/AZIBvwG7AgMBsgHFAVDFAVkDAbABwgFRwgFiAwGuAcYCaMYCewIBYsYCuwHGAo4CAgFfzAJSzAKjAQIBXckCU8kCXAIBW9ICaNIChwECAVjRAnfRAoUBAgFW1AJs1AKVAQIBVNUCbNUCnwECAVHPAtkBzwL3AQIBUNMCadMCcgIBTt8Cb98CjgECAUvbAmjbAocBAgFJ3QJ33QKFAQIBR9wCcdwCiQECAUXeAnHeApEBAgFD4AJz4AKWAQIBQdoCa9oChQECAT/YAuIB2AKJAgIBPmVwZXgCAShhzwFh7wECASdkXGR3AgEmY1hjaAIBJWjQAWjxAQIBI29jb5ABAgEg</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d1lDOlxVc2Vyc1x1cW1ndXB0MVxEb2N1bWVudHNcVWlQYXRoXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXFBCSV9Mb2NhdGlvbkNoZWNrXE1haW4ueGFtbMQBTwO/BBICAQG1BDO1BDYDAakCtwQztwQ2AwGoAswBD50EFwMB8wGNAhfmAh8DAb0B7wIXlQQfAgFUUQerBA8CAQLOAROIAh4DAf4B6wIr6wJKAwH8AekCF+kC4QEDAfgBmgQrmgRHAwH3AZgEF5gEyAEDAfUBjwIb3wImAwHEAeIClgHiArMBAwHBAeMCnwHjAsYBAwHAAeQCigLkAskCAwG/AfECG5MEJgIBVlMLjgEWAgE0kQELxwEQAgEOogQjogQ7AgELoAQPoASdAQIBCqgEI6gEPgIBCKYED6YE9gECAQTSARXSAYsBAwGlAtMBFYcCGgMB/wHpAoUB6QLeAQMB+QGYBIUBmATFAQMB9gGRAh+gAioDAegBwwIf3QIqAwHPAagCI68CLAMBygG3AiO+AiwDAcUB8wIfgAQqAgFeiAQjjwQuAgFXVQ97GgIBOoMBE4oBHAIBNZEBGZEBiAECAQ+TAQ/FARoCAROmBH2mBPMBAgEF0gF60gGIAQMBpgLTASPTATEDAYAC1QEZ3wEkAwGeAuIBGYUCJAMBggKSAiGZAioDAe8BmgIhnwI5AwHpAcUCI9ECOwMB1AHZAifZAocCAwHQAa0CXq0CaQMBzQGqAl+qAnYDAcsBvAJRvAJcAwHIAbkCUrkCXwMBxgH0AiH4AjkDAbsB+QIh/wMmAgFfiQQliQSJAgIBWooEJY4EPQIBWFYRXRoCAVBeEXQWAgFBdRF6KQIBO4gBQYgBTAIBOIUBQoUBTwIBNpgBE7kBHgIBGMEBF8EB9wECARTWARvWAbcBAwGjAtcBG94BJAMBnwLkAR3vATUDAY4C9wEhgQIsAwGDApcCXJcCZQMB8gGUAl2UAnQDAfABnQJ4nQKAAQMB7QGcAmmcAnoDAesBmgLbAZoC6QEDAeoByAJoyAJ1AwHmAckCf8kClgEDAeQBzgJrzgJ+AwHiAc0Ca80CfgMB4AHLAmfLAnQDAd4BxwJ6xwKCAQMB3AHKAmvKAnwDAdoBzAJtzAKAAQMB2AHPAmfPAnYDAdYBxQLgAcUChQIDAdUB2QKWAdkChAIDAdEB9ALdAfQCggIDAbwB+QIv+QJJAgFg+wIl/QMwAgFiiQSTAYkEhgICAVuKBN0BigT+AQIBWVs/W0gCAVNYQFhNAgFRXh9eNAIBQmAVciACAUR4XXhrAgE/d2h3cAIBPXXNAXXxAQIBPJwBFaEBLQIBL6IBFbgBGgIBGcEBhQHBAfQBAgEV1gGOAdYBtAEDAaQC3AFI3AFRAwGiAtkBSdkBWgMBoALqAWfqAXoDAZwC6QFn6QF6AwGaAusBY+sBcgMBmALoAWfoAXgDAZYC5gFk5gF3AwGUAucBdOcBfAMBkgLsAWrsAXsDAZAC5AHYAeQB+wEDAY8C+AEj+AG+AgMBiAL5ASOAAiwDAYQC/wIn/wLJAQMBuQGAAyeAA5MCAwGzAYEDJ98DNwMBhgHgAyfgA8wBAwGEAeEDJ+gDMAMBgAHpAyfxAz8CAXPyAyf8Az8CAWNhF2cvAgFKaBdsLwIBSG0XcSkCAUWfAVefAWECATKeAVKeAWgCATGcAcwBnAHrAQIBMKIBI6IBPAIBGqQBGawBMQIBIq8BGbYBMQIBG/gBkgH4AbsCAwGJAv4BUP4BWQMBhwL7AVH7AWIDAYUC/wKVAf8CxgEDAboBgAPrAYADkAIDAbcBgANggAOzAQMBtAGBA1iBA2sDAbEBhwMt3AM4AwGHAeADlQHgA8kBAwGFAeYDUuYDowEDAYMB4wNT4wNcAwGBAesDaOsDhwECAX7vA2rvA5ABAgF87QNs7QOVAQIBeu4DbO4DnwECAXfpA9kB6QP3AQIBduwDaewDcgIBdPkDb/kDjgECAXH1A2j1A4cBAgFv9wN39wOFAQIBbfYDcfYDiQECAWv4A3H4A5ABAgFp+gNz+gOSAQIBZ/QDa/QDhQECAWXyA+IB8gOJAgIBZGVwZXgCAU5hzwFh7wECAU1kXGR3AgFMY1hjaAIBS2jQAWjxAQIBSW9jb5ABAgFGpgFapgF5AgEtqgFcqgF7AgErqAFeqAF+AgEpqQFeqQFoAgEnpAHSAaQB8AECASanAVunAZgBAgEjswFRswGbAQIBIbIBXLIBbgIBH7EBcLEBeAIBHa8B1QGvAeUBAgEckwMvmgM4AwGtAZsDL6IDOAMBqQGjAy+qAzgDAaUBqwMvsgM4AwGhAbMDL7oDOAMBnQG7Ay/CAzgDAZkBwwMvygM4AwGVAcsDL9IDOAMBkQHTAy/aAzgDAY0B2wMv2wPVBAMBiAGYA1qYA3cDAbABlQNblQNjAwGuAaADWqADfAMBrAGdA1udA2cDAaoBqANaqAN8AwGoAaUDW6UDZgMBpgGwA1qwA3sDAaQBrQNbrQNmAwGiAbgDWrgDgAEDAaABtQNbtQNrAwGeAcADWsADgQEDAZwBvQNbvQNsAwGaAcgDWsgDeQMBmAHFA1vFA2UDAZYB0ANa0AOAAQMBlAHNA1vNA2sDAZIB2ANa2AN2AwGQAdUDW9UDZQMBjgHbA+kB2wPSBAMBjAHbA2HbA7QBAwGJAQ==</sads:DebugSymbol.Symbol>
   </StateMachine>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -465,6 +619,63 @@
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="TryCatch_2" sap:VirtualizedContainerService.HintSize="504,1153">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_22" sap:VirtualizedContainerService.HintSize="653,87">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_23" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_24" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="If_10" sap:VirtualizedContainerService.HintSize="653,235">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Sequence_23" sap:VirtualizedContainerService.HintSize="675,486">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="LogMessage_26" sap:VirtualizedContainerService.HintSize="314,91">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Catch`1_8" sap:VirtualizedContainerService.HintSize="679,21">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="TryCatch_7" sap:VirtualizedContainerService.HintSize="693,713">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="If_11" sap:VirtualizedContainerService.HintSize="818,861">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -557,7 +768,7 @@
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="TryCatch_6" sap:VirtualizedContainerService.HintSize="418,314" />
-      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="436,563">
+      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="436,560">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -619,20 +830,47 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_6" sap:VirtualizedContainerService.HintSize="464,87" />
-      <sap2010:ViewStateData Id="WriteCsvFile_1" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="Assign_17" sap:VirtualizedContainerService.HintSize="314,60" />
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_21" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_20" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="Sequence_22" sap:VirtualizedContainerService.HintSize="336,565">
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_6" sap:VirtualizedContainerService.HintSize="513,87" />
+      <sap2010:ViewStateData Id="LogMessage_27" sap:VirtualizedContainerService.HintSize="366,91" />
+      <sap2010:ViewStateData Id="WriteTextFile_1" sap:VirtualizedContainerService.HintSize="366,87" />
+      <sap2010:ViewStateData Id="Assign_18" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="Assign_19" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="Assign_21" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="Assign_22" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="Assign_23" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="Assign_24" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="Assign_20" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="Assign_25" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="Assign_26" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="AppendLine_1" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="Sequence_24" sap:VirtualizedContainerService.HintSize="336,1111">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_9" sap:VirtualizedContainerService.HintSize="464,713" />
-      <sap2010:ViewStateData Id="Sequence_20" sap:VirtualizedContainerService.HintSize="486,964">
+      <sap2010:ViewStateData Id="ForEachRow_1" sap:VirtualizedContainerService.HintSize="366,1259">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="LogMessage_28" sap:VirtualizedContainerService.HintSize="366,91" />
+      <sap2010:ViewStateData Id="Assign_17" sap:VirtualizedContainerService.HintSize="366,60" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_21" sap:VirtualizedContainerService.HintSize="366,87" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_20" sap:VirtualizedContainerService.HintSize="366,87" />
+      <sap2010:ViewStateData Id="Sequence_22" sap:VirtualizedContainerService.HintSize="388,2126">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="If_9" sap:VirtualizedContainerService.HintSize="513,2274" />
+      <sap2010:ViewStateData Id="Sequence_20" sap:VirtualizedContainerService.HintSize="535,2525">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -648,7 +886,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Catch`1_5" sap:VirtualizedContainerService.HintSize="490,21">
+      <sap2010:ViewStateData Id="Catch`1_5" sap:VirtualizedContainerService.HintSize="539,21">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">False</x:Boolean>
@@ -656,8 +894,8 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_4" sap:VirtualizedContainerService.HintSize="504,1191" />
-      <sap2010:ViewStateData Id="State_1" sap:VirtualizedContainerService.HintSize="530,1331">
+      <sap2010:ViewStateData Id="TryCatch_4" sap:VirtualizedContainerService.HintSize="553,2752" />
+      <sap2010:ViewStateData Id="State_1" sap:VirtualizedContainerService.HintSize="124,104">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <av:Point x:Key="ShapeLocation">73,188.5</av:Point>
@@ -715,7 +953,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="State_2" sap:VirtualizedContainerService.HintSize="234,88">
+      <sap2010:ViewStateData Id="State_2" sap:VirtualizedContainerService.HintSize="844,2320">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <av:Point x:Key="ShapeLocation">274.5,8.5</av:Point>

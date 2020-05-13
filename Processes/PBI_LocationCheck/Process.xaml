@@ -2,6 +2,7 @@
  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
  xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities"
+ xmlns:s="clr-namespace:System;assembly=mscorlib"
  xmlns:sads="http://schemas.microsoft.com/netfx/2010/xaml/activities/debugger"
  xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
@@ -73,6 +74,7 @@
       <AssemblyReference>UiPath.Word</AssemblyReference>
       <AssemblyReference>UiPath.Studio.Plugin.Workflow</AssemblyReference>
       <AssemblyReference>System.Data.Entity</AssemblyReference>
+      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence sap2010:Annotation.AnnotationText="Description: In this file all other process specific files will be invoked. If an application exception occurs, the current transaction can be retried. If a BRE is thrown, the transaction will be skipped. Can be a flowchart or sequence. " DisplayName="ProcessTransaction" sap2010:WorkflowViewState.IdRef="Sequence_1">
@@ -114,6 +116,9 @@
       </If.Then>
       <If.Else>
         <Sequence DisplayName="Update ERROR field and throw BRE" sap2010:WorkflowViewState.IdRef="Sequence_2">
+          <Sequence.Variables>
+            <Variable x:TypeArguments="s:DateTime" Name="current_Timestamp" />
+          </Sequence.Variables>
           <Assign DisplayName="ErrorCode to output CSV" sap2010:WorkflowViewState.IdRef="Assign_3">
             <Assign.To>
               <OutArgument x:TypeArguments="x:Object">[in_TransactionItem.Item("ERROR")]</OutArgument>
@@ -122,7 +127,23 @@
               <InArgument x:TypeArguments="x:Object">[error_message]</InArgument>
             </Assign.Value>
           </Assign>
-          <Throw DisplayName="Throw BRE" Exception="[new BusinessRuleException(&quot;Stundent ID : '&quot;+in_TransactionItem(&quot;EMPLID&quot;).ToString+&quot;'failed to process as '&quot;+error_message+&quot;'.&quot;)]" sap2010:WorkflowViewState.IdRef="Throw_1" />
+          <Assign DisplayName="Assign Current timestamp" sap2010:WorkflowViewState.IdRef="Assign_7">
+            <Assign.To>
+              <OutArgument x:TypeArguments="s:DateTime">[current_Timestamp]</OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="s:DateTime">[Now]</InArgument>
+            </Assign.Value>
+          </Assign>
+          <Assign DisplayName="Current Time output CSV" sap2010:WorkflowViewState.IdRef="Assign_8">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:Object">[in_TransactionItem.Item("UPDATETIMESTAMP")]</OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:Object">[current_Timestamp.ToString("yyyy-MM-dd hh:mm:ss")]</InArgument>
+            </Assign.Value>
+          </Assign>
+          <Throw DisplayName="Throw BRE" Exception="[new BusinessRuleException(&quot;Stundent ID : '&quot;+in_TransactionItem(&quot;EMPLID&quot;).ToString+&quot;' failed to process as '&quot;+error_message+&quot;'.&quot;)]" sap2010:WorkflowViewState.IdRef="Throw_1" />
         </Sequence>
       </If.Else>
     </If>
@@ -156,7 +177,7 @@
         </Assign>
       </If.Else>
     </If>
-    <sads:DebugSymbol.Symbol>d1xDOlxVc2Vyc1x1cW1ndXB0MVxEb2N1bWVudHNcVWlQYXRoXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXFBCSV9Mb2NhdGlvbkNoZWNrXFByb2Nlc3MueGFtbCVOA6ABDgIBAVUFXA4CAS5dBWIVAgEpYwWAAQoCARGBAQWIAQ4CAQ2JAQWeAQoCAQJaMFpcAgExVzFXPgIBL2BCYFECASxfSl9eAgEqYxNjLwIBEmUJcSECARt0CX4UAgEUhgEwhgE7AgEPgwExgwFdAgEOiQETiQEtAgEDiwEJkgESAgEJlQEJnAESAgEFalFqigECAShpTml+AgEnZ0pndgIBJmtJa3UCASVoS2h2AgEkb0lvdQIBI21KbVkCASFlwgFl5QECASBsSmxUAgEebktuVgIBHHULfBQCARd9C32MAgIBFZABNJABPgIBC40BNY0BWgIBCpoBNJoBQwIBB5cBNZcBVwIBBno2ekUCARl3N3dZAgEYfTR93wECARY=</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d1xDOlxVc2Vyc1x1cW1ndXB0MVxEb2N1bWVudHNcVWlQYXRoXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXFBCSV9Mb2NhdGlvbkNoZWNrXFByb2Nlc3MueGFtbCtQA7UBDgIBAVcFXg4CATZfBWQVAgExZQWVAQoCARGWAQWdAQ4CAQ2eAQWzAQoCAQJcMFxcAgE5WTFZPgIBN2JCYlECATRhSmFeAgEyZRNlLwIBEmcJcyECASN2CZMBFAIBFJsBMJsBOwIBD5gBMZgBXQIBDp4BE54BLQIBA6ABCacBEgIBCaoBCbEBEgIBBWxRbIoBAgEwa05rfgIBL2lKaXYCAS5tSW11AgEtaktqdgIBLHFJcXUCAStvSm9ZAgEpZ8IBZ+UBAgEobkpuVAIBJnBLcFYCASR6C4EBFAIBH4IBC4kBFAIBG4oBC5EBFAIBF5IBC5IBjQICARWlATSlAT4CAQuiATWiAVoCAQqvATSvAUMCAQesATWsAVcCAQZ/Nn9FAgEhfDd8WQIBIIcBOIcBPQIBHoQBOYQBTAIBHI8BNo8BaQIBGYwBN4wBYwIBGJIBNJIB4AECARY=</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -164,15 +185,17 @@
       <sap2010:ViewStateData Id="InvokeCode_1" sap:VirtualizedContainerService.HintSize="603,164" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_1" sap:VirtualizedContainerService.HintSize="314,87" />
       <sap2010:ViewStateData Id="Assign_3" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="Assign_7" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="Assign_8" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="Throw_1" sap:VirtualizedContainerService.HintSize="242,22" />
-      <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="264,246">
+      <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="264,446">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="603,394">
+      <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="603,594">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -184,7 +207,7 @@
       <sap2010:ViewStateData Id="Assign_4" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="Assign_5" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="If_2" sap:VirtualizedContainerService.HintSize="603,208" />
-      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="625,1227">
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="625,1427">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -192,7 +215,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="ProcessTransaction_1" sap:VirtualizedContainerService.HintSize="665,1307" />
+      <sap2010:ViewStateData Id="ProcessTransaction_1" sap:VirtualizedContainerService.HintSize="665,1507" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
