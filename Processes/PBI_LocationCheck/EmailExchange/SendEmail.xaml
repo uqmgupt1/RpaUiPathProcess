@@ -17,6 +17,8 @@
     <x:Property Name="in_ReceipentEmail" Type="InArgument(x:String)" />
     <x:Property Name="in_FileAttachment" Type="InArgument(x:String)" />
     <x:Property Name="in_EmailSubject" Type="InArgument(x:String)" />
+    <x:Property Name="in_CredentialsAsset" Type="InArgument(x:String)" />
+    <x:Property Name="in_OperatingEnvironment" Type="InArgument(x:String)" />
   </x:Members>
   <mva:VisualBasic.Settings>
     <x:Null />
@@ -45,6 +47,7 @@
       <x:String>System.Windows.Markup</x:String>
       <x:String>UiPath.Core</x:String>
       <x:String>UiPath.Core.Activities</x:String>
+      <x:String>Microsoft.VisualBasic.CompilerServices</x:String>
     </sco:Collection>
   </TextExpression.NamespacesForImplementation>
   <TextExpression.ReferencesForImplementation>
@@ -81,7 +84,7 @@
     <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke GetAppCredentials workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_1" UnSafe="False" WorkflowFileName="Framework\GetAppCredentials.xaml">
       <ui:InvokeWorkflowFile.Arguments>
         <OutArgument x:TypeArguments="x:String" x:Key="out_Username">[username]</OutArgument>
-        <InArgument x:TypeArguments="x:String" x:Key="in_Credential">SSO_rpa00001</InArgument>
+        <InArgument x:TypeArguments="x:String" x:Key="in_Credential">[in_CredentialsAsset]</InArgument>
         <OutArgument x:TypeArguments="ss:SecureString" x:Key="out_Password">[password]</OutArgument>
       </ui:InvokeWorkflowFile.Arguments>
     </ui:InvokeWorkflowFile>
@@ -96,8 +99,7 @@
     <TryCatch DisplayName="Try Catch - Send email" sap2010:WorkflowViewState.IdRef="TryCatch_1">
       <TryCatch.Try>
         <Sequence DisplayName="Send email " sap2010:WorkflowViewState.IdRef="Sequence_3">
-          <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[&quot;Sending email to '&quot;+in_ReceipentEmail+&quot;'. Subject is '&quot;+in_EmailSubject+&quot;'.&quot;]" />
-          <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_6" Level="Info" Message="[&quot;Subject is '&quot;+in_EmailSubject+&quot;'.&quot;]" />
+          <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[&quot;Sending email to '&quot;+in_ReceipentEmail+&quot;'.&quot;+vbNewLine+&quot;Subject '&quot;+in_EmailSubject+&quot;'.&quot;]" />
           <Assign DisplayName="Private: Assign password to plain text " sap2010:WorkflowViewState.IdRef="Assign_2">
             <Assign.To>
               <OutArgument x:TypeArguments="x:String">[password_plain]</OutArgument>
@@ -106,12 +108,24 @@
               <InArgument x:TypeArguments="x:String">[new System.Net.NetworkCredential(string.Empty, password).Password]</InArgument>
             </Assign.Value>
           </Assign>
+          <If Condition="[in_OperatingEnvironment &lt;&gt; &quot;PROD&quot;]" DisplayName="Check operating env and if Non-Prod, append subject with environment " sap2010:WorkflowViewState.IdRef="If_1">
+            <If.Then>
+              <Assign sap2010:WorkflowViewState.IdRef="Assign_9">
+                <Assign.To>
+                  <OutArgument x:TypeArguments="x:String">[in_EmailSubject]</OutArgument>
+                </Assign.To>
+                <Assign.Value>
+                  <InArgument x:TypeArguments="x:String">[in_OperatingEnvironment +" - " + in_EmailSubject]</InArgument>
+                </Assign.Value>
+              </Assign>
+            </If.Then>
+          </If>
           <ui:SendExchangeMail Bcc="{x:Null}" Cc="{x:Null}" Domain="{x:Null}" EmailAutodiscover="{x:Null}" From="{x:Null}" MailMessage="{x:Null}" Name="{x:Null}" TimeoutMS="{x:Null}" Body="[in_MessageBody]" DisplayName="Send Exchange Mail Message" ExchangeVersion="Exchange2007_SP1" sap2010:WorkflowViewState.IdRef="SendExchangeMail_1" IsBodyHtml="False" IsDraft="False" Password="[password_plain]" SaveCopy="True" Server="[in_ServerName]" Subject="[in_EmailSubject]" To="[in_ReceipentEmail]" User="[username]">
             <ui:SendExchangeMail.Files>
               <InArgument x:TypeArguments="x:String">[in_FileAttachment]</InArgument>
             </ui:SendExchangeMail.Files>
           </ui:SendExchangeMail>
-          <ui:LogMessage DisplayName="Log Message" Level="Info" Message="[&quot;Email sent successfully.&quot;]" sap2010:WorkflowViewState.IdRef="LogMessage_7" />
+          <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_7" Level="Info" Message="[&quot;Email sent successfully.&quot;]" />
           <ui:Delete ContinueOnError="{x:Null}" sap2010:WorkflowViewState.IdRef="Delete_1" Path="[in_FileAttachment]" />
           <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_5" Level="Info" Message="[&quot;Output file : '&quot;+in_FileAttachment+&quot;' deleted from local drive.&quot;]" />
         </Sequence>
@@ -130,20 +144,21 @@
         </Catch>
       </TryCatch.Catches>
     </TryCatch>
-    <sads:DebugSymbol.Symbol>d2xDOlxVc2Vyc1x1cW1ndXB0MVxEb2N1bWVudHNcVWlQYXRoXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXFBCSV9Mb2NhdGlvbkNoZWNrXEVtYWlsRXhjaGFuZ2VcU2VuZEVtYWlsLnhhbWwlSwOGAQ4CAQFRBVcdAgE0WAVfDgIBL2AFhAEQAgECVU1VVwIBOVRGVFICAThTRlNQAgE2Ub4BUeABAgE1XTBdRwIBMloxWjsCATBiCXUUAgELfQ2AARgCAQNjC2PqAQIBK2QLZLYBAgEoZQtsFAIBI20LcSECARRyC3KjAQIBEnMLc3kCAQ90C3TUAQIBDH4PfpUBAgEIfw9/3gECAQRjeGPnAQIBLGR4ZLMBAgEpajZqeQIBJmc3Z0cCASRt2ANt7QMCASFvNm9JAgEfbfMDbf8DAgEdbb0Bbc8BAgEbbcEDbdQDAgEZbacDbbgDAgEXbf0CbY8DAgEVcklycQIBE3Nhc3YCARB0eHTRAQIBDX59fpIBAgEJf0Z/sQECAQU=</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d2xDOlxVc2Vyc1x1cW1ndXB0MVxEb2N1bWVudHNcVWlQYXRoXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXFBCSV9Mb2NhdGlvbkNoZWNrXEVtYWlsRXhjaGFuZ2VcU2VuZEVtYWlsLnhhbWwoTgOUAQ4CAQFUBVodAgE4WwViDgIBM2MFkgEQAgECWE1YVwIBPldGV1sCATxWRlZQAgE6VL4BVOABAgE5YDBgRwIBNl0xXTsCATRlCYMBFAIBC4sBDY4BGAIBA2YLZv0BAgExZwtuFAIBLG8LehACASN7C38hAgEUgAELgAGjAQIBEoEBC4EBeQIBD4IBC4IB1AECAQyMAQ+MAZUBAgEIjQEPjQHeAQIBBGZ4ZvoBAgEybDZseQIBL2k3aUcCAS1vGW9OAgEkcQ94GAIBJnvYA3vtAwIBIX02fUkCAR978wN7/wMCAR17vQF7zwECARt7wQN71AMCARl7pwN7uAMCARd7/QJ7jwMCARWAAXiAAaABAgETgQFhgQF2AgEQggF4ggHRAQIBDYwBfYwBkgECAQmNAUaNAbEBAgEFdjp2bAIBKXM7c0wCASc=</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_1" sap:VirtualizedContainerService.HintSize="414,87" />
-      <sap2010:ViewStateData Id="Assign_7" sap:VirtualizedContainerService.HintSize="414,60" />
-      <sap2010:ViewStateData Id="LogMessage_2" sap:VirtualizedContainerService.HintSize="314,91" />
-      <sap2010:ViewStateData Id="LogMessage_6" sap:VirtualizedContainerService.HintSize="314,91" />
-      <sap2010:ViewStateData Id="Assign_2" sap:VirtualizedContainerService.HintSize="314,60" />
-      <sap2010:ViewStateData Id="SendExchangeMail_1" sap:VirtualizedContainerService.HintSize="314,145" />
-      <sap2010:ViewStateData Id="LogMessage_7" sap:VirtualizedContainerService.HintSize="314,91" />
-      <sap2010:ViewStateData Id="Delete_1" sap:VirtualizedContainerService.HintSize="314,22" />
-      <sap2010:ViewStateData Id="LogMessage_5" sap:VirtualizedContainerService.HintSize="314,91" />
-      <sap2010:ViewStateData Id="Sequence_3" sap:VirtualizedContainerService.HintSize="336,955">
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_1" sap:VirtualizedContainerService.HintSize="504,87" />
+      <sap2010:ViewStateData Id="Assign_7" sap:VirtualizedContainerService.HintSize="504,60" />
+      <sap2010:ViewStateData Id="LogMessage_2" sap:VirtualizedContainerService.HintSize="464,91" />
+      <sap2010:ViewStateData Id="Assign_2" sap:VirtualizedContainerService.HintSize="464,60" />
+      <sap2010:ViewStateData Id="Assign_9" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="464,208" />
+      <sap2010:ViewStateData Id="SendExchangeMail_1" sap:VirtualizedContainerService.HintSize="464,145" />
+      <sap2010:ViewStateData Id="LogMessage_7" sap:VirtualizedContainerService.HintSize="464,91" />
+      <sap2010:ViewStateData Id="Delete_1" sap:VirtualizedContainerService.HintSize="464,22" />
+      <sap2010:ViewStateData Id="LogMessage_5" sap:VirtualizedContainerService.HintSize="464,91" />
+      <sap2010:ViewStateData Id="Sequence_3" sap:VirtualizedContainerService.HintSize="486,1072">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -159,7 +174,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Catch`1_1" sap:VirtualizedContainerService.HintSize="404,21">
+      <sap2010:ViewStateData Id="Catch`1_1" sap:VirtualizedContainerService.HintSize="490,21">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">False</x:Boolean>
@@ -167,7 +182,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="418,1182">
+      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="504,1299">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -175,14 +190,14 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="436,859">
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="526,1650">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Test_SendEmail_1" sap:VirtualizedContainerService.HintSize="476,939" />
+      <sap2010:ViewStateData Id="Test_SendEmail_1" sap:VirtualizedContainerService.HintSize="566,1730" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
