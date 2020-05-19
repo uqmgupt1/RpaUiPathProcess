@@ -73,7 +73,6 @@
       <AssemblyReference>UiPath.Word</AssemblyReference>
       <AssemblyReference>UiPath.Studio.Plugin.Workflow</AssemblyReference>
       <AssemblyReference>System.Data.Entity</AssemblyReference>
-      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <StateMachine sap2010:Annotation.AnnotationText="This process determine the numbers of International students that are here in Australia vs those offshore via performing VEVO check on Immi website, which includes read email, download input csv and perform VEVO check, update location and send back csv file to sender. " DisplayName="PBI_LocationCheck " sap2010:WorkflowViewState.IdRef="StateMachine_1">
@@ -174,13 +173,17 @@
                         </ui:InvokeWorkflowFile>
                       </If.Then>
                       <If.Else>
-                        <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke SendEmail without attachment" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_24" UnSafe="False" WorkflowFileName="SendEmail.xaml">
+                        <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke SendEmail without attachment" UnSafe="False" WorkflowFileName="EmailExchange\SendEmail.xaml">
                           <ui:InvokeWorkflowFile.Arguments>
-                            <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)" x:Key="in_Config">[Config]</InArgument>
-                            <InArgument x:TypeArguments="x:String" x:Key="receiverAddress">[distributionList]</InArgument>
-                            <InArgument x:TypeArguments="x:String" x:Key="body">[Config("VevoInitErrorEmailMsg") +vbNewLine +SystemError.Message.ToString]</InArgument>
-                            <InArgument x:TypeArguments="x:String" x:Key="attachmentPath" />
+                            <InArgument x:TypeArguments="x:String" x:Key="in_ServerName">[Config("EmailExchangeServer")]</InArgument>
+                            <InArgument x:TypeArguments="x:String" x:Key="in_MessageBody">[Config("EmailMsg_InitError") + SystemError.Message.ToString]</InArgument>
+                            <InArgument x:TypeArguments="x:String" x:Key="in_ReceipentEmail">[Config("Email_AlertRecipient")]</InArgument>
+                            <InArgument x:TypeArguments="x:String" x:Key="in_FileAttachment" />
+                            <InArgument x:TypeArguments="x:String" x:Key="in_EmailSubject">[Config("Email_Alert_Subject")]</InArgument>
+                            <InArgument x:TypeArguments="x:String" x:Key="in_CredentialsAsset" />
+                            <InArgument x:TypeArguments="x:String" x:Key="in_OperatingEnvironment" />
                           </ui:InvokeWorkflowFile.Arguments>
+                          <sap2010:WorkflowViewState.IdRef>InvokeWorkflowFile_25</sap2010:WorkflowViewState.IdRef>
                         </ui:InvokeWorkflowFile>
                       </If.Else>
                     </If>
@@ -492,7 +495,7 @@
                                         <ui:InvokeWorkflowFile.Arguments>
                                           <InArgument x:TypeArguments="x:String" x:Key="in_ServerName">[Config("EmailExchangeServer")]</InArgument>
                                           <InArgument x:TypeArguments="x:String" x:Key="in_MessageBody">[msgBody]</InArgument>
-                                          <InArgument x:TypeArguments="x:String" x:Key="in_ReceipentEmail">[Config("PBI_LocationCheck_SenderEmail")]</InArgument>
+                                          <InArgument x:TypeArguments="x:String" x:Key="in_ReceipentEmail">[emailMessage.Sender.Address]</InArgument>
                                           <InArgument x:TypeArguments="x:String" x:Key="in_FileAttachment">[Config("Folder_Location")+"\"+Config("File_Name")]</InArgument>
                                           <InArgument x:TypeArguments="x:String" x:Key="in_EmailSubject">["RE: "+emailMessage.Subject.ToString]</InArgument>
                                           <InArgument x:TypeArguments="x:String" x:Key="in_CredentialsAsset">[Config("SSO_rpa00001")]</InArgument>
@@ -575,7 +578,7 @@
       <Variable x:TypeArguments="sd:DataTable" Name="TransactionData" />
       <Variable x:TypeArguments="snm:MailMessage" Name="emailMessage" />
     </StateMachine.Variables>
-    <sads:DebugSymbol.Symbol>d1lDOlxVc2Vyc1x1cW1ndXB0MVxEb2N1bWVudHNcVWlQYXRoXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXFBCSV9Mb2NhdGlvbkNoZWNrXE1haW4ueGFtbMcBTwPDBBICAQG5BDO5BDYDAa4CuwQzuwQ2AwGtAs4BD6EEFwMB9gGPAhfoAh8DAcAB8QIXmQQfAgFUUQevBA8CAQLQAROKAh4DAYEC7QIr7QJKAwH/AesCF+sC4QEDAfsBngQrngRHAwH6AZwEF5wEyAEDAfgBkQIb4QImAwHHAeQClgHkArMBAwHEAeUCnwHlAsYBAwHDAeYCigLmAskCAwHCAfMCG5cEJgIBVlMLjgEWAgE0kQELyQEQAgEOpgQjpgQ7AgELpAQPpASdAQIBCqwEI6wEPgIBCKoED6oE9gECAQTUARXUAYsBAwGqAtUBFYkCGgMBggLrAoUB6wLeAQMB/AGcBIUBnATFAQMB+QGTAh+iAioDAesBxQIf3wIqAwHSAaoCI7ECLAMBzQG5AiPAAiwDAcgB9QIfhAQqAgFejAQjkwQuAgFXVQ97GgIBOoMBE4oBHAIBNZEBGZEBiAECAQ+TAQ/HARoCAROqBH2qBPMBAgEF1AF61AGIAQMBqwLVASPVATEDAYMC1wEZ4QEkAwGjAuQBGYcCJAMBhQKUAiGbAioDAfIBnAIhoQI5AwHsAccCI9MCOwMB1wHbAifbAocCAwHTAa8CXq8CaQMB0AGsAl+sAnYDAc4BvgJRvgJcAwHLAbsCUrsCXwMByQH2AiH6AjkDAb4B+wIhgwQmAgFfjQQljQSJAgIBWo4EJZIEPQIBWFYRXRoCAVBeEXQWAgFBdRF6KQIBO4gBQYgBTAIBOIUBQoUBTwIBNpgBE7sBHgIBGMMBF8MB9wECARTYARvYAbcBAwGoAtkBG+ABJAMBpALmAR3xATUDAZEC+QEhgwIsAwGGApkCXJkCZQMB9QGWAl2WAnQDAfMBnwJ4nwKAAQMB8AGeAmmeAnoDAe4BnALbAZwC6QEDAe0BygJoygJ1AwHpAcsCf8sClgEDAecB0AJr0AJ+AwHlAc8Ca88CfgMB4wHNAmfNAnQDAeEByQJ6yQKCAQMB3wHMAmvMAnwDAd0BzgJtzgKAAQMB2wHRAmfRAnYDAdkBxwLgAccChQIDAdgB2wKWAdsChAIDAdQB9gLdAfYCggIDAb8B+wIv+wJvAgFg/QIlgQQwAgFhjQSTAY0EhgICAVuOBN0BjgT+AQIBWVs/W0gCAVNYQFhNAgFRXh9eNAIBQmAVciACAUR4XXhrAgE/d2h3cAIBPXXNAXXxAQIBPJwBFaEBLQIBL6IBFboBGgIBGcMBhQHDAfQBAgEV2AGOAdgBtAEDAakC3gFI3gFRAwGnAtsBSdsBWgMBpQLsAWfsAXoDAaEC6wFn6wF6AwGfAu0BY+0BcgMBnQLqAWfqAXgDAZsC6AFk6AF3AwGZAu8BZu8BdAMBlwLpAXTpAXwDAZUC7gFq7gF7AwGTAuYB2AHmAfsBAwGSAvoBI/oBvgIDAYsC+wEjggIsAwGHAoEDJ4EDyQEDAbwBggMnggOTAgMBtgGDAyfhAzcDAYkB4gMn4gPKAQMBhwHjAyfqAzADAYMB6wMn9QM/AgFy9gMngAQ/AgFiYRdnLwIBSmgXbC8CAUhtF3EpAgFFnwFXnwFhAgEyngFSngFoAgExnAHMAZwB6wECATCiASOiATwCARqkARmuATECASKxARm4ATECARv6AZIB+gG7AgMBjAKAAlCAAlkDAYoC/QFR/QFiAwGIAoEDlQGBA8YBAwG9AYID6wGCA5ACAwG6AYIDYIIDswEDAbcBgwNYgwNrAwG0AYkDLd4DOAMBigHiA5UB4gPHAQMBiAHoA1LoA6MBAwGGAeUDU+UDXAMBhAHtA2jtA4cBAwGBAfEDavEDkAECAX/zA3LzA5IBAgF97wNs7wOVAQIBe/ADbPADnwECAXjyA27yA4YBAgF26wPZAesD9wECAXXuA2nuA3ICAXP9A2/9A44BAgFw+QNo+QOHAQIBbvsDd/sDhQECAWz6A3H6A4kBAgFq/ANx/AOQAQIBaP4Dc/4DkgECAWb4A2v4A4UBAgFk9gPiAfYDiQICAWNlcGV4AgFOYc8BYe8BAgFNZFxkdwIBTGNYY2gCAUto0AFo8QECAUlvY2+QAQIBRqYBWqYBeQIBLaoBXKoBewIBK6gBXqgBfgIBKakBXqkBaAIBJ6QB0gGkAfABAgEmpwFbpwGYAQIBI7UBUbUBmwECASG0AVy0AW4CAR+zAXCzAXgCAR2xAdUBsQHlAQIBHJUDL5wDOAMBsAGdAy+kAzgDAawBpQMvrAM4AwGoAa0DL7QDOAMBpAG1Ay+8AzgDAaABvQMvxAM4AwGcAcUDL8wDOAMBmAHNAy/UAzgDAZQB1QMv3AM4AwGQAd0DL90D1QQDAYsBmgNamgN3AwGzAZcDW5cDYwMBsQGiA1qiA3wDAa8BnwNbnwNnAwGtAaoDWqoDfAMBqwGnA1unA2YDAakBsgNasgN7AwGnAa8DW68DZgMBpQG6A1q6A4ABAwGjAbcDW7cDawMBoQHCA1rCA4EBAwGfAb8DW78DbAMBnQHKA1rKA3kDAZsBxwNbxwNlAwGZAdIDWtIDgAEDAZcBzwNbzwNrAwGVAdoDWtoDdgMBkwHXA1vXA2UDAZEB3QPpAd0D0gQDAY8B3QNh3QO0AQMBjAE=</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>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</sads:DebugSymbol.Symbol>
   </StateMachine>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -639,7 +642,7 @@
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="InvokeWorkflowFile_23" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_24" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_25" sap:VirtualizedContainerService.HintSize="314,87" />
       <sap2010:ViewStateData Id="If_10" sap:VirtualizedContainerService.HintSize="653,235">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
