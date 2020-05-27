@@ -21,6 +21,7 @@
     <x:Property Name="out_TransactionID" Type="OutArgument(x:String)" />
     <x:Property Name="io_TransactionData" Type="InOutArgument(sd:DataTable)" />
     <x:Property Name="in_MailMessage" Type="InArgument(snm:MailMessage)" />
+    <x:Property Name="in_isValidEmailFlag" Type="InArgument(x:Boolean)" />
   </x:Members>
   <mva:VisualBasic.Settings>
     <x:Null />
@@ -87,7 +88,7 @@
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence sap2010:Annotation.AnnotationText="Description: Get data from spreadsheets, databases, email, web API or UiPath server queues. If no new data, set out_TransactionItem to Nothing. &#xA;&#xA;For a linear process (not repetitive), set out_TransactionItem only for in_TransactionNumber 1 - first and only transaction. &#xA;&#xA;If the process is repeatable, set io_TransactionData once for in_TransactionNumber 1, then assign a new out_TransactionItem by using the in_TransactionNumber to index io_TransactionData. Be aware that, at the end of the io_TransactionData collection, it is your responsibility to set out_TransactionItem to Nothing, thus ending the process." DisplayName="GetTransactionData" sap2010:WorkflowViewState.IdRef="Sequence_1">
-    <If Condition="[in_TransactionNumber = 1]" DisplayName="Check if it is first transaction" sap2010:WorkflowViewState.IdRef="If_2">
+    <If Condition="[in_isValidEmailFlag AndAlso in_TransactionNumber = 1]" DisplayName="Check if it is first transaction and " sap2010:WorkflowViewState.IdRef="If_2">
       <If.Then>
         <Sequence DisplayName="Read input file and assign first transaction" sap2010:WorkflowViewState.IdRef="Sequence_4">
           <TryCatch DisplayName="Try Catch - Read Input CSV file" sap2010:WorkflowViewState.IdRef="TryCatch_1">
@@ -142,8 +143,18 @@
           </TryCatch>
         </Sequence>
       </If.Then>
+      <If.Else>
+        <Assign DisplayName="End process as no email found " sap2010:WorkflowViewState.IdRef="Assign_10">
+          <Assign.To>
+            <OutArgument x:TypeArguments="sd:DataRow">[out_TransactionItem]</OutArgument>
+          </Assign.To>
+          <Assign.Value>
+            <InArgument x:TypeArguments="sd:DataRow">[Nothing]</InArgument>
+          </Assign.Value>
+        </Assign>
+      </If.Else>
     </If>
-    <If Condition="[in_TransactionNumber &lt;= io_TransactionData.Rows.Count]" DisplayName="Check if more dataRow to process " sap2010:WorkflowViewState.IdRef="If_3">
+    <If Condition="[in_isValidEmailFlag  AndAlso in_TransactionNumber &lt;= io_TransactionData.Rows.Count]" DisplayName="Check if more dataRow to process " sap2010:WorkflowViewState.IdRef="If_3">
       <If.Then>
         <Assign DisplayName="Assign next row to TransactionItem" sap2010:WorkflowViewState.IdRef="Assign_8">
           <Assign.To>
@@ -195,7 +206,7 @@
         </Sequence>
       </If.Then>
     </If>
-    <sads:DebugSymbol.Symbol>d3FDOlxVc2Vyc1x1cW1ndXB0MVxEb2N1bWVudHNcVWlQYXRoXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXFBCSV9Mb2NhdGlvbkNoZWNrXEZyYW1ld29ya1xHZXRUcmFuc2FjdGlvbkRhdGEueGFtbDdZA8cBDgIBAVoFkQEKAgEbkgEFpwEKAgERqAEFxQEKAgECWhNaLwIBHFwJjwEUAgEekgETkgFPAgESlAEJmwESAgEXngEJpQESAgETqAETqAE4AgEDqgEJwwEUAgEEXQuOARYCAR+ZATaZAWkCARqWATeWAUwCARijATajAT8CARagATegAUwCARSrAQuyARQCAQ2zAQu6ARQCAQm7AQvCARQCAQVfD2oaAgFFchOKAR4CASCwATawAV4CARCtATetAUoCAQ64ATa4AUQCAQy1ATe1AU4CAQrAATbAAUQCAQi9ATe9AU4CAQZgEWCWAgIBTGERYfYBAgFKYhFpGgIBRnMVc78BAgFDdBV+LQIBMX8ViQEtAgEhYD9gVQIBUGCKAWDjAQIBTWGXAWHzAQIBS2c+Z3ECAUlkP2RUAgFHc4MBc7wBAgFEdlZ2eAIBQXpYeoABAgE/fGB8gwECAT14WnifAQIBOnlaeZMBAgE3e1x7dwIBNXTGAXTkAQIBNHdXd3kCATKGAV2GAX8CAS+CAVaCAXgCAS2EAWWEAXUCASuDAV+DAXoCASmFAV+FAYEBAgEnhwFhhwGDAQIBJYEBWYEBdgIBI3/PAX/2AQIBIg==</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d3FDOlxVc2Vyc1x1cW1ndXB0MVxEb2N1bWVudHNcVWlQYXRoXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXFBCSV9Mb2NhdGlvbkNoZWNrXEZyYW1ld29ya1xHZXRUcmFuc2FjdGlvbkRhdGEueGFtbDpaA9IBDgIBAVsFnAEKAgEbnQEFsgEKAgERswEF0AEKAgECWxNbSwIBHF0JkAEUAgEjkwEJmgESAgEfnQETnQFsAgESnwEJpgESAgEXqQEJsAESAgETswETswE4AgEDtQEJzgEUAgEEXguPARYCASSYATaYAT8CASKVATeVAUwCASCkATakAWkCARqhATehAUwCARiuATauAT8CARarATerAUwCARS2AQu9ARQCAQ2+AQvFARQCAQnGAQvNARQCAQVgD2saAgFKcxOLAR4CASW7ATa7AV4CARC4ATe4AUoCAQ7DATbDAUQCAQzAATfAAU4CAQrLATbLAUQCAQjIATfIAU4CAQZhEWGWAgIBUWIRYvYBAgFPYxFqGgIBS3QVdL8BAgFIdRV/LQIBNoABFYoBLQIBJmE/YVUCAVVhigFh4wECAVJilwFi8wECAVBoPmhxAgFOZT9lVAIBTHSDAXS8AQIBSXdWd3gCAUZ7WHuAAQIBRH1gfYMBAgFCeVp5nwECAT96WnqTAQIBPHxcfHcCATp1xgF15AECATl4V3h5AgE3hwFdhwF/AgE0gwFWgwF4AgEyhQFlhQF1AgEwhAFfhAF6AgEuhgFfhgGBAQIBLIgBYYgBgwECASqCAVmCAXYCASiAAc8BgAH2AQIBJw==</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -219,26 +230,27 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Catch`1_1" sap:VirtualizedContainerService.HintSize="400,538">
+      <sap2010:ViewStateData Id="Catch`1_1" sap:VirtualizedContainerService.HintSize="404,21">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
             <x:Boolean x:Key="IsPinned">False</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="414,700" />
-      <sap2010:ViewStateData Id="Sequence_4" sap:VirtualizedContainerService.HintSize="436,824">
+      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="418,641" />
+      <sap2010:ViewStateData Id="Sequence_4" sap:VirtualizedContainerService.HintSize="440,765">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_2" sap:VirtualizedContainerService.HintSize="561,972" />
+      <sap2010:ViewStateData Id="Assign_10" sap:VirtualizedContainerService.HintSize="242,60" />
+      <sap2010:ViewStateData Id="If_2" sap:VirtualizedContainerService.HintSize="707,913" />
       <sap2010:ViewStateData Id="Assign_8" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="Assign_9" sap:VirtualizedContainerService.HintSize="242,60" />
-      <sap2010:ViewStateData Id="If_3" sap:VirtualizedContainerService.HintSize="561,208" />
+      <sap2010:ViewStateData Id="If_3" sap:VirtualizedContainerService.HintSize="707,208" />
       <sap2010:ViewStateData Id="Assign_1" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="Assign_2" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="Assign_4" sap:VirtualizedContainerService.HintSize="242,60" />
@@ -250,8 +262,8 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="561,574" />
-      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="583,2120">
+      <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="707,574" />
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="729,2031">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -259,7 +271,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="GetTransactionData_1" sap:VirtualizedContainerService.HintSize="623,2200" />
+      <sap2010:ViewStateData Id="GetTransactionData_1" sap:VirtualizedContainerService.HintSize="769,2111" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>

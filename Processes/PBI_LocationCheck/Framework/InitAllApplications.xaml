@@ -14,6 +14,7 @@
   <x:Members>
     <x:Property Name="in_Config" Type="InArgument(scg:Dictionary(x:String, x:String))" />
     <x:Property Name="out_emailMessage" Type="OutArgument(snm:MailMessage)" />
+    <x:Property Name="isEmailAndAttachmentValid" Type="OutArgument(x:Boolean)" />
   </x:Members>
   <mva:VisualBasic.Settings>
     <x:Null />
@@ -113,18 +114,37 @@
     </TryCatch>
     <If Condition="[out_emailMessage isNot Nothing AndAlso out_emailMessage.Attachments.Any AndAlso attachFileName.Trim = in_Config(&quot;File_Name&quot;).ToString]" DisplayName="Check if new email found and input CSV downloaded successfully " sap2010:WorkflowViewState.IdRef="If_1">
       <If.Then>
-        <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke LoginImmiPortal workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_2" UnSafe="False" WorkflowFileName="ImmiPortal\LoginImmiPortal.xaml">
-          <ui:InvokeWorkflowFile.Arguments>
-            <InArgument x:TypeArguments="x:String" x:Key="in_ImmiPortal_URL">[in_Config("Immi_Website")]</InArgument>
-            <InArgument x:TypeArguments="x:String" x:Key="in_CredentialsAsset">[in_Config("IAA_Vevo_ImmiAccount")]</InArgument>
-          </ui:InvokeWorkflowFile.Arguments>
-        </ui:InvokeWorkflowFile>
+        <Sequence DisplayName="Login to Immi website" sap2010:WorkflowViewState.IdRef="Sequence_14">
+          <Assign DisplayName="set email flag to true" sap2010:WorkflowViewState.IdRef="Assign_1">
+            <Assign.To>
+              <OutArgument x:TypeArguments="x:Boolean">[isEmailAndAttachmentValid]</OutArgument>
+            </Assign.To>
+            <Assign.Value>
+              <InArgument x:TypeArguments="x:Boolean">True</InArgument>
+            </Assign.Value>
+          </Assign>
+          <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke LoginImmiPortal workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_2" UnSafe="False" WorkflowFileName="ImmiPortal\LoginImmiPortal.xaml">
+            <ui:InvokeWorkflowFile.Arguments>
+              <InArgument x:TypeArguments="x:String" x:Key="in_ImmiPortal_URL">[in_Config("Immi_Website")]</InArgument>
+              <InArgument x:TypeArguments="x:String" x:Key="in_CredentialsAsset">[in_Config("IAA_Vevo_ImmiAccount")]</InArgument>
+            </ui:InvokeWorkflowFile.Arguments>
+          </ui:InvokeWorkflowFile>
+        </Sequence>
       </If.Then>
       <If.Else>
         <Sequence DisplayName="Check email and throw exception" sap2010:WorkflowViewState.IdRef="Sequence_11">
           <If Condition="[isEmailAvailable]" DisplayName="If email available, than move to archive " sap2010:WorkflowViewState.IdRef="If_2">
             <If.Then>
               <Sequence DisplayName="Notify sender and move email to archive" sap2010:WorkflowViewState.IdRef="Sequence_12">
+                <Assign DisplayName="File name if attachmet available " sap2010:WorkflowViewState.IdRef="Assign_2">
+                  <Assign.To>
+                    <OutArgument x:TypeArguments="x:String">[attachFileName]</OutArgument>
+                  </Assign.To>
+                  <Assign.Value>
+                    <InArgument x:TypeArguments="x:String">[if(out_emailMessage.Attachments.Any, "attached file is : "+attachFileName, "no attachment found" )]</InArgument>
+                  </Assign.Value>
+                </Assign>
+                <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_3" Level="Info" Message="[&quot;Unable to process email with subject :'&quot;+out_emailMessage.Subject +&quot;' and &quot;+ attachFileName]" />
                 <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke SendEmail workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_4" UnSafe="False" WorkflowFileName="EmailExchange\SendEmail.xaml">
                   <ui:InvokeWorkflowFile.Arguments>
                     <InArgument x:TypeArguments="x:String" x:Key="in_ServerName">[in_Config("EmailExchangeServer")]</InArgument>
@@ -150,18 +170,24 @@
               </Sequence>
             </If.Then>
             <If.Else>
-              <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[&quot;No new email found&quot;]" />
+              <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[&quot;No new email in mailbox to process&quot;]" />
             </If.Else>
           </If>
-          <Throw DisplayName="Throw NoEmailToProcess" Exception="[new BusinessRuleException(in_Config(&quot;NoEmail_Message&quot;))]" sap2010:WorkflowViewState.IdRef="Throw_1" />
+          <ui:CommentOut DisplayName="Comment Out" sap2010:WorkflowViewState.IdRef="CommentOut_1">
+            <ui:CommentOut.Body>
+              <Sequence DisplayName="Ignored Activities" sap2010:WorkflowViewState.IdRef="Sequence_13">
+                <Throw DisplayName="Throw NoEmailToProcess" Exception="[new BusinessRuleException(in_Config(&quot;NoEmail_Message&quot;))]" sap2010:WorkflowViewState.IdRef="Throw_1" />
+              </Sequence>
+            </ui:CommentOut.Body>
+          </ui:CommentOut>
         </Sequence>
       </If.Else>
     </If>
-    <sads:DebugSymbol.Symbol>d3JDOlxVc2Vyc1x1cW1ndXB0MVxEb2N1bWVudHNcVWlQYXRoXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXFBCSV9Mb2NhdGlvbkNoZWNrXEZyYW1ld29ya1xJbml0QWxsQXBwbGljYXRpb25zLnhhbWwyTgOhAQ4CAQFTBVOvAQIBTVQFcRACATJyBZ8BCgIBAlOFAVOsAQIBTlYJZSECATVtDW2QAgIBM3ITcqYBAgEDdAl5IQIBLHwJnQEUAgEEXFBcYAIBS1lKWWwCAUleTV5qAgFHY1RjdwIBRVtMW2oCAUNYUFhrAgFBYk1iXwIBP2FNYXACAT1aTVp5AgE7YEhgYAIBOV9UX2YCATdWwAFW5AECATZtRG3jAQIBNHdQd3MCATB2TnZpAgEudMABdOEBAgEtfQubARACAQecAQucAbMBAgEFfRl9LQIBCH8PlgEaAgEMmQEPmQGhAQIBCpwBQZwBhgECAQaAARGKASkCAR2LARGVASkCAQ2ZAXyZAZ4BAgELggFSggF0AgEqhgFUhgF+AgEoiAFciAF/AgEmhAFWhAGdAQIBI4cBWIcBcwIBIYABwgGAAeABAgEggwFTgwF3AgEekgFZkgF7AgEbjgFSjgF0AgEZkAFhkAFzAgEXjwFbjwF2AgEVkQFbkQF+AgETkwFdkwGMAQIBEY0BVY0BcgIBD4sBywGLAfIBAgEO</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d3JDOlxVc2Vyc1x1cW1ndXB0MVxEb2N1bWVudHNcVWlQYXRoXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXFBCSV9Mb2NhdGlvbkNoZWNrXEZyYW1ld29ya1xJbml0QWxsQXBwbGljYXRpb25zLnhhbWw6TwO7AQ4CAQFUBVSvAQIBWVUFchACAT5zBbkBCgIBAlSFAVSsAQIBWlcJZiECAUFuDW6QAgIBP3MTc6YBAgEDdQmEARQCATOHAQm3ARQCAQRdUF1gAgFXWkpabAIBVV9NX2oCAVNkVGR3AgFRXExcagIBT1lQWWsCAU1jTWNfAgFLYk1icAIBSVtNW3kCAUdhSGFgAgFFYFRgZgIBQ1fAAVfkAQIBQm5EbuMBAgFAdgt9FAIBOn4LgwEjAgE0iAELrwEQAgEGsAELtgEbAgEFezd7OwIBPXg4eFMCATuBAVKBAXUCATiAAVCAAWsCATZ+wgF+4wECATWIARmIAS0CAQeKAQ+qARoCAQutAQ+tAbEBAgEJiwERkgEaAgEvkwERkwH1AQIBK5QBEZ4BKQIBHJ8BEakBKQIBDK0BfK0BrgECAQqQATyQAaABAgEyjQE9jQFNAgEwkwF+kwHyAQIBLJYBUpYBdAIBKZoBVJoBfgIBJ5wBXJwBfwIBJZgBVpgBnQECASKbAVibAXMCASCUAcIBlAHgAQIBH5cBU5cBdwIBHaYBWaYBewIBGqIBUqIBdAIBGKQBYaQBcwIBFqMBW6MBdgIBFKUBW6UBfgIBEqcBXacBjAECARChAVWhAXICAQ6fAcsBnwHyAQIBDQ==</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
-      <sap2010:ViewStateData Id="LogMessage_1" sap:VirtualizedContainerService.HintSize="1036,91" />
+      <sap2010:ViewStateData Id="LogMessage_1" sap:VirtualizedContainerService.HintSize="1058,91" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_1" sap:VirtualizedContainerService.HintSize="314,87" />
       <sap2010:ViewStateData Id="Throw_2" sap:VirtualizedContainerService.HintSize="200,22" />
       <sap2010:ViewStateData Id="Catch`1_1" sap:VirtualizedContainerService.HintSize="404,21">
@@ -172,7 +198,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="1036,314">
+      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="1058,314">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -180,10 +206,20 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Assign_1" sap:VirtualizedContainerService.HintSize="314,60" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_2" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="Sequence_14" sap:VirtualizedContainerService.HintSize="336,311">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Assign_2" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="LogMessage_3" sap:VirtualizedContainerService.HintSize="314,91" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_4" sap:VirtualizedContainerService.HintSize="314,87" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_3" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="Sequence_12" sap:VirtualizedContainerService.HintSize="336,338">
+      <sap2010:ViewStateData Id="Sequence_12" sap:VirtualizedContainerService.HintSize="336,569">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -191,17 +227,25 @@
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="LogMessage_2" sap:VirtualizedContainerService.HintSize="314,91" />
-      <sap2010:ViewStateData Id="If_2" sap:VirtualizedContainerService.HintSize="675,486" />
-      <sap2010:ViewStateData Id="Throw_1" sap:VirtualizedContainerService.HintSize="675,22" />
-      <sap2010:ViewStateData Id="Sequence_11" sap:VirtualizedContainerService.HintSize="697,672">
+      <sap2010:ViewStateData Id="If_2" sap:VirtualizedContainerService.HintSize="675,717" />
+      <sap2010:ViewStateData Id="Throw_1" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="Sequence_13" sap:VirtualizedContainerService.HintSize="222,146">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="1036,820" />
-      <sap2010:ViewStateData Id="Sequence_9" sap:VirtualizedContainerService.HintSize="1058,1501">
+      <sap2010:ViewStateData Id="CommentOut_1" sap:VirtualizedContainerService.HintSize="675,224" />
+      <sap2010:ViewStateData Id="Sequence_11" sap:VirtualizedContainerService.HintSize="697,1105">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="1058,1253" />
+      <sap2010:ViewStateData Id="Sequence_9" sap:VirtualizedContainerService.HintSize="1080,1934">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -209,7 +253,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Initialization_1" sap:VirtualizedContainerService.HintSize="1098,1581" />
+      <sap2010:ViewStateData Id="Initialization_1" sap:VirtualizedContainerService.HintSize="1120,1914" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
