@@ -72,6 +72,7 @@
       <AssemblyReference>System.ValueTuple</AssemblyReference>
       <AssemblyReference>UiPath.Studio.Plugin.Workflow</AssemblyReference>
       <AssemblyReference>System.Collections.Immutable</AssemblyReference>
+      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
   <Sequence sap2010:Annotation.AnnotationText="Description: Get data from spreadsheets, databases, email, web API or UiPath server queues. If no new data, set out_TransactionItem to Nothing. &#xA;&#xA;For a linear process (not repetitive), set out_TransactionItem only for in_TransactionNumber 1 - first and only transaction. &#xA;&#xA;If the process is repeatable, set io_TransactionData once for in_TransactionNumber 1, then assign a new out_TransactionItem by using the in_TransactionNumber to index io_TransactionData. Be aware that, at the end of the io_TransactionData collection, it is your responsibility to set out_TransactionItem to Nothing, thus ending the process." DisplayName="GetTransactionData" sap2010:WorkflowViewState.IdRef="Sequence_1">
@@ -87,9 +88,9 @@
         <InArgument x:TypeArguments="x:String" x:Key="in_VevoDashboardName">[in_Config("VevoDashboardName")]</InArgument>
       </ui:InvokeWorkflowFile.Arguments>
     </ui:InvokeWorkflowFile>
-    <If Condition="[Not isNoItemToDisplay]" DisplayName="Check if CRM ticket available">
+    <If Condition="[Not isNoItemToDisplay]" DisplayName="Check if CRM ticket available" sap2010:WorkflowViewState.IdRef="If_4">
       <If.Then>
-        <Sequence DisplayName="CRM ticket available">
+        <Sequence DisplayName="CRM ticket available" sap2010:WorkflowViewState.IdRef="Sequence_6">
           <Assign DisplayName="Assign TransactionID" sap2010:WorkflowViewState.IdRef="Assign_1">
             <Assign.To>
               <OutArgument x:TypeArguments="x:String">[out_TransactionID]</OutArgument>
@@ -131,6 +132,7 @@
             <If Condition="[case_counter &gt; cint(in_Config(&quot;VevoMaxRetryCount&quot;))]" DisplayName="Validate if count is greater than VevoMaxCaseCount" sap2010:WorkflowViewState.IdRef="If_3">
               <If.Then>
                 <Sequence DisplayName="Skip this CaseRef to add in TransactionItem " sap2010:WorkflowViewState.IdRef="Sequence_5">
+                  <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_6" Level="Warn" Message="[in_Config(&quot;VevoMaxCountExceedEmailErrorMsg&quot;) +caseReference]" />
                   <ui:Click DelayBefore="{x:Null}" DelayMS="{x:Null}" ClickType="CLICK_DOUBLE" DisplayName="Open Case reference" sap2010:WorkflowViewState.IdRef="Click_1" KeyModifiers="None" MouseButton="BTN_LEFT" SendWindowMessages="False" SimulateClick="True">
                     <ui:Click.CursorPosition>
                       <ui:CursorPosition Position="Center">
@@ -163,7 +165,6 @@
                       <InArgument x:TypeArguments="x:String" x:Key="in_CaseReference">[caseReference]</InArgument>
                     </ui:InvokeWorkflowFile.Arguments>
                   </ui:InvokeWorkflowFile>
-                  <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_6" Level="Warn" Message="[in_Config(&quot;VevoMaxCountExceedEmailErrorMsg&quot;) +caseReference]" />
                   <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke SendEmail without attachment" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_7" UnSafe="False" WorkflowFileName="SendEmail.xaml">
                     <ui:InvokeWorkflowFile.Arguments>
                       <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)" x:Key="in_Config">[in_Config]</InArgument>
@@ -184,30 +185,27 @@
               </If.Else>
             </If>
           </Sequence>
-          <sap2010:WorkflowViewState.IdRef>Sequence_6</sap2010:WorkflowViewState.IdRef>
         </Sequence>
       </If.Then>
       <If.Else>
-        <Assign DisplayName="Assign to Nothing ">
+        <Assign DisplayName="Assign to Nothing " sap2010:WorkflowViewState.IdRef="Assign_3">
           <Assign.To>
             <OutArgument x:TypeArguments="ui:QueueItem">[out_TransactionItem]</OutArgument>
           </Assign.To>
           <Assign.Value>
             <InArgument x:TypeArguments="ui:QueueItem">[Nothing]</InArgument>
           </Assign.Value>
-          <sap2010:WorkflowViewState.IdRef>Assign_3</sap2010:WorkflowViewState.IdRef>
         </Assign>
       </If.Else>
-      <sap2010:WorkflowViewState.IdRef>If_4</sap2010:WorkflowViewState.IdRef>
     </If>
-    <sads:DebugSymbol.Symbol>d21DOlxVc2Vyc1x1cW1ndXB0MVxEb2N1bWVudHNcVWlQYXRoXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXElBQV9WZXZvQ2hlY2tcRnJhbWV3b3JrXEdldFRyYW5zYWN0aW9uRGF0YS54YW1sPk0DzAEOAgEBUgVSogECAVtTBVkdAgFTWgXKAQoCAQJSclKfAQIBXFVLVVoCAVlWUFZjAgFXU7kBU98BAgFWV01XbQIBVFoTWiwCAQNcCbwBFAIBCb8BCccBEgIBBV0LZBQCAU5lC2WYAwIBTWYLugEWAgEKxAE4xAFBAgEIwQE5wQFOAgEGYjZiRQIBUV83X0oCAU9oUWh/AgELaw1rywMCAUdsDYIBGgIBPYMBDbkBEgIBDGuxA2vIAwIBTGvnAmuXAwIBSmvPAWv0AQIBSWufA2utAwIBSGy8AWzKAQIBRnITfx4CAT6DARuDAV8CAQ2FARGvARwCARuyARG3ASkCARBzFX4aAgE/hgETlAEeAgE6lQETmgErAgE0mwEToAErAgEuoQETpQErAgEqpgETpgHMAQIBJqcBE64BKwIBHLIBlQKyAaYCAgEZtQFMtQFbAgEXsgHaAbIBigICARW0AVO0AW8CAROyAbcCsgHOAgIBEXMjc28CAUB1GXwiAgFBkgFtkgGnAgIBO5cBUpcBcwIBOJgBV5gBZgIBNpUB0wGVAfYBAgE1ngFXngFmAgEynQFZnQF8AgEwmwHXAZsB/gECAS+jAVejAWYCASyhAdABoQHwAQIBK6YBgAGmAckBAgEnqwFLqwGJAQIBI6oBVqoBngECASCpAWqpAXUCAR6nAc4BpwHeAQIBHXpDelMCAUR3RHdSAgFC</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d21DOlxVc2Vyc1x1cW1ndXB0MVxEb2N1bWVudHNcVWlQYXRoXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXElBQV9WZXZvQ2hlY2tcRnJhbWV3b3JrXEdldFRyYW5zYWN0aW9uRGF0YS54YW1sPk4DygEOAgEBUwVTogECAVtUBVodAgFTWwXIAQoCAQJTclOfAQIBXFZLVloCAVlXUFdjAgFXVLkBVN8BAgFWWE1YbQIBVFsTWywCAQNdCbwBFAIBCb8BCcYBEgIBBV4LZRQCAU5mC2aYAwIBTWcLuwEWAgEKxAE4xAFBAgEIwQE5wQFOAgEGYzZjRQIBUWA3YEoCAU9pUWl/AgELbA1sywMCAUdtDYMBGgIBPYQBDboBEgIBDGyxA2zIAwIBTGznAmyXAwIBSmzPAWz0AQIBSWyfA2ytAwIBSG28AW3KAQIBRnMTgAEeAgE+hAEbhAFfAgENhgERsAEcAgEbswERuAEpAgEQdBV/GgIBP4cBE4cBzAECATmIAROWAR4CATaXAROcASsCATCdAROiASsCASqjAROnASsCASaoAROvASsCARyzAZUCswGmAgIBGbYBTLYBWwIBF7MB2gGzAYoCAgEVtQFTtQFvAgETswG3ArMBzgICARF0I3RvAgFAdhl9IgIBQYcBgAGHAckBAgE6lAFtlAGnAgIBN5kBUpkBcwIBNJoBV5oBZgIBMpcB0wGXAfYBAgExoAFXoAFmAgEunwFZnwF8AgEsnQHXAZ0B/gECASulAVelAWYCASijAdABowHwAQIBJ6wBS6wBiQECASOrAVarAZ4BAgEgqgFqqgF1AgEeqAHOAagB3gECAR17Q3tTAgFEeER4UgIBQg==</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
-      <sap2010:ViewStateData Id="LogMessage_4" sap:VirtualizedContainerService.HintSize="603,91" />
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_2" sap:VirtualizedContainerService.HintSize="603,87" />
-      <sap2010:ViewStateData Id="Assign_1" sap:VirtualizedContainerService.HintSize="314,60" />
-      <sap2010:ViewStateData Id="Comment_1" sap:VirtualizedContainerService.HintSize="314,208" />
+      <sap2010:ViewStateData Id="LogMessage_4" sap:VirtualizedContainerService.HintSize="872,91" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_2" sap:VirtualizedContainerService.HintSize="872,87" />
+      <sap2010:ViewStateData Id="Assign_1" sap:VirtualizedContainerService.HintSize="583,60" />
+      <sap2010:ViewStateData Id="Comment_1" sap:VirtualizedContainerService.HintSize="583,208" />
       <sap2010:ViewStateData Id="GetQueueItems_1" sap:VirtualizedContainerService.HintSize="561,22" />
       <sap2010:ViewStateData Id="Assign_2" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="If_2" sap:VirtualizedContainerService.HintSize="464,208">
@@ -234,22 +232,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Click_1" sap:VirtualizedContainerService.HintSize="314,68" />
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_3" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_5" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_4" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="LogMessage_6" sap:VirtualizedContainerService.HintSize="314,91" />
-      <sap2010:ViewStateData Id="InvokeWorkflowFile_7" sap:VirtualizedContainerService.HintSize="314,87" />
-      <sap2010:ViewStateData Id="Sequence_5" sap:VirtualizedContainerService.HintSize="336,831">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="AddTransactionItem_1" sap:VirtualizedContainerService.HintSize="200,22" />
-      <sap2010:ViewStateData Id="If_3" sap:VirtualizedContainerService.HintSize="561,979" />
-      <sap2010:ViewStateData Id="Sequence_3" sap:VirtualizedContainerService.HintSize="314,51">
+      <sap2010:ViewStateData Id="LogMessage_6" sap:VirtualizedContainerService.HintSize="314,51">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">False</x:Boolean>
@@ -257,7 +240,29 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_6" sap:VirtualizedContainerService.HintSize="336,523">
+      <sap2010:ViewStateData Id="Click_1" sap:VirtualizedContainerService.HintSize="314,68" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_3" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_5" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_4" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_7" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="Sequence_5" sap:VirtualizedContainerService.HintSize="336,791">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="AddTransactionItem_1" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="If_3" sap:VirtualizedContainerService.HintSize="561,939" />
+      <sap2010:ViewStateData Id="Sequence_3" sap:VirtualizedContainerService.HintSize="583,1631">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Sequence_6" sap:VirtualizedContainerService.HintSize="605,2103">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -265,8 +270,8 @@
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="Assign_3" sap:VirtualizedContainerService.HintSize="242,60" />
-      <sap2010:ViewStateData Id="If_4" sap:VirtualizedContainerService.HintSize="603,671" />
-      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="625,1215">
+      <sap2010:ViewStateData Id="If_4" sap:VirtualizedContainerService.HintSize="872,2251" />
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="894,2750">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -274,7 +279,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="GetTransactionData_1" sap:VirtualizedContainerService.HintSize="665,1295" />
+      <sap2010:ViewStateData Id="GetTransactionData_1" sap:VirtualizedContainerService.HintSize="934,2830" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
