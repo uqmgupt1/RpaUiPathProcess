@@ -14,7 +14,8 @@
   <x:Members>
     <x:Property Name="in_TransactionItem" Type="InArgument(ui:QueueItem)" />
     <x:Property Name="in_Config" Type="InArgument(scg:Dictionary(x:String, x:Object))" />
-    <x:Property Name="in_CoursesDT" Type="InArgument(sd:DataTable)" />
+    <x:Property Name="io_TemplateName" Type="InOutArgument(x:String)" />
+    <x:Property Name="io_CoursesDT" Type="InOutArgument(sd:DataTable)" />
   </x:Members>
   <mva:VisualBasic.Settings>
     <x:Null />
@@ -78,18 +79,18 @@
   </TextExpression.ReferencesForImplementation>
   <Sequence sap2010:Annotation.AnnotationText="Description: In this file all other process specific files will be invoked. If an application exception occurs, the current transaction can be retried. If a BRE is thrown, the transaction will be skipped. Can be a flowchart or sequence. " DisplayName="ProcessTransaction" sap2010:WorkflowViewState.IdRef="Sequence_1">
     <Sequence.Variables>
-      <Variable x:TypeArguments="sd:DataTable" Name="workDT" />
       <Variable x:TypeArguments="x:Int32" Name="index" />
+      <Variable x:TypeArguments="sd:DataTable" Name="wordDT" />
     </Sequence.Variables>
     <Assign DisplayName="Assign workDT = null" sap2010:WorkflowViewState.IdRef="Assign_1">
       <Assign.To>
-        <OutArgument x:TypeArguments="sd:DataTable">[workDT]</OutArgument>
+        <OutArgument x:TypeArguments="sd:DataTable">[wordDT]</OutArgument>
       </Assign.To>
       <Assign.Value>
         <InArgument x:TypeArguments="sd:DataTable">[New System.Data.DataTable]</InArgument>
       </Assign.Value>
     </Assign>
-    <ui:FilterDataTable DataTable="[in_CoursesDT]" DisplayName="Filter Data Table" FilterRowsMode="Keep" sap2010:WorkflowViewState.IdRef="FilterDataTable_1" OutputDataTable="[workDT]" SelectColumnsMode="Keep">
+    <ui:FilterDataTable DataTable="[io_CoursesDT]" DisplayName="Filter Data Table" FilterRowsMode="Keep" sap2010:WorkflowViewState.IdRef="FilterDataTable_1" OutputDataTable="[wordDT]" SelectColumnsMode="Keep">
       <ui:FilterDataTable.Filters>
         <scg:List x:TypeArguments="ui:FilterOperationArgument" Capacity="4">
           <ui:FilterOperationArgument BooleanOperator="And" Operator="EQ">
@@ -108,8 +109,13 @@
         </scg:List>
       </ui:FilterDataTable.SelectColumns>
     </ui:FilterDataTable>
-    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_6" Level="Info" Message="[in_TransactionItem.Reference + &quot; has &quot; + workDT.Rows.Count.ToString + &quot; templates&quot;]" />
-    <ui:ForEachRow CurrentIndex="[index]" DataTable="[workDT]" DisplayName="For Each Row" sap2010:WorkflowViewState.IdRef="ForEachRow_1">
+    <If Condition="[wordDT.Rows.Count.Equals(0)]" DisplayName="If workDT.Rows.Count.Equals(0)" sap2010:WorkflowViewState.IdRef="If_7">
+      <If.Then>
+        <Throw DisplayName="Throw Templates not found for module" Exception="[New BusinessRuleException(&quot;Templates not found for module &quot; + in_TransactionItem.Reference + &quot;. Please investigate.&quot;)]" sap2010:WorkflowViewState.IdRef="Throw_4" />
+      </If.Then>
+    </If>
+    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_6" Level="Info" Message="[in_TransactionItem.Reference + &quot; has &quot; + wordDT.Rows.Count.ToString + &quot; templates&quot;]" />
+    <ui:ForEachRow CurrentIndex="[index]" DataTable="[wordDT]" DisplayName="For Each Row" sap2010:WorkflowViewState.IdRef="ForEachRow_1">
       <ui:ForEachRow.Body>
         <ActivityAction x:TypeArguments="sd:DataRow">
           <ActivityAction.Argument>
@@ -122,7 +128,15 @@
                   <DelegateInArgument x:TypeArguments="x:Object" Name="ContextTarget" />
                 </ActivityAction.Argument>
                 <Sequence DisplayName="Do" sap2010:WorkflowViewState.IdRef="Sequence_3">
-                  <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_4" Level="Info" Message="[&quot;Begin template &quot; + row.Item(&quot;Template Name&quot;).ToString.Trim + &quot; (&quot; + (index+1).ToString + &quot; of &quot; + workDT.Rows.Count.ToString +&quot;)&quot;]" />
+                  <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_4" Level="Info" Message="[&quot;Begin template &quot; + row.Item(&quot;Template Name&quot;).ToString.Trim + &quot; (&quot; + (index+1).ToString + &quot; of &quot; + wordDT.Rows.Count.ToString +&quot;)&quot;]" />
+                  <Assign DisplayName="Assign io_TemplateName" sap2010:WorkflowViewState.IdRef="Assign_13">
+                    <Assign.To>
+                      <OutArgument x:TypeArguments="x:String">[io_TemplateName]</OutArgument>
+                    </Assign.To>
+                    <Assign.Value>
+                      <InArgument x:TypeArguments="x:String">[row.Item("Template Name").ToString.Trim]</InArgument>
+                    </Assign.Value>
+                  </Assign>
                   <Sequence DisplayName="Home page" sap2010:WorkflowViewState.IdRef="Sequence_15">
                     <ui:SelectItem ContinueOnError="{x:Null}" DelayAfter="{x:Null}" DelayBefore="{x:Null}" DisplayName="Select Item 'Department' (Reset to default)" sap2010:WorkflowViewState.IdRef="SelectItem_9" Item="Please Select...">
                       <ui:SelectItem.Items>
@@ -911,6 +925,14 @@
                       </ui:Click>
                     </Sequence>
                   </Sequence>
+                  <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke Datatable_UpdateCourseDT workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_1" UnSafe="False" WorkflowFileName="Datatable\Datatable_UpdateCoursesDT.xaml">
+                    <ui:InvokeWorkflowFile.Arguments>
+                      <InArgument x:TypeArguments="x:String" x:Key="in_Status">Success</InArgument>
+                      <InArgument x:TypeArguments="x:String" x:Key="in_Notes" />
+                      <InArgument x:TypeArguments="x:String" x:Key="in_TemplateName">[io_TemplateName]</InArgument>
+                      <InOutArgument x:TypeArguments="sd:DataTable" x:Key="io_CoursesDT">[io_CoursesDT]</InOutArgument>
+                    </ui:InvokeWorkflowFile.Arguments>
+                  </ui:InvokeWorkflowFile>
                   <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_5" Level="Info" Message="[&quot;End template &quot; + row.Item(&quot;Template Name&quot;).ToString.Trim]" />
                 </Sequence>
               </ActivityAction>
@@ -919,19 +941,22 @@
         </ActivityAction>
       </ui:ForEachRow.Body>
     </ui:ForEachRow>
-    <sads:DebugSymbol.Symbol>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</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>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</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
-      <sap2010:ViewStateData Id="Assign_1" sap:VirtualizedContainerService.HintSize="889,60" />
-      <sap2010:ViewStateData Id="FilterDataTable_1" sap:VirtualizedContainerService.HintSize="889,59" />
-      <sap2010:ViewStateData Id="LogMessage_6" sap:VirtualizedContainerService.HintSize="889,91" />
-      <sap2010:ViewStateData Id="LogMessage_4" sap:VirtualizedContainerService.HintSize="823,91" />
+      <sap2010:ViewStateData Id="Assign_1" sap:VirtualizedContainerService.HintSize="464,60" />
+      <sap2010:ViewStateData Id="FilterDataTable_1" sap:VirtualizedContainerService.HintSize="464,59" />
+      <sap2010:ViewStateData Id="Throw_4" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="If_7" sap:VirtualizedContainerService.HintSize="464,208" />
+      <sap2010:ViewStateData Id="LogMessage_6" sap:VirtualizedContainerService.HintSize="464,91" />
+      <sap2010:ViewStateData Id="LogMessage_4" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="Assign_13" sap:VirtualizedContainerService.HintSize="314,60" />
       <sap2010:ViewStateData Id="SelectItem_9" sap:VirtualizedContainerService.HintSize="314,134" />
       <sap2010:ViewStateData Id="SelectItem_1" sap:VirtualizedContainerService.HintSize="314,134" />
       <sap2010:ViewStateData Id="SelectItem_2" sap:VirtualizedContainerService.HintSize="314,134" />
       <sap2010:ViewStateData Id="Click_1" sap:VirtualizedContainerService.HintSize="314,106" />
-      <sap2010:ViewStateData Id="Sequence_15" sap:VirtualizedContainerService.HintSize="823,51">
+      <sap2010:ViewStateData Id="Sequence_15" sap:VirtualizedContainerService.HintSize="314,51">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">False</x:Boolean>
@@ -949,7 +974,7 @@
       <sap2010:ViewStateData Id="SelectItem_12" sap:VirtualizedContainerService.HintSize="314,134" />
       <sap2010:ViewStateData Id="SelectItem_6" sap:VirtualizedContainerService.HintSize="314,134" />
       <sap2010:ViewStateData Id="If_5" sap:VirtualizedContainerService.HintSize="653,282" />
-      <sap2010:ViewStateData Id="Sequence_4" sap:VirtualizedContainerService.HintSize="823,51">
+      <sap2010:ViewStateData Id="Sequence_4" sap:VirtualizedContainerService.HintSize="314,51">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">False</x:Boolean>
@@ -1029,10 +1054,10 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_9" sap:VirtualizedContainerService.HintSize="823,2292">
+      <sap2010:ViewStateData Id="Sequence_9" sap:VirtualizedContainerService.HintSize="314,51">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
             <x:Boolean x:Key="IsPinned">False</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
@@ -1192,25 +1217,26 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_10" sap:VirtualizedContainerService.HintSize="823,4016">
+      <sap2010:ViewStateData Id="Sequence_10" sap:VirtualizedContainerService.HintSize="314,51">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
             <x:Boolean x:Key="IsPinned">False</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="LogMessage_5" sap:VirtualizedContainerService.HintSize="823,91" />
-      <sap2010:ViewStateData Id="Sequence_3" sap:VirtualizedContainerService.HintSize="845,6916">
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_1" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="LogMessage_5" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="Sequence_3" sap:VirtualizedContainerService.HintSize="336,937">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="BrowserScope_1" sap:VirtualizedContainerService.HintSize="859,7062" />
-      <sap2010:ViewStateData Id="ForEachRow_1" sap:VirtualizedContainerService.HintSize="889,7210" />
-      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="911,7706">
+      <sap2010:ViewStateData Id="BrowserScope_1" sap:VirtualizedContainerService.HintSize="414,1083" />
+      <sap2010:ViewStateData Id="ForEachRow_1" sap:VirtualizedContainerService.HintSize="464,1231" />
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="486,1990">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -1218,7 +1244,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="ProcessTransaction_1" sap:VirtualizedContainerService.HintSize="951,7786" />
+      <sap2010:ViewStateData Id="ProcessTransaction_1" sap:VirtualizedContainerService.HintSize="526,2070" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
