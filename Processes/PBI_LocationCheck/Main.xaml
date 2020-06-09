@@ -167,7 +167,7 @@
                         <OutArgument x:TypeArguments="x:String">[subject]</OutArgument>
                       </Assign.To>
                       <Assign.Value>
-                        <InArgument x:TypeArguments="x:String">[if(emailMessage isNot Nothing AndAlso emailMessage.Subject.Trim.Length &gt; 0,emailMessage.Subject, Config("Email_Alert_Subject"))]</InArgument>
+                        <InArgument x:TypeArguments="x:String">[if(Config("OperatingEnvironment") &lt;&gt; "PROD",Config("OperatingEnvironment")+" - " +Config("Email_Alert_Subject") , Config("Email_Alert_Subject"))]</InArgument>
                       </Assign.Value>
                     </Assign>
                     <Assign DisplayName="Assign - distributionList" sap2010:WorkflowViewState.IdRef="Assign_55">
@@ -175,7 +175,7 @@
                         <OutArgument x:TypeArguments="x:String">[distributionList]</OutArgument>
                       </Assign.To>
                       <Assign.Value>
-                        <InArgument x:TypeArguments="x:String">[if(emailMessage isNot Nothing AndAlso emailMessage.Sender.ToString.Trim.Length &gt; 0,emailMessage.Sender.ToString+";"+Config("Email_AlertRecipient"), Config("Email_AlertRecipient"))]</InArgument>
+                        <InArgument x:TypeArguments="x:String">[if(emailMessage isNot Nothing AndAlso emailMessage.Sender.ToString.Trim.Length &gt; 0,emailMessage.Sender.ToString+";"+Config("Email_AlertRecipient"), Config("Email_AlertRecipient")+";"+Config("PBI_LocationCheck_SenderEmail"))]</InArgument>
                       </Assign.Value>
                     </Assign>
                     <If Condition="[File.Exists(FilePath)]" DisplayName="If screen capture file exists" sap2010:WorkflowViewState.IdRef="If_10">
@@ -474,6 +474,7 @@
                                       <Sequence DisplayName="Check screenshot available" sap2010:WorkflowViewState.IdRef="Sequence_45">
                                         <Sequence.Variables>
                                           <Variable x:TypeArguments="x:String" Name="filename" />
+                                          <Variable x:TypeArguments="x:String" Name="subject" />
                                         </Sequence.Variables>
                                         <If Condition="[Directory.Exists(&quot;Exceptions_Screenshots&quot;) AndAlso Directory.GetFiles(&quot;Exceptions_Screenshots&quot;).Length &gt; 0]" DisplayName="If exceptions folder exists and screenshot available  " sap2010:WorkflowViewState.IdRef="If_25">
                                           <If.Then>
@@ -487,13 +488,21 @@
                                             </Assign>
                                           </If.Then>
                                         </If>
+                                        <Assign sap2010:WorkflowViewState.IdRef="Assign_59">
+                                          <Assign.To>
+                                            <OutArgument x:TypeArguments="x:String">[subject]</OutArgument>
+                                          </Assign.To>
+                                          <Assign.Value>
+                                            <InArgument x:TypeArguments="x:String">[if(Config("OperatingEnvironment") &lt;&gt; "PROD",Config("OperatingEnvironment")+" - " +Config("Email_Alert_Subject"),Config("Email_Alert_Subject"))]</InArgument>
+                                          </Assign.Value>
+                                        </Assign>
                                         <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke SendEmail workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_46" UnSafe="False" WorkflowFileName="EmailExchange\SendEmail.xaml">
                                           <ui:InvokeWorkflowFile.Arguments>
                                             <InArgument x:TypeArguments="x:String" x:Key="in_ServerName">[Config("EmailExchangeServer")]</InArgument>
                                             <InArgument x:TypeArguments="x:String" x:Key="in_MessageBody">[Config("Email_PartialSuccess_Msg")+" Exception :" +SystemError.Message+ " at :"+SystemError.Source]</InArgument>
                                             <InArgument x:TypeArguments="x:String" x:Key="in_ReceipentEmail">[Config("Email_AlertRecipient")]</InArgument>
                                             <InArgument x:TypeArguments="x:String" x:Key="in_FileAttachment">[filename]</InArgument>
-                                            <InArgument x:TypeArguments="x:String" x:Key="in_EmailSubject">[Config("Email_Alert_Subject")]</InArgument>
+                                            <InArgument x:TypeArguments="x:String" x:Key="in_EmailSubject">[subject]</InArgument>
                                             <InArgument x:TypeArguments="x:String" x:Key="in_CredentialsAsset">[Config("SSO_rpa00001")]</InArgument>
                                             <InArgument x:TypeArguments="x:String" x:Key="in_OperatingEnvironment">[Config("OperatingEnvironment")]</InArgument>
                                           </ui:InvokeWorkflowFile.Arguments>
@@ -618,7 +627,7 @@
       <Variable x:TypeArguments="x:Boolean" Name="validEmailFlag" />
       <Variable x:TypeArguments="x:Boolean" Name="maxRetriesFlag" />
     </StateMachine.Variables>
-    <sads:DebugSymbol.Symbol>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</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>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</sads:DebugSymbol.Symbol>
   </StateMachine>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -926,15 +935,16 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Assign_59" sap:VirtualizedContainerService.HintSize="464,60" />
       <sap2010:ViewStateData Id="InvokeWorkflowFile_46" sap:VirtualizedContainerService.HintSize="464,87" />
-      <sap2010:ViewStateData Id="Sequence_45" sap:VirtualizedContainerService.HintSize="486,459">
+      <sap2010:ViewStateData Id="Sequence_45" sap:VirtualizedContainerService.HintSize="486,559">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_22" sap:VirtualizedContainerService.HintSize="611,634">
+      <sap2010:ViewStateData Id="If_22" sap:VirtualizedContainerService.HintSize="611,734">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -987,7 +997,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_44" sap:VirtualizedContainerService.HintSize="633,2279">
+      <sap2010:ViewStateData Id="Sequence_44" sap:VirtualizedContainerService.HintSize="633,2379">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -1003,7 +1013,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_20" sap:VirtualizedContainerService.HintSize="655,2494">
+      <sap2010:ViewStateData Id="Sequence_20" sap:VirtualizedContainerService.HintSize="655,2594">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -1036,7 +1046,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_4" sap:VirtualizedContainerService.HintSize="418,287" />
+      <sap2010:ViewStateData Id="TryCatch_4" sap:VirtualizedContainerService.HintSize="673,2821" />
       <sap2010:ViewStateData Id="State_1" sap:VirtualizedContainerService.HintSize="124,104">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
