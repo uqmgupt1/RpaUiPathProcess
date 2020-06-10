@@ -1,8 +1,10 @@
-﻿<Activity mc:Ignorable="sap sap2010 sads" x:Class="Temp" mva:VisualBasic.Settings="{x:Null}" sap2010:WorkflowViewState.IdRef="Temp_1"
+﻿<Activity mc:Ignorable="sap sap2010 sads" x:Class="Sandbox" mva:VisualBasic.Settings="{x:Null}" sap2010:WorkflowViewState.IdRef="Temp_1"
  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
  xmlns:av="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
  xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities"
+ xmlns:njl="clr-namespace:Newtonsoft.Json.Linq;assembly=Newtonsoft.Json"
+ xmlns:s="clr-namespace:System;assembly=mscorlib"
  xmlns:sads="http://schemas.microsoft.com/netfx/2010/xaml/activities/debugger"
  xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
@@ -61,32 +63,47 @@
       <AssemblyReference>UiPath.Mail</AssemblyReference>
       <AssemblyReference>System.ValueTuple</AssemblyReference>
       <AssemblyReference>System.ComponentModel.Composition</AssemblyReference>
+      <AssemblyReference>Microsoft.VisualStudio.Services.Common</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
-  <Flowchart DisplayName="Temp" sap2010:WorkflowViewState.IdRef="Flowchart_1">
+  <Flowchart DisplayName="Sandbox" sap2010:WorkflowViewState.IdRef="Flowchart_1">
     <Flowchart.Variables>
       <Variable x:TypeArguments="ui:QueueItem" Name="transactionItem" />
       <Variable x:TypeArguments="scg:IEnumerable(ui:QueueItem)" Name="queueItems" />
+      <Variable x:TypeArguments="scg:Dictionary(x:String, x:Object)" Name="Config" />
+      <Variable x:TypeArguments="x:String" Name="operatingEnvironment" />
+      <Variable x:TypeArguments="x:String" Name="placementsText" />
+      <Variable x:TypeArguments="ui:UiElement" Name="placementsElement" />
+      <Variable x:TypeArguments="ui:GenericValue" Name="placementsAttribute" />
+      <Variable x:TypeArguments="s:DateTime" Name="tempDate" />
     </Flowchart.Variables>
     <Flowchart.StartNode>
-      <FlowStep x:Name="__ReferenceID0" sap2010:WorkflowViewState.IdRef="FlowStep_6">
-        <ui:GetQueueItems Duration="{x:Null}" From="{x:Null}" Priority="{x:Null}" Reference="{x:Null}" Skip="{x:Null}" TimeoutMS="{x:Null}" To="{x:Null}" Top="{x:Null}" DisplayName="Get Queue Items" FilterStrategy="StartsWith" sap2010:WorkflowViewState.IdRef="GetQueueItems_1" QueueItemStates="InProgress" QueueName="HR_FixedTermAppointmentExpiry" Result="[queueItems]" />
-        <FlowStep.Next>
-          <FlowStep x:Name="__ReferenceID1" sap2010:WorkflowViewState.IdRef="FlowStep_5">
-            <ui:ForEach x:TypeArguments="ui:QueueItem" CurrentIndex="{x:Null}" DisplayName="For Each" sap2010:WorkflowViewState.IdRef="ForEach`1_1" Values="[queueItems]">
-              <ui:ForEach.Body>
-                <ActivityAction x:TypeArguments="ui:QueueItem">
-                  <ActivityAction.Argument>
-                    <DelegateInArgument x:TypeArguments="ui:QueueItem" Name="item" />
-                  </ActivityAction.Argument>
-                  <Sequence DisplayName="Body" sap2010:WorkflowViewState.IdRef="Sequence_4">
-                    <ui:PostponeTransactionItem ContinueOnError="{x:Null}" TimeoutMS="{x:Null}" DeferDate="[Now]" DisplayName="Postpone Transaction Item" sap2010:WorkflowViewState.IdRef="PostponeTransactionItem_4" TransactionItem="[item]" />
-                  </Sequence>
-                </ActivityAction>
-              </ui:ForEach.Body>
-            </ui:ForEach>
-          </FlowStep>
-        </FlowStep.Next>
+      <FlowStep x:Name="__ReferenceID1" sap2010:WorkflowViewState.IdRef="FlowStep_8">
+        <Sequence DisplayName="Open Apps" sap2010:WorkflowViewState.IdRef="Sequence_7">
+          <ui:GetRobotAsset TimeoutMS="{x:Null}" AssetName="OperatingEnvironment" DisplayName="Get Op Env Asset" sap2010:WorkflowViewState.IdRef="GetRobotAsset_1">
+            <ui:GetRobotAsset.Value>
+              <OutArgument x:TypeArguments="x:String">[operatingEnvironment]</OutArgument>
+            </ui:GetRobotAsset.Value>
+          </ui:GetRobotAsset>
+          <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke InitAllSettings workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_1" UnSafe="False" WorkflowFileName="Framework\InitAllSettings.xaml">
+            <ui:InvokeWorkflowFile.Arguments>
+              <InArgument x:TypeArguments="x:String" x:Key="in_ConfigFile">Data\Config.xlsx</InArgument>
+              <InArgument x:TypeArguments="s:String[]" x:Key="in_ConfigSheets">[{"Settings", "Constants"}]</InArgument>
+              <OutArgument x:TypeArguments="scg:Dictionary(x:String, x:Object)" x:Key="out_Config">[Config]</OutArgument>
+              <InArgument x:TypeArguments="x:String" x:Key="in_OperatingEnvironment">[operatingEnvironment]</InArgument>
+            </ui:InvokeWorkflowFile.Arguments>
+          </ui:InvokeWorkflowFile>
+          <ui:InvokeWorkflowFile ContinueOnError="{x:Null}" DisplayName="Invoke InitiAllApplications workflow" sap2010:WorkflowViewState.IdRef="InvokeWorkflowFile_2" UnSafe="False" WorkflowFileName="Framework\InitAllApplications.xaml">
+            <ui:InvokeWorkflowFile.Arguments>
+              <InArgument x:TypeArguments="scg:Dictionary(x:String, x:Object)" x:Key="in_Config">[Config]</InArgument>
+              <OutArgument x:TypeArguments="ui:Browser" x:Key="out_uqCustomWorklistBrowser" />
+              <OutArgument x:TypeArguments="ui:Window" x:Key="out_AurionWindow" />
+              <OutArgument x:TypeArguments="ui:Browser" x:Key="out_bonitaPortalBrowser" />
+              <OutArgument x:TypeArguments="njl:JObject" x:Key="out_pstEmailAddresses" />
+              <InArgument x:TypeArguments="x:Boolean" x:Key="in_FirstRun" />
+            </ui:InvokeWorkflowFile.Arguments>
+          </ui:InvokeWorkflowFile>
+        </Sequence>
       </FlowStep>
     </Flowchart.StartNode>
     <FlowStep sap2010:WorkflowViewState.IdRef="FlowStep_1">
@@ -115,17 +132,41 @@
     </FlowStep>
     <FlowStep sap2010:WorkflowViewState.IdRef="FlowStep_4">
       <Sequence DisplayName="Reset In Progress queue items to new" sap2010:WorkflowViewState.IdRef="Sequence_3">
-        <ui:AddQueueItem ServiceBaseAddress="{x:Null}" TimeoutMS="{x:Null}" DisplayName="Add Queue Item" sap2010:WorkflowViewState.IdRef="AddQueueItem_2" Priority="Normal" QueueType="HR_FixedTermAppointmentExpiry" Reference="123456">
-          <ui:AddQueueItem.ItemInformation>
-            <scg:Dictionary x:TypeArguments="x:String, InArgument" />
-          </ui:AddQueueItem.ItemInformation>
-        </ui:AddQueueItem>
-        <ui:GetQueueItem ContinueOnError="{x:Null}" TimeoutMS="{x:Null}" DisplayName="Get Transaction Item" sap2010:WorkflowViewState.IdRef="GetQueueItem_2" QueueType="HR_FixedTermAppointmentExpiry" TransactionItem="[transactionItem]" />
-        <ui:PostponeTransactionItem ContinueOnError="{x:Null}" TimeoutMS="{x:Null}" DeferDate="[Now]" DisplayName="Postpone Transaction Item" sap2010:WorkflowViewState.IdRef="PostponeTransactionItem_3" TransactionItem="[transactionItem]" />
+        <ui:GetQueueItems Duration="{x:Null}" From="{x:Null}" Priority="{x:Null}" Reference="{x:Null}" Skip="{x:Null}" TimeoutMS="{x:Null}" To="{x:Null}" Top="{x:Null}" DisplayName="Get Queue Items" FilterStrategy="StartsWith" sap2010:WorkflowViewState.IdRef="GetQueueItems_2" QueueItemStates="InProgress, Failed" QueueName="HR_FixedTermAppointmentExpiry" Result="[queueItems]" />
+        <ui:ForEach x:TypeArguments="x:Object" CurrentIndex="{x:Null}" DisplayName="For Each" sap2010:WorkflowViewState.IdRef="ForEach`1_2" Values="[queueItems]">
+          <ui:ForEach.Body>
+            <ActivityAction x:TypeArguments="x:Object">
+              <ActivityAction.Argument>
+                <DelegateInArgument x:TypeArguments="x:Object" Name="item" />
+              </ActivityAction.Argument>
+              <Sequence DisplayName="Body" sap2010:WorkflowViewState.IdRef="Sequence_6">
+                <ui:PostponeTransactionItem ContinueOnError="{x:Null}" TimeoutMS="{x:Null}" DeferDate="[Now]" DisplayName="Postpone Transaction Item" sap2010:WorkflowViewState.IdRef="PostponeTransactionItem_3" TransactionItem="[item]" />
+              </Sequence>
+            </ActivityAction>
+          </ui:ForEach.Body>
+        </ui:ForEach>
       </Sequence>
     </FlowStep>
+    <FlowStep sap2010:WorkflowViewState.IdRef="FlowStep_6">
+      <ui:GetQueueItems Duration="{x:Null}" From="{x:Null}" Priority="{x:Null}" Reference="{x:Null}" Skip="{x:Null}" TimeoutMS="{x:Null}" To="{x:Null}" Top="{x:Null}" DisplayName="Get Queue Items" FilterStrategy="StartsWith" sap2010:WorkflowViewState.IdRef="GetQueueItems_1" QueueItemStates="InProgress, Failed" QueueName="HR_FixedTermAppointmentExpiry" Result="[queueItems]" />
+      <FlowStep.Next>
+        <FlowStep x:Name="__ReferenceID0" sap2010:WorkflowViewState.IdRef="FlowStep_5">
+          <ui:ForEach x:TypeArguments="ui:QueueItem" CurrentIndex="{x:Null}" DisplayName="For Each" sap2010:WorkflowViewState.IdRef="ForEach`1_1" Values="[queueItems]">
+            <ui:ForEach.Body>
+              <ActivityAction x:TypeArguments="ui:QueueItem">
+                <ActivityAction.Argument>
+                  <DelegateInArgument x:TypeArguments="ui:QueueItem" Name="item" />
+                </ActivityAction.Argument>
+                <Sequence DisplayName="Body" sap2010:WorkflowViewState.IdRef="Sequence_4">
+                  <ui:PostponeTransactionItem ContinueOnError="{x:Null}" TimeoutMS="{x:Null}" DeferDate="[Now]" DisplayName="Postpone Transaction Item" sap2010:WorkflowViewState.IdRef="PostponeTransactionItem_4" TransactionItem="[item]" />
+                </Sequence>
+              </ActivityAction>
+            </ui:ForEach.Body>
+          </ui:ForEach>
+        </FlowStep>
+      </FlowStep.Next>
+    </FlowStep>
     <x:Reference>__ReferenceID0</x:Reference>
-    <x:Reference>__ReferenceID1</x:Reference>
     <FlowStep sap2010:WorkflowViewState.IdRef="FlowStep_7">
       <Sequence sap2010:WorkflowViewState.IdRef="Sequence_5">
         <Sequence.Variables>
@@ -136,10 +177,107 @@
         <WriteLine DisplayName="Write Line" sap2010:WorkflowViewState.IdRef="WriteLine_1" Text="[(New System.Net.NetworkCredential(String.Empty,password).Password).ToString]" />
       </Sequence>
     </FlowStep>
-    <sads:DebugSymbol.Symbol>d2FDOlxVc2Vyc1x1cXNkZWJiZVxEb2N1bWVudHNcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcSFJfRml4ZWRUZXJtQXBwb2ludG1lbnRFeHBpcnlcU2FuZGJveC54YW1sCkIDjAEPAgEBSQlJ9QICAQlMDVcaAgECSb0CSdwCAgELSeQCSfICAgEKTJwBTKoBAgEIUhNUHgIBA1MVU/IBAgEEU2tTcgIBB1PnAVPvAQIBBQ==</sads:DebugSymbol.Symbol>
+    <x:Reference>__ReferenceID1</x:Reference>
+    <FlowStep sap2010:WorkflowViewState.IdRef="FlowStep_10">
+      <ui:GetVisibleText WordsInfo="{x:Null}" DisplayName="Get Visible Text 'Placements'" FormattedText="True" sap2010:WorkflowViewState.IdRef="GetVisibleText_1" Separators="[vbTab]">
+        <ui:GetVisibleText.Target>
+          <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" InformativeScreenshot="3f9e0e3ed686045d4f548b463ff45b65" Selector="&lt;wnd app='aurion.exe' cls='UniApplication' omit:title='Aurion - [Aurion 11 AURXTRN Environment]' /&gt;&lt;wnd cls='AfxWnd140u' idx='2' /&gt;" TimeoutMS="120000" WaitForReady="COMPLETE" />
+        </ui:GetVisibleText.Target>
+        <ui:GetVisibleText.Text>
+          <OutArgument x:TypeArguments="x:String">[placementsText]</OutArgument>
+        </ui:GetVisibleText.Text>
+      </ui:GetVisibleText>
+    </FlowStep>
+    <FlowStep sap2010:WorkflowViewState.IdRef="FlowStep_9">
+      <ui:GetAttribute ContinueOnError="{x:Null}" Attribute="visibility" DisplayName="Get Attribute 'AfxWnd140u'" sap2010:WorkflowViewState.IdRef="GetAttribute_1">
+        <ui:GetAttribute.Result>
+          <OutArgument x:TypeArguments="ui:GenericValue">[placementsAttribute]</OutArgument>
+        </ui:GetAttribute.Result>
+        <ui:GetAttribute.Target>
+          <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="47310f9a75821fe2213e1f447a632808" Selector="&lt;wnd app='aurion.exe' cls='UniApplication' title='Aurion - [Aurion 11 AURXTRN Environment]' /&gt;&lt;wnd cls='AfxWnd140u' idx='2' /&gt;" WaitForReady="COMPLETE" />
+        </ui:GetAttribute.Target>
+      </ui:GetAttribute>
+    </FlowStep>
+    <FlowStep sap2010:WorkflowViewState.IdRef="FlowStep_11">
+      <Sequence sap2010:WorkflowViewState.IdRef="Sequence_8">
+        <ui:WaitUiElementAppear DisplayName="Find Element 'AfxWnd140u'" FoundElement="[placementsElement]" sap2010:WorkflowViewState.IdRef="WaitUiElementAppear_1" WaitActive="False" WaitVisible="False">
+          <ui:WaitUiElementAppear.Target>
+            <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="47310f9a75821fe2213e1f447a632808" Selector="&lt;wnd app='aurion.exe' cls='UniApplication' title='Aurion - [Aurion 11 AURXTRN Environment]' /&gt;&lt;wnd cls='AfxWnd140u' idx='2' /&gt;" WaitForReady="COMPLETE" />
+          </ui:WaitUiElementAppear.Target>
+        </ui:WaitUiElementAppear>
+        <ui:WaitAttribute AttributeValue="{x:Null}" TimeoutMS="{x:Null}" Attribute="readyState" DisplayName="Wait Attribute" Element="[placementsElement]" sap2010:WorkflowViewState.IdRef="WaitAttribute_1" />
+      </Sequence>
+    </FlowStep>
+    <sads:DebugSymbol.Symbol>d2FDOlxVc2Vyc1x1cXNkZWJiZVxEb2N1bWVudHNcUnBhVWlQYXRoUHJvY2Vzc1xQcm9jZXNzZXNcSFJfRml4ZWRUZXJtQXBwb2ludG1lbnRFeHBpcnlcU2FuZGJveC54YW1sDkUD1AEPAgEBUglqFAIBAlMLVx4CAQ9YC18jAgEHYAtpIwIBA1U3VU0CARFTPFNSAgEQXVZdbAIBDVxkXGwCAQtYwgFY4gECAQpbUFtrAgEJWkxaXAIBCGJiYmoCAQVgxwFg6wECAQQ=</sads:DebugSymbol.Symbol>
   </Flowchart>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
+      <sap2010:ViewStateData Id="GetRobotAsset_1" sap:VirtualizedContainerService.HintSize="314,22" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_1" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="InvokeWorkflowFile_2" sap:VirtualizedContainerService.HintSize="314,87" />
+      <sap2010:ViewStateData Id="Sequence_7" sap:VirtualizedContainerService.HintSize="336,400">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="FlowStep_8">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <av:Point x:Key="ShapeLocation">20,294.02</av:Point>
+            <av:Size x:Key="ShapeSize">200,51</av:Size>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="UiElementExists_1" sap:VirtualizedContainerService.HintSize="314,106">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Click_1" sap:VirtualizedContainerService.HintSize="314,106" />
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="200,51">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="FlowStep_1">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <av:Point x:Key="ShapeLocation">0,164.02</av:Point>
+            <av:Size x:Key="ShapeSize">200,51</av:Size>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="GetQueueItems_2" sap:VirtualizedContainerService.HintSize="287,22" />
+      <sap2010:ViewStateData Id="PostponeTransactionItem_3" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="Sequence_6" sap:VirtualizedContainerService.HintSize="222,146">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="ForEach`1_2" sap:VirtualizedContainerService.HintSize="287,280" />
+      <sap2010:ViewStateData Id="Sequence_3" sap:VirtualizedContainerService.HintSize="200,51">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="FlowStep_4">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <av:Point x:Key="ShapeLocation">320,114.5</av:Point>
+            <av:Size x:Key="ShapeSize">200,51</av:Size>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="GetQueueItems_1" sap:VirtualizedContainerService.HintSize="200,22">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
@@ -173,59 +311,6 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="UiElementExists_1" sap:VirtualizedContainerService.HintSize="314,106">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Click_1" sap:VirtualizedContainerService.HintSize="314,106" />
-      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="200,51">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="FlowStep_1">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <av:Point x:Key="ShapeLocation">0,164.02</av:Point>
-            <av:Size x:Key="ShapeSize">200,51</av:Size>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="AddQueueItem_2" sap:VirtualizedContainerService.HintSize="200,22">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="GetQueueItem_2" sap:VirtualizedContainerService.HintSize="200,22">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="PostponeTransactionItem_3" sap:VirtualizedContainerService.HintSize="200,22" />
-      <sap2010:ViewStateData Id="Sequence_3" sap:VirtualizedContainerService.HintSize="200,51">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="FlowStep_4">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <av:Point x:Key="ShapeLocation">320,114.5</av:Point>
-            <av:Size x:Key="ShapeSize">200,51</av:Size>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="GetRobotCredential_1" sap:VirtualizedContainerService.HintSize="210,22" />
       <sap2010:ViewStateData Id="WriteLine_1" sap:VirtualizedContainerService.HintSize="210,61" />
       <sap2010:ViewStateData Id="Sequence_5" sap:VirtualizedContainerService.HintSize="200,51">
@@ -243,17 +328,65 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Flowchart_1" sap:VirtualizedContainerService.HintSize="614,636">
+      <sap2010:ViewStateData Id="GetVisibleText_1" sap:VirtualizedContainerService.HintSize="200,51" />
+      <sap2010:ViewStateData Id="FlowStep_10">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <av:Point x:Key="ShapeLocation">20,444.5</av:Point>
+            <av:Size x:Key="ShapeSize">200,51</av:Size>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="GetAttribute_1" sap:VirtualizedContainerService.HintSize="200,51">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="FlowStep_9">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <av:Point x:Key="ShapeLocation">30,524.02</av:Point>
+            <av:Size x:Key="ShapeSize">200,51</av:Size>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="WaitUiElementAppear_1" sap:VirtualizedContainerService.HintSize="314,106" />
+      <sap2010:ViewStateData Id="WaitAttribute_1" sap:VirtualizedContainerService.HintSize="314,87">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Sequence_8" sap:VirtualizedContainerService.HintSize="200,51">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="FlowStep_11">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <av:Point x:Key="ShapeLocation">330,404.5</av:Point>
+            <av:Size x:Key="ShapeSize">200,51</av:Size>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Flowchart_1" sap:VirtualizedContainerService.HintSize="614,711">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">False</x:Boolean>
             <av:Point x:Key="ShapeLocation">270,2.5</av:Point>
             <av:Size x:Key="ShapeSize">60,75</av:Size>
-            <av:PointCollection x:Key="ConnectorLocation">300,77.5 300,260 320,260</av:PointCollection>
+            <av:PointCollection x:Key="ConnectorLocation">300,77.5 300,319.52 220,319.52</av:PointCollection>
+            <x:Double x:Key="Height">675.02</x:Double>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Temp_1" sap:VirtualizedContainerService.HintSize="654,716" />
+      <sap2010:ViewStateData Id="Temp_1" sap:VirtualizedContainerService.HintSize="654,791" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
