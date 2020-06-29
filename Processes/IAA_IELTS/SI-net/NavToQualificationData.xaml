@@ -1,4 +1,4 @@
-﻿<Activity mc:Ignorable="sap sap2010 sads" x:Class="NavToChecklistManagementStudent" this:NavToChecklistManagementStudent.in_AcademicInstitution="UQUNI"
+﻿<Activity mc:Ignorable="sap sap2010 sads" x:Class="NavToQualificationData" this:NavToQualificationData.in_AcademicInstitution="UQUNI"
  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
  xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities"
@@ -16,6 +16,7 @@
     <x:Property Name="in_AdmitTerm" Type="InArgument(x:String)" />
     <x:Property Name="in_AcademicInstitution" Type="InArgument(x:String)" />
     <x:Property Name="in_SInetMaintainAppSearch_URL" Type="InArgument(x:String)" />
+    <x:Property Name="in_ApplicationProgramNumber" Type="InArgument(x:Int32)" />
   </x:Members>
   <mva:VisualBasic.Settings>
     <x:Null />
@@ -73,10 +74,10 @@
       <AssemblyReference>UiPath.Word</AssemblyReference>
       <AssemblyReference>System.ComponentModel.Composition</AssemblyReference>
       <AssemblyReference>UiPath.Studio.Plugin.Workflow</AssemblyReference>
-      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
+      <AssemblyReference>System.Data.Entity</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
-  <Sequence sap2010:Annotation.AnnotationText="This file will search for the required student ID and checklist code. The result of this search should produce one of three outcomes.&#xA;1. The search resulted in a table in which case we need to select the row with the highest 'Sequence Number'.&#xA;2. The search returned a single result in which case we go straight to the 'Checklist Management - Person' page.&#xA;3. The search returned no matching values which will produce a BRE.&#xA;In the case where the search returned a table with 100 or more rows we will throw a BRE.&#xA;On completion we should be at the 'Checklist Management - Person' page where we can start to update the 'End of Milestone'.&#xA;Inputs:&#xA;student ID&#xA;case ID&#xA;checklist code (CANCON)" DisplayName="NavToQualificationData" sap2010:WorkflowViewState.IdRef="Sequence_8">
+  <Sequence sap2010:Annotation.AnnotationText="Description: This workflow navigates to 'maintain application search' page in SI-net and perform search based on the input parameters. If serach is successful, this navigtaes to 'UQ Qualification Data' page and if not throws a BRE.&#xA;&#xA;Inputs: &#xD;&#xA;in_SInetMaintainAppSearch_URL : SI-net maintain application search URL extracted from config. This value changes as per the corresponding operating environment (DEV, TEST, STAGING and PROD)&#xA;in_ApplicationNbr : Application Number received from datahub&#xD;&#xA;in_AdmitTerm : Admit Term received from datahub&#xD;&#xA;in_AcademicInstitution : Academic institution value extracted from config (AcademicInstitution). This value is always constant as &quot;UQUNI&quot;&#xD;&#xA;in_ApplicationProgramNumber : Application Program Number received from datahub&#xA;&#xA;Outputs: NA&#xA;&#xA;Pre Condition:&#xA;Bot user should be logged into SI-net&#xA;&#xA;Post Condition:&#xA;NA" DisplayName="NavToQualificationData" sap2010:WorkflowViewState.IdRef="Sequence_8">
     <ui:BrowserScope Browser="{x:Null}" SearchScope="{x:Null}" TimeoutMS="{x:Null}" UiBrowser="{x:Null}" BrowserType="Chrome" DisplayName="Attach Browser 'chrome.exe Checklist'" sap2010:WorkflowViewState.IdRef="BrowserScope_1" InformativeScreenshot="30de4dd3baa3e930baecba00db1e0aa8" Selector="&lt;html app='chrome.exe' url='*sinet.uq.edu.au*' /&gt;">
       <ui:BrowserScope.Body>
         <ActivityAction x:TypeArguments="x:Object">
@@ -136,16 +137,76 @@
                 </ui:Click.Target>
               </ui:Click>
             </Sequence>
-            <Pick DisplayName="Test if Serach result any data or No match found" sap2010:WorkflowViewState.IdRef="Pick_2">
+            <Pick DisplayName="Evaluate Search result(s) " sap2010:WorkflowViewState.IdRef="Pick_2">
               <PickBranch DisplayName="UQ Qualification" sap2010:WorkflowViewState.IdRef="PickBranch_4">
                 <PickBranch.Trigger>
-                  <ui:WaitUiElementAppear FoundElement="{x:Null}" DisplayName="Single item returned" sap2010:WorkflowViewState.IdRef="WaitUiElementAppear_4" WaitActive="False" WaitVisible="False">
+                  <ui:WaitUiElementAppear FoundElement="{x:Null}" DisplayName="Single item and redirected to UQ Qualification screen" sap2010:WorkflowViewState.IdRef="WaitUiElementAppear_4" WaitActive="False" WaitVisible="False">
                     <ui:WaitUiElementAppear.Target>
                       <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" InformativeScreenshot="8322a832a67ccea3dead327beb5269be" Selector="&lt;webctrl id='ptifrmtgtframe' tag='IFRAME' /&gt;&lt;webctrl id='app_label' tag='SPAN' /&gt;" TimeoutMS="30000" WaitForReady="COMPLETE" />
                     </ui:WaitUiElementAppear.Target>
                   </ui:WaitUiElementAppear>
                 </PickBranch.Trigger>
-                <ui:LogMessage DisplayName="Log Message - single item returned" sap2010:WorkflowViewState.IdRef="LogMessage_7" Level="Info" Message="[&quot;UQ Qulaification data screen found&quot;]" />
+                <ui:LogMessage DisplayName="Log Message - single item returned" sap2010:WorkflowViewState.IdRef="LogMessage_7" Level="Info" Message="[&quot;UQ Qualification data screen found&quot;]" />
+              </PickBranch>
+              <PickBranch DisplayName="More than one item in 'Serach Result'" sap2010:WorkflowViewState.IdRef="PickBranch_6">
+                <PickBranch.Trigger>
+                  <ui:WaitUiElementAppear FoundElement="{x:Null}" DisplayName="Search Results returned" sap2010:WorkflowViewState.IdRef="WaitUiElementAppear_6" WaitActive="False" WaitVisible="False">
+                    <ui:WaitUiElementAppear.Target>
+                      <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Selector="&lt;webctrl aaname='Search Results*' /&gt;" TimeoutMS="30000" WaitForReady="COMPLETE" />
+                    </ui:WaitUiElementAppear.Target>
+                  </ui:WaitUiElementAppear>
+                </PickBranch.Trigger>
+                <Sequence DisplayName="Search table returned" sap2010:WorkflowViewState.IdRef="Sequence_17">
+                  <Sequence.Variables>
+                    <Variable x:TypeArguments="sd:DataTable" Name="ExtractDataTable" />
+                    <Variable x:TypeArguments="x:Int32" Name="applicationProgNbr" />
+                    <Variable x:TypeArguments="x:Int32" Name="tableIndex" />
+                  </Sequence.Variables>
+                  <ui:LogMessage DisplayName="Log Message - Search results table returned" sap2010:WorkflowViewState.IdRef="LogMessage_9" Level="Info" Message="[&quot;Search results table returned - searching for application program number : '&quot;+in_ApplicationProgramNumber.ToString+&quot;'&quot;]" />
+                  <ui:ExtractData NextLinkSelector="{x:Null}" ContinueOnError="True" DataTable="[ExtractDataTable]" DelayBetweenPagesMS="300" DisplayName="Extract Structured Data 'TABLE  PTSRCHRESULTS'" ExtractMetadata="&lt;extract-table get_columns_name='1' get_empty_columns='1' /&gt;" sap2010:WorkflowViewState.IdRef="ExtractData_2" MaxNumberOfResults="0">
+                    <ui:ExtractData.Target>
+                      <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="&lt;webctrl id='ptifrmtgtframe' tag='IFRAME' /&gt;&lt;webctrl id='PTSRCHRESULTS' tag='TABLE' /&gt;" WaitForReady="COMPLETE" />
+                    </ui:ExtractData.Target>
+                  </ui:ExtractData>
+                  <ui:ForEachRow CurrentIndex="[tableIndex]" DataTable="[ExtractDataTable]" DisplayName="For Each Row" sap2010:WorkflowViewState.IdRef="ForEachRow_2">
+                    <ui:ForEachRow.Body>
+                      <ActivityAction x:TypeArguments="sd:DataRow">
+                        <ActivityAction.Argument>
+                          <DelegateInArgument x:TypeArguments="sd:DataRow" Name="row" />
+                        </ActivityAction.Argument>
+                        <Sequence DisplayName="Body" sap2010:WorkflowViewState.IdRef="Sequence_14">
+                          <Assign DisplayName="Assign Application Program Number" sap2010:WorkflowViewState.IdRef="Assign_3">
+                            <Assign.To>
+                              <OutArgument x:TypeArguments="x:Int32">[applicationProgNbr]</OutArgument>
+                            </Assign.To>
+                            <Assign.Value>
+                              <InArgument x:TypeArguments="x:Int32">[Int32.Parse(row("Application Program Nbr").ToString)]</InArgument>
+                            </Assign.Value>
+                          </Assign>
+                          <If Condition="[applicationProgNbr = in_ApplicationProgramNumber]" DisplayName="If current number greater than previous highest update highest" sap2010:WorkflowViewState.IdRef="If_3">
+                            <If.Then>
+                              <ui:Click DelayBefore="{x:Null}" DelayMS="{x:Null}" ClickType="CLICK_SINGLE" DisplayName="Click 'Application Program Number'" sap2010:WorkflowViewState.IdRef="Click_5" KeyModifiers="None" MouseButton="BTN_LEFT" SendWindowMessages="False" SimulateClick="True">
+                                <ui:Click.CursorPosition>
+                                  <ui:CursorPosition Position="Center">
+                                    <ui:CursorPosition.OffsetX>
+                                      <InArgument x:TypeArguments="x:Int32" />
+                                    </ui:CursorPosition.OffsetX>
+                                    <ui:CursorPosition.OffsetY>
+                                      <InArgument x:TypeArguments="x:Int32" />
+                                    </ui:CursorPosition.OffsetY>
+                                  </ui:CursorPosition>
+                                </ui:Click.CursorPosition>
+                                <ui:Click.Target>
+                                  <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="[&quot;&lt;webctrl tag='A' aaname='&quot; + applicationProgNbr.ToString + &quot;' /&gt;&quot;]" WaitForReady="INTERACTIVE" />
+                                </ui:Click.Target>
+                              </ui:Click>
+                            </If.Then>
+                          </If>
+                        </Sequence>
+                      </ActivityAction>
+                    </ui:ForEachRow.Body>
+                  </ui:ForEachRow>
+                </Sequence>
               </PickBranch>
               <PickBranch DisplayName="No result found" sap2010:WorkflowViewState.IdRef="PickBranch_5">
                 <PickBranch.Trigger>
@@ -157,130 +218,15 @@
                 </PickBranch.Trigger>
                 <Sequence sap2010:WorkflowViewState.IdRef="Sequence_13">
                   <ui:LogMessage DisplayName="Log Message - ID not found" sap2010:WorkflowViewState.IdRef="LogMessage_8" Level="Error" Message="[&quot;No record found for Application Number  :  '&quot;+in_ApplicationNbr+&quot;' and Admit Term : '&quot;+in_AdmitTerm+&quot;'.&quot;]" />
-                  <Throw DisplayName="Throw BRE" Exception="[new businessruleexception(&quot;Application Number : '&quot; + in_ApplicationNbr + &quot;' with Adit Term : '&quot; + in_AdmitTerm + &quot;'. Did not return any match in search&quot;)]" sap2010:WorkflowViewState.IdRef="Throw_3" />
+                  <Throw DisplayName="Throw BRE" Exception="[new businessruleexception(&quot;No record found for Application Number : '&quot; + in_ApplicationNbr + &quot;' with Adit Term : '&quot; + in_AdmitTerm + &quot;' on Maintain Application Search&quot;)]" sap2010:WorkflowViewState.IdRef="Throw_3" />
                 </Sequence>
               </PickBranch>
             </Pick>
-            <ui:CommentOut DisplayName="Comment Out" sap2010:WorkflowViewState.IdRef="CommentOut_1">
-              <ui:CommentOut.Body>
-                <Sequence DisplayName="Ignored Activities" sap2010:WorkflowViewState.IdRef="Sequence_10">
-                  <Sequence DisplayName="Navigate to checklist item" sap2010:WorkflowViewState.IdRef="Sequence_6">
-                    <Pick DisplayName="Test if Student has more than one checklist item" sap2010:WorkflowViewState.IdRef="Pick_1">
-                      <PickBranch DisplayName="More than one checklist item" sap2010:WorkflowViewState.IdRef="PickBranch_1">
-                        <PickBranch.Trigger>
-                          <ui:WaitUiElementAppear FoundElement="{x:Null}" DisplayName="Search Results returned" sap2010:WorkflowViewState.IdRef="WaitUiElementAppear_1" WaitActive="False" WaitVisible="False">
-                            <ui:WaitUiElementAppear.Target>
-                              <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Selector="&lt;webctrl aaname='Search Results*' /&gt;" TimeoutMS="10000" WaitForReady="COMPLETE" />
-                            </ui:WaitUiElementAppear.Target>
-                          </ui:WaitUiElementAppear>
-                        </PickBranch.Trigger>
-                        <Sequence DisplayName="Search table returned" sap2010:WorkflowViewState.IdRef="Sequence_4">
-                          <Sequence.Variables>
-                            <Variable x:TypeArguments="sd:DataTable" Name="ExtractDataTable" />
-                            <Variable x:TypeArguments="x:Int32" Default="0" Name="highestSeqNumber" />
-                            <Variable x:TypeArguments="x:Int32" Name="currentSeqNumber" />
-                            <Variable x:TypeArguments="x:Int32" Name="tableIndex" />
-                          </Sequence.Variables>
-                          <ui:LogMessage DisplayName="Log Message - Search results table returned" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[&quot;Search results table returned - searching for higest sequence number&quot;]" />
-                          <ui:ExtractData NextLinkSelector="{x:Null}" ContinueOnError="True" DataTable="[ExtractDataTable]" DelayBetweenPagesMS="300" DisplayName="Extract Structured Data 'TABLE  PTSRCHRESULTS'" ExtractMetadata="&lt;extract-table get_columns_name='1' get_empty_columns='1' /&gt;" sap2010:WorkflowViewState.IdRef="ExtractData_1" MaxNumberOfResults="0">
-                            <ui:ExtractData.Target>
-                              <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="&lt;webctrl id='ptifrmtgtframe' tag='IFRAME' /&gt;&lt;webctrl id='PTSRCHRESULTS' tag='TABLE' /&gt;" WaitForReady="COMPLETE" />
-                            </ui:ExtractData.Target>
-                          </ui:ExtractData>
-                          <ui:ForEachRow CurrentIndex="[tableIndex]" DataTable="[ExtractDataTable]" DisplayName="For Each Row" sap2010:WorkflowViewState.IdRef="ForEachRow_1">
-                            <ui:ForEachRow.Body>
-                              <ActivityAction x:TypeArguments="sd:DataRow">
-                                <ActivityAction.Argument>
-                                  <DelegateInArgument x:TypeArguments="sd:DataRow" Name="row" />
-                                </ActivityAction.Argument>
-                                <Sequence DisplayName="Body" sap2010:WorkflowViewState.IdRef="Sequence_2">
-                                  <Assign DisplayName="Assign current number" sap2010:WorkflowViewState.IdRef="Assign_1">
-                                    <Assign.To>
-                                      <OutArgument x:TypeArguments="x:Int32">[currentSeqNumber]</OutArgument>
-                                    </Assign.To>
-                                    <Assign.Value>
-                                      <InArgument x:TypeArguments="x:Int32">[Int32.Parse(row("Sequence Number").ToString)]</InArgument>
-                                    </Assign.Value>
-                                  </Assign>
-                                  <If Condition="[currentSeqNumber &gt; highestSeqNumber]" DisplayName="If current number greater than previous highest update highest" sap2010:WorkflowViewState.IdRef="If_1">
-                                    <If.Then>
-                                      <Assign DisplayName="Assign current to highest" sap2010:WorkflowViewState.IdRef="Assign_2">
-                                        <Assign.To>
-                                          <OutArgument x:TypeArguments="x:Int32">[highestSeqNumber]</OutArgument>
-                                        </Assign.To>
-                                        <Assign.Value>
-                                          <InArgument x:TypeArguments="x:Int32">[currentSeqNumber]</InArgument>
-                                        </Assign.Value>
-                                      </Assign>
-                                    </If.Then>
-                                  </If>
-                                </Sequence>
-                              </ActivityAction>
-                            </ui:ForEachRow.Body>
-                          </ui:ForEachRow>
-                          <If Condition="[tableIndex &gt;= 99]" DisplayName="If number of rows in table equals or exceeds 100 throw BRE" sap2010:WorkflowViewState.IdRef="If_2">
-                            <If.Then>
-                              <Sequence DisplayName="Search results table has more than 99 rows" sap2010:WorkflowViewState.IdRef="Sequence_3">
-                                <ui:LogMessage DisplayName="Log Message - Search returned higher than expected" sap2010:WorkflowViewState.IdRef="LogMessage_3" Level="Error" Message="[&quot;The search results table returned higher than expected row count&quot;]" />
-                                <Throw DisplayName="Throw BRE" Exception="[new businessruleexception(&quot;Case ID: '&quot; + in_caseID + &quot;' with student ID: '&quot; + in_studentID + &quot;'. Returned more than 100 rows in search table&quot;)]" sap2010:WorkflowViewState.IdRef="Throw_1" />
-                              </Sequence>
-                            </If.Then>
-                            <If.Else>
-                              <Sequence DisplayName="Search results table has less than 100 rows" sap2010:WorkflowViewState.IdRef="Sequence_9">
-                                <ui:LogMessage DisplayName="Log Message - highest sequence number found" sap2010:WorkflowViewState.IdRef="LogMessage_6" Level="Info" Message="[&quot;Highest sequence number found was: '&quot; + highestSeqNumber.ToString + &quot;'&quot;]" />
-                                <ui:Click DelayBefore="{x:Null}" DelayMS="{x:Null}" ClickType="CLICK_SINGLE" DisplayName="Click item with highest sequence number" sap2010:WorkflowViewState.IdRef="Click_2" KeyModifiers="None" MouseButton="BTN_LEFT" SendWindowMessages="False" SimulateClick="True">
-                                  <ui:Click.CursorPosition>
-                                    <ui:CursorPosition Position="Center">
-                                      <ui:CursorPosition.OffsetX>
-                                        <InArgument x:TypeArguments="x:Int32" />
-                                      </ui:CursorPosition.OffsetX>
-                                      <ui:CursorPosition.OffsetY>
-                                        <InArgument x:TypeArguments="x:Int32" />
-                                      </ui:CursorPosition.OffsetY>
-                                    </ui:CursorPosition>
-                                  </ui:Click.CursorPosition>
-                                  <ui:Click.Target>
-                                    <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="[&quot;&lt;webctrl tag='A' aaname='&quot; + highestSeqNumber.ToString + &quot;' /&gt;&quot;]" WaitForReady="INTERACTIVE" />
-                                  </ui:Click.Target>
-                                </ui:Click>
-                              </Sequence>
-                            </If.Else>
-                          </If>
-                        </Sequence>
-                      </PickBranch>
-                      <PickBranch DisplayName="Only one checklist item" sap2010:WorkflowViewState.IdRef="PickBranch_2">
-                        <PickBranch.Trigger>
-                          <ui:WaitUiElementAppear FoundElement="{x:Null}" DisplayName="Single item returned" sap2010:WorkflowViewState.IdRef="WaitUiElementAppear_2" WaitActive="False" WaitVisible="False">
-                            <ui:WaitUiElementAppear.Target>
-                              <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Selector="&lt;webctrl aaname='Checklist Management 1' /&gt;" TimeoutMS="10000" WaitForReady="COMPLETE" />
-                            </ui:WaitUiElementAppear.Target>
-                          </ui:WaitUiElementAppear>
-                        </PickBranch.Trigger>
-                        <ui:LogMessage DisplayName="Log Message - single item returned" sap2010:WorkflowViewState.IdRef="LogMessage_4" Level="Info" Message="[&quot;Single search item returned&quot;]" />
-                      </PickBranch>
-                      <PickBranch DisplayName="ID not found" sap2010:WorkflowViewState.IdRef="PickBranch_3">
-                        <PickBranch.Trigger>
-                          <ui:WaitUiElementAppear FoundElement="{x:Null}" DisplayName="No matching value found" sap2010:WorkflowViewState.IdRef="WaitUiElementAppear_3" WaitActive="False" WaitVisible="False">
-                            <ui:WaitUiElementAppear.Target>
-                              <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Selector="&lt;webctrl aaname='No matching values were found.' /&gt;" TimeoutMS="10000" WaitForReady="COMPLETE" />
-                            </ui:WaitUiElementAppear.Target>
-                          </ui:WaitUiElementAppear>
-                        </PickBranch.Trigger>
-                        <Sequence sap2010:WorkflowViewState.IdRef="Sequence_5">
-                          <ui:LogMessage DisplayName="Log Message - ID not found" sap2010:WorkflowViewState.IdRef="LogMessage_5" Level="Error" Message="[&quot;Student ID not found&quot;]" />
-                          <Throw DisplayName="Throw BRE" Exception="[new businessruleexception(&quot;Case ID: '&quot; + in_caseID + &quot;' with student ID: '&quot; + in_studentID + &quot;'. Did not return any match in search&quot;)]" sap2010:WorkflowViewState.IdRef="Throw_2" />
-                        </Sequence>
-                      </PickBranch>
-                    </Pick>
-                  </Sequence>
-                </Sequence>
-              </ui:CommentOut.Body>
-            </ui:CommentOut>
           </Sequence>
         </ActivityAction>
       </ui:BrowserScope.Body>
     </ui:BrowserScope>
-    <sads:DebugSymbol.Symbol>d2pDOlxVc2Vyc1x1cW1ndXB0MVxEb2N1bWVudHNcVWlQYXRoXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXElBQV9JRUxUU1xTSS1uZXRcTmF2VG9RdWFsaWZpY2F0aW9uRGF0YS54YW1sKAGRAQGXAQECTwOcAg4CAQFQBZoCFwIBAlCmAlDfAgIBL1YLlwIWAgEDWg2KARgCAReLAQ2jARQCAQWkAQ2WAh0CAQRbD1vHAQIBLFwPahoCASprD2uVAgIBJmwPcB0CASJxD3UdAgEedg96HQIBGnsPiQEaAgEYjAEPlQEcAgERlgEPogEcAgEGW6MBW8QBAgEtaGlolwECAStriQFrkgICASdsuwFs0AECASNuogFulwICASVzogFznAICASFxqAJx2AICAR92swF2wwECARt4ogF4kgICAR2HAWmHAesBAgEZjgETkgEsAgEUlAERlAHKAQIBEpgBE5wBLAIBDp4BEaEBHAIBB5ABkQGQAfABAgEWkAH7AZABggICARWUAZUBlAHHAQIBE5oBWJoBkwECARCaAZ4BmgGlAQIBD58BE58BngICAQqgAROgAaQCAgEInwGQAZ8BmwICAQugATygAfcBAgEJ</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d2pDOlxVc2Vyc1x1cW1ndXB0MVxEb2N1bWVudHNcVWlQYXRoXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXElBQV9JRUxUU1xTSS1uZXRcTmF2VG9RdWFsaWZpY2F0aW9uRGF0YS54YW1sQAF/AYUBAQJQA+YBDgIBAVEF5AEXAgECUaYCUd8CAgFPVwvhARYCAQNbDYsBGAIBN4wBDeABFAIBBFwPXMcBAgFMXQ9rGgIBSmwPbJUCAgFGbQ9xHQIBQnIPdh0CAT53D3sdAgE6fA+KARoCATiNAQ+WARwCATGXAQ/SARwCARDTAQ/fARwCAQVcowFcxAECAU1paWmXAQIBS2yJAWySAgIBR227AW3QAQIBQ2+iAW+XAgIBRXSiAXScAgIBQXKoAnLYAgIBP3ezAXfDAQIBO3miAXmSAgIBPYgBaYgB6wECATmPAROTASwCATSVARGVAcoBAgEymQETnQEsAgEunwER0QEcAgER1QET2QEsAgEN2wER3gEcAgEGkQGRAZEB8AECATaRAfsBkQGCAgIBNZUBlQGVAccBAgEzmwFYmwGEAQIBMJsBjwGbAZYBAgEvpQETpQGyAgIBK6YBE6oBJAIBI6sBE9ABIwIBEtcBWNcBkwECAQ/XAZ4B1wGlAQIBDtwBE9wBngICAQndARPdAbMCAgEHpQGgAaUBrwICASymAeQCpgHnAgIBKqgBbagB0QECASmmAYkBpgGOAQIBKKYBT6YBVQIBJ6YBYKYBdAIBJaYB3AGmAaACAgEkqwEvqwE9AgEhqwFIqwFcAgEfsQEZzQEkAgET3AGQAdwBmwICAQrdATzdAYYCAgEIsgEbuQEkAgEbugEbzAEgAgEUtwFFtwF7AgEetAFGtAFaAgEcugEpugFdAgEVvAEfygEqAgEYyAF5yAHZAQIBGQ==</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -291,7 +237,45 @@
       <sap2010:ViewStateData Id="TypeInto_1" sap:VirtualizedContainerService.HintSize="314,134" />
       <sap2010:ViewStateData Id="SetValue_3" sap:VirtualizedContainerService.HintSize="314,134" />
       <sap2010:ViewStateData Id="Click_1" sap:VirtualizedContainerService.HintSize="314,68" />
-      <sap2010:ViewStateData Id="Sequence_12" sap:VirtualizedContainerService.HintSize="864,51">
+      <sap2010:ViewStateData Id="Sequence_12" sap:VirtualizedContainerService.HintSize="998,1052">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="WaitUiElementAppear_4" sap:VirtualizedContainerService.HintSize="200,51">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="LogMessage_7" sap:VirtualizedContainerService.HintSize="200,51">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="PickBranch_4" sap:VirtualizedContainerService.HintSize="230,326" />
+      <sap2010:ViewStateData Id="WaitUiElementAppear_6" sap:VirtualizedContainerService.HintSize="314,68" />
+      <sap2010:ViewStateData Id="LogMessage_9" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="ExtractData_2" sap:VirtualizedContainerService.HintSize="314,68" />
+      <sap2010:ViewStateData Id="Assign_3" sap:VirtualizedContainerService.HintSize="464,60" />
+      <sap2010:ViewStateData Id="Click_5" sap:VirtualizedContainerService.HintSize="314,68" />
+      <sap2010:ViewStateData Id="If_3" sap:VirtualizedContainerService.HintSize="464,215" />
+      <sap2010:ViewStateData Id="Sequence_14" sap:VirtualizedContainerService.HintSize="486,439">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="ForEachRow_2" sap:VirtualizedContainerService.HintSize="314,51">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">False</x:Boolean>
@@ -299,92 +283,35 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="WaitUiElementAppear_4" sap:VirtualizedContainerService.HintSize="314,106" />
-      <sap2010:ViewStateData Id="LogMessage_7" sap:VirtualizedContainerService.HintSize="314,91" />
-      <sap2010:ViewStateData Id="PickBranch_4" sap:VirtualizedContainerService.HintSize="344,543" />
-      <sap2010:ViewStateData Id="WaitUiElementAppear_5" sap:VirtualizedContainerService.HintSize="314,68" />
+      <sap2010:ViewStateData Id="Sequence_17" sap:VirtualizedContainerService.HintSize="200,51">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="PickBranch_6" sap:VirtualizedContainerService.HintSize="344,326" />
+      <sap2010:ViewStateData Id="WaitUiElementAppear_5" sap:VirtualizedContainerService.HintSize="200,51">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="LogMessage_8" sap:VirtualizedContainerService.HintSize="314,91" />
       <sap2010:ViewStateData Id="Throw_3" sap:VirtualizedContainerService.HintSize="314,22" />
-      <sap2010:ViewStateData Id="Sequence_13" sap:VirtualizedContainerService.HintSize="336,277">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="PickBranch_5" sap:VirtualizedContainerService.HintSize="366,543" />
-      <sap2010:ViewStateData Id="Pick_2" sap:VirtualizedContainerService.HintSize="864,589">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-            <x:Boolean x:Key="IsPinned">False</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="WaitUiElementAppear_1" sap:VirtualizedContainerService.HintSize="314,68" />
-      <sap2010:ViewStateData Id="LogMessage_2" sap:VirtualizedContainerService.HintSize="697,91" />
-      <sap2010:ViewStateData Id="ExtractData_1" sap:VirtualizedContainerService.HintSize="697,68" />
-      <sap2010:ViewStateData Id="Assign_1" sap:VirtualizedContainerService.HintSize="464,60" />
-      <sap2010:ViewStateData Id="Assign_2" sap:VirtualizedContainerService.HintSize="242,60" />
-      <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="464,207" />
-      <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="486,431">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="ForEachRow_1" sap:VirtualizedContainerService.HintSize="697,578" />
-      <sap2010:ViewStateData Id="LogMessage_3" sap:VirtualizedContainerService.HintSize="314,91" />
-      <sap2010:ViewStateData Id="Throw_1" sap:VirtualizedContainerService.HintSize="314,22" />
-      <sap2010:ViewStateData Id="Sequence_3" sap:VirtualizedContainerService.HintSize="336,277">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="LogMessage_6" sap:VirtualizedContainerService.HintSize="314,91" />
-      <sap2010:ViewStateData Id="Click_2" sap:VirtualizedContainerService.HintSize="314,68" />
-      <sap2010:ViewStateData Id="Sequence_9" sap:VirtualizedContainerService.HintSize="336,323">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_2" sap:VirtualizedContainerService.HintSize="697,470" />
-      <sap2010:ViewStateData Id="Sequence_4" sap:VirtualizedContainerService.HintSize="719,1451">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="PickBranch_1" sap:VirtualizedContainerService.HintSize="749,1717" />
-      <sap2010:ViewStateData Id="WaitUiElementAppear_2" sap:VirtualizedContainerService.HintSize="314,68" />
-      <sap2010:ViewStateData Id="LogMessage_4" sap:VirtualizedContainerService.HintSize="314,91" />
-      <sap2010:ViewStateData Id="PickBranch_2" sap:VirtualizedContainerService.HintSize="344,1717" />
-      <sap2010:ViewStateData Id="WaitUiElementAppear_3" sap:VirtualizedContainerService.HintSize="314,68" />
-      <sap2010:ViewStateData Id="LogMessage_5" sap:VirtualizedContainerService.HintSize="314,91" />
-      <sap2010:ViewStateData Id="Throw_2" sap:VirtualizedContainerService.HintSize="314,22" />
-      <sap2010:ViewStateData Id="Sequence_5" sap:VirtualizedContainerService.HintSize="336,277">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="PickBranch_3" sap:VirtualizedContainerService.HintSize="366,1717" />
-      <sap2010:ViewStateData Id="Pick_1" sap:VirtualizedContainerService.HintSize="200,51">
+      <sap2010:ViewStateData Id="Sequence_13" sap:VirtualizedContainerService.HintSize="200,51">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">False</x:Boolean>
-            <x:Boolean x:Key="IsPinned">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_6" sap:VirtualizedContainerService.HintSize="222,175">
+      <sap2010:ViewStateData Id="PickBranch_5" sap:VirtualizedContainerService.HintSize="230,326" />
+      <sap2010:ViewStateData Id="Pick_2" sap:VirtualizedContainerService.HintSize="998,372">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -392,22 +319,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_10" sap:VirtualizedContainerService.HintSize="244,299">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="CommentOut_1" sap:VirtualizedContainerService.HintSize="864,51">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
-            <x:Boolean x:Key="IsPinned">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_7" sap:VirtualizedContainerService.HintSize="886,895">
+      <sap2010:ViewStateData Id="Sequence_7" sap:VirtualizedContainerService.HintSize="1020,1588">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -415,8 +327,8 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="BrowserScope_1" sap:VirtualizedContainerService.HintSize="900,1041" />
-      <sap2010:ViewStateData Id="Sequence_8" sap:VirtualizedContainerService.HintSize="922,1327">
+      <sap2010:ViewStateData Id="BrowserScope_1" sap:VirtualizedContainerService.HintSize="1034,1734" />
+      <sap2010:ViewStateData Id="Sequence_8" sap:VirtualizedContainerService.HintSize="1056,2140">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -424,10 +336,10 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="NavToChecklistManagementStudent_1" sap:VirtualizedContainerService.HintSize="962,1407">
+      <sap2010:ViewStateData Id="NavToChecklistManagementStudent_1" sap:VirtualizedContainerService.HintSize="1096,2220">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="ShouldExpandAll">True</x:Boolean>
+            <x:Boolean x:Key="ShouldExpandAll">False</x:Boolean>
             <x:Boolean x:Key="ShouldCollapseAll">False</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>

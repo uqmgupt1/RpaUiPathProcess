@@ -1,4 +1,4 @@
-﻿<Activity mc:Ignorable="sap sap2010 sads" x:Class="NavToMaintainApplicationsPerson" this:NavToMaintainApplicationsPerson.in_TableIndex="1" this:NavToMaintainApplicationsPerson.in_ScoreIndex="5"
+﻿<Activity mc:Ignorable="sap sap2010 sads" x:Class="ExtractSInetTestDetails"
  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
  xmlns:maes="clr-namespace:Microsoft.Activities.Extensions.Statements;assembly=Microsoft.Activities.Extensions"
  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -8,13 +8,14 @@
  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
  xmlns:scg="clr-namespace:System.Collections.Generic;assembly=mscorlib"
  xmlns:sco="clr-namespace:System.Collections.ObjectModel;assembly=mscorlib"
- xmlns:this="clr-namespace:"
  xmlns:ui="http://schemas.uipath.com/workflow/activities"
  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <x:Members>
-    <x:Property Name="sinet_IELTSDetails" Type="OutArgument(scg:Dictionary(x:String, x:String))" />
-    <x:Property Name="in_TableIndex" Type="InArgument(x:Int32)" />
-    <x:Property Name="in_ScoreIndex" Type="InArgument(x:Int32)" />
+    <x:Property Name="in_TRFNumber" Type="InArgument(x:String)" />
+    <x:Property Name="out_sinet_IELTSDetails" Type="OutArgument(scg:Dictionary(x:String, x:String))" />
+    <x:Property Name="in_FirstName" Type="InArgument(x:String)" />
+    <x:Property Name="in_LastName" Type="InArgument(x:String)" />
+    <x:Property Name="out_testScoreIndex" Type="OutArgument(x:String)" />
   </x:Members>
   <mva:VisualBasic.Settings>
     <x:Null />
@@ -44,6 +45,7 @@
       <x:String>UiPath.Core</x:String>
       <x:String>UiPath.Core.Activities</x:String>
       <x:String>Microsoft.VisualBasic.CompilerServices</x:String>
+      <x:String>System.Text.RegularExpressions</x:String>
     </sco:Collection>
   </TextExpression.NamespacesForImplementation>
   <TextExpression.ReferencesForImplementation>
@@ -74,185 +76,485 @@
       <AssemblyReference>System.ValueTuple</AssemblyReference>
       <AssemblyReference>System.ComponentModel.Composition</AssemblyReference>
       <AssemblyReference>UiPath.Studio.Plugin.Workflow</AssemblyReference>
-      <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
+      <AssemblyReference>System.Collections.Immutable</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
-  <Sequence DisplayName="NavToTestIELTS" sap2010:WorkflowViewState.IdRef="Sequence_11">
+  <Sequence sap2010:Annotation.AnnotationText="Description: This workflow verifies if the TRF number is availble and check if the score status ( either 'not yet reviewed' or blank).  If these conditions are satisfied, it extracts the test component name and respective results else throws BRE.&#xA;&#xA;Inputs: &#xA;in_TRFNumber : IELTS TRF received from datahub&#xD;&#xA;in_FirstName : First name value received from datahub&#xD;&#xA;in_LastName : Last name value received from dataub&#xA;&#xA;Outputs: &#xA;out_sinet_IELTSDetails &lt;String, String&gt; : This collection stores the value extracted from SI-net as follows -  Test Date, Overall Score, Listening, Writing, Speaking, Reading, Family Name and First Name&#xD;&#xA;out_testScoreIndex : IELTS test score index (more than one IELTS test score available in SI-net) &#xA;&#xA;Pre Condition:&#xA;NA&#xA;&#xA;Post Condition:&#xA;NA" DisplayName="ExtractSInetTestDetails" sap2010:WorkflowViewState.IdRef="Sequence_11">
     <Sequence.Variables>
       <Variable x:TypeArguments="x:String" Name="extractedValue" />
       <Variable x:TypeArguments="x:Boolean" Name="attr_expand" />
       <Variable x:TypeArguments="x:String" Name="dynamicSelector" />
       <Variable x:TypeArguments="x:Boolean" Name="elementExists" />
     </Sequence.Variables>
-    <ui:BrowserScope Browser="{x:Null}" SearchScope="{x:Null}" TimeoutMS="{x:Null}" UiBrowser="{x:Null}" BrowserType="Chrome" DisplayName="Attach Browser 'chrome.exe Maintain'" sap2010:WorkflowViewState.IdRef="BrowserScope_4" InformativeScreenshot="7c785b2e1794edf0b3b97bea3236759d" Selector="&lt;html app='chrome.exe' title='Maintain Applications' /&gt;">
+    <ui:CommentOut DisplayName="Comment Out" sap2010:WorkflowViewState.IdRef="CommentOut_2">
+      <ui:CommentOut.Body>
+        <Sequence DisplayName="Ignored Activities" sap2010:WorkflowViewState.IdRef="Sequence_19">
+          <ui:BrowserScope Browser="{x:Null}" SearchScope="{x:Null}" TimeoutMS="{x:Null}" UiBrowser="{x:Null}" BrowserType="Chrome" DisplayName="Attach Browser 'chrome.exe Maintain'" sap2010:WorkflowViewState.IdRef="BrowserScope_4" InformativeScreenshot="7c785b2e1794edf0b3b97bea3236759d" Selector="&lt;html app='chrome.exe' title='Maintain Applications' /&gt;">
+            <ui:BrowserScope.Body>
+              <ActivityAction x:TypeArguments="x:Object">
+                <ActivityAction.Argument>
+                  <DelegateInArgument x:TypeArguments="x:Object" Name="ContextTarget" />
+                </ActivityAction.Argument>
+                <Sequence DisplayName="Do" sap2010:WorkflowViewState.IdRef="Sequence_10">
+                  <Assign sap2010:WorkflowViewState.IdRef="Assign_1">
+                    <Assign.To>
+                      <OutArgument x:TypeArguments="scg:Dictionary(x:String, x:String)">[sinet_IELTSDetails]</OutArgument>
+                    </Assign.To>
+                    <Assign.Value>
+                      <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)">[new Dictionary(Of String, String)]</InArgument>
+                    </Assign.Value>
+                  </Assign>
+                  <Sequence DisplayName="NavToTestIELTS" sap2010:WorkflowViewState.IdRef="Sequence_16">
+                    <Sequence.Variables>
+                      <Variable x:TypeArguments="x:Int32" Default="1" Name="rowIndex" />
+                      <Variable x:TypeArguments="ui:GenericValue" Name="testComp_Row" />
+                      <Variable x:TypeArguments="ui:UiElement" Name="isTRFavailable" />
+                      <Variable x:TypeArguments="ui:GenericValue" Name="TrfAttributeName" />
+                    </Sequence.Variables>
+                    <Assign DisplayName="Dynamic Selector for Test Date " sap2010:WorkflowViewState.IdRef="Assign_5">
+                      <Assign.To>
+                        <OutArgument x:TypeArguments="x:String">[dynamicSelector]</OutArgument>
+                      </Assign.To>
+                      <Assign.Value>
+                        <InArgument x:TypeArguments="x:String">["&lt;webctrl id='*WRK_TEST_DT$"+in_TableIndex.ToString+"' tag='INPUT'/&gt;"]</InArgument>
+                      </Assign.Value>
+                    </Assign>
+                    <ui:GetFullText DisplayName="Test Date " sap2010:WorkflowViewState.IdRef="GetFullText_2" IgnoreHidden="False">
+                      <ui:GetFullText.Target>
+                        <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="b1b911c3b19ee77cdac12d4bf5f54946" Selector="[dynamicSelector]" WaitForReady="INTERACTIVE" />
+                      </ui:GetFullText.Target>
+                      <ui:GetFullText.Text>
+                        <OutArgument x:TypeArguments="x:String">[extractedValue]</OutArgument>
+                      </ui:GetFullText.Text>
+                    </ui:GetFullText>
+                    <maes:AddToDictionary x:TypeArguments="x:String, x:String" Dictionary="[sinet_IELTSDetails]" DisplayName="Add to dictionary _ Test Date" sap2010:WorkflowViewState.IdRef="AddToDictionary`2_2" Key="TestDate" Value="[extractedValue.Trim]" />
+                    <ui:CommentOut DisplayName="Comment Out" sap2010:WorkflowViewState.IdRef="CommentOut_1">
+                      <ui:CommentOut.Body>
+                        <Sequence DisplayName="Ignored Activities" sap2010:WorkflowViewState.IdRef="Sequence_18">
+                          <ui:WaitUiElementAppear DisplayName="Find Element TRF Number " FoundElement="[isTRFavailable]" sap2010:WorkflowViewState.IdRef="WaitUiElementAppear_1" WaitActive="False" WaitVisible="False">
+                            <ui:WaitUiElementAppear.Target>
+                              <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="681f490f9a78882656f5ca1c682e5891" Selector="&lt;webctrl id='ptifrmtgtframe' tag='IFRAME' /&gt;&lt;webctrl id='UQAD3590_WRK_UQ_TRF_NO$*' tag='INPUT' aaname='TRF Number:' value='15CN004978ZHEF002B' /&gt;" WaitForReady="INTERACTIVE" />
+                            </ui:WaitUiElementAppear.Target>
+                          </ui:WaitUiElementAppear>
+                          <ui:GetAttribute ContinueOnError="{x:Null}" Attribute="name" DisplayName="If available, get the attribute name" sap2010:WorkflowViewState.IdRef="GetAttribute_7">
+                            <ui:GetAttribute.Result>
+                              <OutArgument x:TypeArguments="ui:GenericValue">[TrfAttributeName]</OutArgument>
+                            </ui:GetAttribute.Result>
+                            <ui:GetAttribute.Target>
+                              <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="681f490f9a78882656f5ca1c682e5891" Selector="&lt;webctrl id='ptifrmtgtframe' tag='IFRAME' /&gt;&lt;webctrl id='UQAD3590_WRK_UQ_TRF_NO$*' tag='INPUT' aaname='TRF Number:' value='15CN004978ZHEF002B' /&gt;" WaitForReady="INTERACTIVE" />
+                            </ui:GetAttribute.Target>
+                          </ui:GetAttribute>
+                          <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_6" Level="Warn" Message="[&quot;--&gt;&quot;+TrfAttributeName]" />
+                        </Sequence>
+                      </ui:CommentOut.Body>
+                    </ui:CommentOut>
+                    <Assign DisplayName="Dynamic Selector for TRF Number " sap2010:WorkflowViewState.IdRef="Assign_6">
+                      <Assign.To>
+                        <OutArgument x:TypeArguments="x:String">[dynamicSelector]</OutArgument>
+                      </Assign.To>
+                      <Assign.Value>
+                        <InArgument x:TypeArguments="x:String">["&lt;webctrl id='*WRK_UQ_TRF_NO$"+in_TableIndex.ToString+"' tag='INPUT'/&gt;"]</InArgument>
+                      </Assign.Value>
+                    </Assign>
+                    <ui:GetFullText DisplayName="TRF Number " sap2010:WorkflowViewState.IdRef="GetFullText_3" IgnoreHidden="False">
+                      <ui:GetFullText.Target>
+                        <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="b1b911c3b19ee77cdac12d4bf5f54946" Selector="[dynamicSelector]" WaitForReady="INTERACTIVE" />
+                      </ui:GetFullText.Target>
+                      <ui:GetFullText.Text>
+                        <OutArgument x:TypeArguments="x:String">[extractedValue]</OutArgument>
+                      </ui:GetFullText.Text>
+                    </ui:GetFullText>
+                    <maes:AddToDictionary x:TypeArguments="x:String, x:String" Dictionary="[sinet_IELTSDetails]" DisplayName="Add to dictionary _ TRF Number" sap2010:WorkflowViewState.IdRef="AddToDictionary`2_5" Key="TRFNumber" Value="[extractedValue.Trim]" />
+                    <Assign DisplayName="Dynamic Selector - Table Expand " sap2010:WorkflowViewState.IdRef="Assign_7">
+                      <Assign.To>
+                        <OutArgument x:TypeArguments="x:String">[dynamicSelector]</OutArgument>
+                      </Assign.To>
+                      <Assign.Value>
+                        <InArgument x:TypeArguments="x:String">["&lt;webctrl id='*STDNT_TEST_COMP$expand$"+in_TableIndex.ToString+"' tag='A'/&gt;"]</InArgument>
+                      </Assign.Value>
+                    </Assign>
+                    <ui:GetAttribute ContinueOnError="{x:Null}" Attribute="aria-expanded" DisplayName="Check If Test Component is collapsed" sap2010:WorkflowViewState.IdRef="GetAttribute_5">
+                      <ui:GetAttribute.Result>
+                        <OutArgument x:TypeArguments="x:Boolean">[attr_expand]</OutArgument>
+                      </ui:GetAttribute.Result>
+                      <ui:GetAttribute.Target>
+                        <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="[dynamicSelector]" WaitForReady="INTERACTIVE" />
+                      </ui:GetAttribute.Target>
+                    </ui:GetAttribute>
+                    <If Condition="[Not attr_expand]" DisplayName="If collapsed, click to expand" sap2010:WorkflowViewState.IdRef="If_2">
+                      <If.Then>
+                        <ui:Click DelayBefore="{x:Null}" DelayMS="{x:Null}" ClickType="CLICK_SINGLE" DisplayName="Click to expand Test Components" sap2010:WorkflowViewState.IdRef="Click_2" KeyModifiers="None" MouseButton="BTN_LEFT" SendWindowMessages="False" SimulateClick="False">
+                          <ui:Click.CursorPosition>
+                            <ui:CursorPosition Position="Center">
+                              <ui:CursorPosition.OffsetX>
+                                <InArgument x:TypeArguments="x:Int32" />
+                              </ui:CursorPosition.OffsetX>
+                              <ui:CursorPosition.OffsetY>
+                                <InArgument x:TypeArguments="x:Int32" />
+                              </ui:CursorPosition.OffsetY>
+                            </ui:CursorPosition>
+                          </ui:Click.CursorPosition>
+                          <ui:Click.Target>
+                            <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="[dynamicSelector]" WaitForReady="COMPLETE" />
+                          </ui:Click.Target>
+                        </ui:Click>
+                      </If.Then>
+                    </If>
+                    <DoWhile DisplayName="Do While get data for all 5 sections " sap2010:WorkflowViewState.IdRef="DoWhile_1" Condition="[elementExists]">
+                      <Sequence sap2010:WorkflowViewState.IdRef="Sequence_13">
+                        <Sequence.Variables>
+                          <Variable x:TypeArguments="ui:GenericValue" Name="TBD_FullText" />
+                        </Sequence.Variables>
+                        <Assign DisplayName="Create a dynamic selector for fetching items" sap2010:WorkflowViewState.IdRef="Assign_8">
+                          <Assign.To>
+                            <OutArgument x:TypeArguments="x:String">[dynamicSelector]</OutArgument>
+                          </Assign.To>
+                          <Assign.Value>
+                            <InArgument x:TypeArguments="x:String">["&lt;webctrl id='"+"trSTDNT_TEST_COMP$"+in_TableIndex.ToString+"_row"+rowIndex.ToString+"' tag='TR' /&gt;"]</InArgument>
+                          </Assign.Value>
+                        </Assign>
+                        <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_4" Level="Trace" Message="[dynamicSelector]" />
+                        <ui:UiElementExists DisplayName="Element Exists : Check 'Checklist Item' one by one" Exists="[elementExists]" sap2010:WorkflowViewState.IdRef="UiElementExists_1">
+                          <ui:UiElementExists.Target>
+                            <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" InformativeScreenshot="1335a1ee1f3714663341c78caa2491f0" Selector="[dynamicSelector]" TimeoutMS="3000" WaitForReady="INTERACTIVE" />
+                          </ui:UiElementExists.Target>
+                        </ui:UiElementExists>
+                        <If Condition="[elementExists]" sap2010:WorkflowViewState.IdRef="If_3">
+                          <If.Then>
+                            <Sequence DisplayName="Get the Item value and check in allowed item list from config file" sap2010:WorkflowViewState.IdRef="Sequence_12">
+                              <ui:GetAttribute ContinueOnError="{x:Null}" Attribute="selectedItem" DisplayName="Get Test Component" sap2010:WorkflowViewState.IdRef="GetAttribute_6">
+                                <ui:GetAttribute.Result>
+                                  <OutArgument x:TypeArguments="ui:GenericValue">[testComp_Row]</OutArgument>
+                                </ui:GetAttribute.Result>
+                                <ui:GetAttribute.Target>
+                                  <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="[&quot;&lt;webctrl id='&quot;+&quot;STDNT_TEST_COMP_TEST_COMPONENT$&quot;+in_ScoreIndex.ToString+&quot;' tag='SELECT' /&gt;&quot;]" WaitForReady="INTERACTIVE" />
+                                </ui:GetAttribute.Target>
+                              </ui:GetAttribute>
+                              <ui:GetValue ContinueOnError="{x:Null}" DisplayName="Get Score Value " sap2010:WorkflowViewState.IdRef="GetValue_1">
+                                <ui:GetValue.Target>
+                                  <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="[&quot;&lt;webctrl id='&quot;+&quot;STDNT_TEST_COMP_SCORE$&quot;+in_ScoreIndex.ToString+&quot;' tag='INPUT' /&gt;&quot;]" WaitForReady="COMPLETE" />
+                                </ui:GetValue.Target>
+                                <ui:GetValue.Value>
+                                  <OutArgument x:TypeArguments="x:String">[extractedValue]</OutArgument>
+                                </ui:GetValue.Value>
+                              </ui:GetValue>
+                              <ui:Check ContinueOnError="{x:Null}" DelayAfter="{x:Null}" DelayBefore="{x:Null}" Action="Uncheck" DisplayName="Uncheck - Verified field " sap2010:WorkflowViewState.IdRef="Check_1">
+                                <ui:Check.Target>
+                                  <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="[&quot;&lt;webctrl id='&quot;+&quot;STDNT_TEST_COMP_TEST_ADMIN$&quot;+in_ScoreIndex.ToString+&quot;' tag='INPUT' /&gt;&quot;]" WaitForReady="INTERACTIVE" />
+                                </ui:Check.Target>
+                              </ui:Check>
+                              <maes:AddToDictionary x:TypeArguments="x:String, x:String" Dictionary="[sinet_IELTSDetails]" DisplayName="Add to dictionary" sap2010:WorkflowViewState.IdRef="AddToDictionary`2_4" Key="[testComp_Row.Trim]" Value="[extractedValue.Trim]" />
+                            </Sequence>
+                          </If.Then>
+                        </If>
+                        <Assign DisplayName="Assign - increment index" sap2010:WorkflowViewState.IdRef="Assign_9">
+                          <Assign.To>
+                            <OutArgument x:TypeArguments="x:Int32">[rowIndex]</OutArgument>
+                          </Assign.To>
+                          <Assign.Value>
+                            <InArgument x:TypeArguments="x:Int32">[rowIndex+1]</InArgument>
+                          </Assign.Value>
+                        </Assign>
+                        <Assign sap2010:WorkflowViewState.IdRef="Assign_11">
+                          <Assign.To>
+                            <OutArgument x:TypeArguments="x:Int32">[in_ScoreIndex]</OutArgument>
+                          </Assign.To>
+                          <Assign.Value>
+                            <InArgument x:TypeArguments="x:Int32">[in_ScoreIndex+1]</InArgument>
+                          </Assign.Value>
+                        </Assign>
+                      </Sequence>
+                    </DoWhile>
+                  </Sequence>
+                  <ui:ForEach x:TypeArguments="x:Object" CurrentIndex="{x:Null}" DisplayName="For Each" sap2010:WorkflowViewState.IdRef="ForEach`1_1" Values="[sinet_IELTSDetails]">
+                    <ui:ForEach.Body>
+                      <ActivityAction x:TypeArguments="x:Object">
+                        <ActivityAction.Argument>
+                          <DelegateInArgument x:TypeArguments="x:Object" Name="item" />
+                        </ActivityAction.Argument>
+                        <Sequence DisplayName="Body" sap2010:WorkflowViewState.IdRef="Sequence_17">
+                          <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_5" Level="Info" Message="[item]" />
+                        </Sequence>
+                      </ActivityAction>
+                    </ui:ForEach.Body>
+                  </ui:ForEach>
+                </Sequence>
+              </ActivityAction>
+            </ui:BrowserScope.Body>
+          </ui:BrowserScope>
+        </Sequence>
+      </ui:CommentOut.Body>
+    </ui:CommentOut>
+    <ui:BrowserScope Browser="{x:Null}" SearchScope="{x:Null}" TimeoutMS="{x:Null}" UiBrowser="{x:Null}" BrowserType="Chrome" DisplayName="Attach Browser 'chrome.exe Maintain'" sap2010:WorkflowViewState.IdRef="BrowserScope_5" InformativeScreenshot="7c785b2e1794edf0b3b97bea3236759d" Selector="&lt;html app='chrome.exe' title='Maintain Applications' /&gt;">
       <ui:BrowserScope.Body>
         <ActivityAction x:TypeArguments="x:Object">
           <ActivityAction.Argument>
             <DelegateInArgument x:TypeArguments="x:Object" Name="ContextTarget" />
           </ActivityAction.Argument>
-          <Sequence DisplayName="Do" sap2010:WorkflowViewState.IdRef="Sequence_10">
-            <Assign sap2010:WorkflowViewState.IdRef="Assign_1">
+          <Sequence DisplayName="Extract test details from SInet " sap2010:WorkflowViewState.IdRef="Sequence_29">
+            <Sequence.Variables>
+              <Variable x:TypeArguments="x:Int32" Default="1" Name="rowNumber" />
+              <Variable x:TypeArguments="ui:GenericValue" Name="testComp_Row" />
+              <Variable x:TypeArguments="ui:UiElement" Name="isTRFavailable" />
+              <Variable x:TypeArguments="ui:GenericValue" Name="TrfAttributeName" />
+              <Variable x:TypeArguments="ui:UiElement" Name="trfNumber" />
+              <Variable x:TypeArguments="ui:GenericValue" Name="scoreStatus" />
+              <Variable x:TypeArguments="x:Boolean" Name="isTestRowExists" />
+              <Variable x:TypeArguments="x:String" Name="testID" />
+              <Variable x:TypeArguments="x:String" Name="testScoreIndex" />
+            </Sequence.Variables>
+            <Assign sap2010:WorkflowViewState.IdRef="Assign_12">
               <Assign.To>
-                <OutArgument x:TypeArguments="scg:Dictionary(x:String, x:String)">[sinet_IELTSDetails]</OutArgument>
+                <OutArgument x:TypeArguments="scg:Dictionary(x:String, x:String)">[out_sinet_IELTSDetails]</OutArgument>
               </Assign.To>
               <Assign.Value>
                 <InArgument x:TypeArguments="scg:Dictionary(x:String, x:String)">[new Dictionary(Of String, String)]</InArgument>
               </Assign.Value>
             </Assign>
-            <Sequence DisplayName="NavToTestIELTS" sap2010:WorkflowViewState.IdRef="Sequence_16">
-              <Sequence.Variables>
-                <Variable x:TypeArguments="x:Int32" Default="1" Name="rowIndex" />
-                <Variable x:TypeArguments="ui:GenericValue" Name="testComp_Row" />
-              </Sequence.Variables>
-              <Assign DisplayName="Dynamic Selector for Test Date " sap2010:WorkflowViewState.IdRef="Assign_5">
-                <Assign.To>
-                  <OutArgument x:TypeArguments="x:String">[dynamicSelector]</OutArgument>
-                </Assign.To>
-                <Assign.Value>
-                  <InArgument x:TypeArguments="x:String">["&lt;webctrl id='*WRK_TEST_DT$"+in_TableIndex.ToString+"' tag='INPUT'/&gt;"]</InArgument>
-                </Assign.Value>
-              </Assign>
-              <ui:GetFullText DisplayName="Test Date " sap2010:WorkflowViewState.IdRef="GetFullText_2" IgnoreHidden="False">
-                <ui:GetFullText.Target>
-                  <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="b1b911c3b19ee77cdac12d4bf5f54946" Selector="[dynamicSelector]" WaitForReady="INTERACTIVE" />
-                </ui:GetFullText.Target>
-                <ui:GetFullText.Text>
-                  <OutArgument x:TypeArguments="x:String">[extractedValue]</OutArgument>
-                </ui:GetFullText.Text>
-              </ui:GetFullText>
-              <maes:AddToDictionary x:TypeArguments="x:String, x:String" Dictionary="[sinet_IELTSDetails]" DisplayName="Add to dictionary _ Test Date" sap2010:WorkflowViewState.IdRef="AddToDictionary`2_2" Key="TestDate" Value="[extractedValue.Trim]" />
-              <Assign DisplayName="Dynamic Selector for TRF Number " sap2010:WorkflowViewState.IdRef="Assign_6">
-                <Assign.To>
-                  <OutArgument x:TypeArguments="x:String">[dynamicSelector]</OutArgument>
-                </Assign.To>
-                <Assign.Value>
-                  <InArgument x:TypeArguments="x:String">["&lt;webctrl id='*WRK_UQ_TRF_NO$"+in_TableIndex.ToString+"' tag='INPUT'/&gt;"]</InArgument>
-                </Assign.Value>
-              </Assign>
-              <ui:GetFullText DisplayName="TRF Number " sap2010:WorkflowViewState.IdRef="GetFullText_3" IgnoreHidden="False">
-                <ui:GetFullText.Target>
-                  <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="b1b911c3b19ee77cdac12d4bf5f54946" Selector="[dynamicSelector]" WaitForReady="INTERACTIVE" />
-                </ui:GetFullText.Target>
-                <ui:GetFullText.Text>
-                  <OutArgument x:TypeArguments="x:String">[extractedValue]</OutArgument>
-                </ui:GetFullText.Text>
-              </ui:GetFullText>
-              <maes:AddToDictionary x:TypeArguments="x:String, x:String" Dictionary="[sinet_IELTSDetails]" DisplayName="Add to dictionary _ TRF Number" sap2010:WorkflowViewState.IdRef="AddToDictionary`2_5" Key="TRFNumber" Value="[extractedValue.Trim]" />
-              <Assign DisplayName="Dynamic Selector - Table Expand " sap2010:WorkflowViewState.IdRef="Assign_7">
-                <Assign.To>
-                  <OutArgument x:TypeArguments="x:String">[dynamicSelector]</OutArgument>
-                </Assign.To>
-                <Assign.Value>
-                  <InArgument x:TypeArguments="x:String">["&lt;webctrl id='*STDNT_TEST_COMP$expand$"+in_TableIndex.ToString+"' tag='A'/&gt;"]</InArgument>
-                </Assign.Value>
-              </Assign>
-              <ui:GetAttribute ContinueOnError="{x:Null}" Attribute="aria-expanded" DisplayName="Check If Test Component is collapsed" sap2010:WorkflowViewState.IdRef="GetAttribute_5">
-                <ui:GetAttribute.Result>
-                  <OutArgument x:TypeArguments="x:Boolean">[attr_expand]</OutArgument>
-                </ui:GetAttribute.Result>
-                <ui:GetAttribute.Target>
-                  <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="[dynamicSelector]" WaitForReady="INTERACTIVE" />
-                </ui:GetAttribute.Target>
-              </ui:GetAttribute>
-              <If Condition="[Not attr_expand]" DisplayName="If collapsed, click to expand" sap2010:WorkflowViewState.IdRef="If_2">
-                <If.Then>
-                  <ui:Click DelayBefore="{x:Null}" DelayMS="{x:Null}" ClickType="CLICK_SINGLE" DisplayName="Click to expand Test Components" sap2010:WorkflowViewState.IdRef="Click_2" KeyModifiers="None" MouseButton="BTN_LEFT" SendWindowMessages="False" SimulateClick="False">
-                    <ui:Click.CursorPosition>
-                      <ui:CursorPosition Position="Center">
-                        <ui:CursorPosition.OffsetX>
-                          <InArgument x:TypeArguments="x:Int32" />
-                        </ui:CursorPosition.OffsetX>
-                        <ui:CursorPosition.OffsetY>
-                          <InArgument x:TypeArguments="x:Int32" />
-                        </ui:CursorPosition.OffsetY>
-                      </ui:CursorPosition>
-                    </ui:Click.CursorPosition>
-                    <ui:Click.Target>
-                      <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="[dynamicSelector]" WaitForReady="COMPLETE" />
-                    </ui:Click.Target>
-                  </ui:Click>
-                </If.Then>
-              </If>
-              <DoWhile DisplayName="Do While get data for all 5 sections " sap2010:WorkflowViewState.IdRef="DoWhile_1" Condition="[elementExists]">
-                <Sequence sap2010:WorkflowViewState.IdRef="Sequence_13">
-                  <Sequence.Variables>
-                    <Variable x:TypeArguments="ui:GenericValue" Name="TBD_FullText" />
-                  </Sequence.Variables>
-                  <Assign DisplayName="Create a dynamic selector for fetching items" sap2010:WorkflowViewState.IdRef="Assign_8">
-                    <Assign.To>
-                      <OutArgument x:TypeArguments="x:String">[dynamicSelector]</OutArgument>
-                    </Assign.To>
-                    <Assign.Value>
-                      <InArgument x:TypeArguments="x:String">["&lt;webctrl id='"+"trSTDNT_TEST_COMP$"+in_TableIndex.ToString+"_row"+rowIndex.ToString+"' tag='TR' /&gt;"]</InArgument>
-                    </Assign.Value>
-                  </Assign>
-                  <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_4" Level="Trace" Message="[dynamicSelector]" />
-                  <ui:GetFullText DisplayName="Get Full Text 'SELECT  STDNT_TEST_COMP...'" sap2010:WorkflowViewState.IdRef="GetFullText_4" IgnoreHidden="False">
-                    <ui:GetFullText.Target>
-                      <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="a2db2fdf2cac2d0eb551f59196fc3571" Selector="&lt;webctrl id='ptifrmtgtframe' tag='IFRAME' /&gt;&lt;webctrl id='STDNT_TEST_COMP_TEST_COMPONENT$0' tag='SELECT' /&gt;" WaitForReady="INTERACTIVE" />
-                    </ui:GetFullText.Target>
-                    <ui:GetFullText.Text>
-                      <OutArgument x:TypeArguments="ui:GenericValue">[TBD_FullText]</OutArgument>
-                    </ui:GetFullText.Text>
-                  </ui:GetFullText>
-                  <ui:UiElementExists DisplayName="Element Exists : Check 'Checklist Item' one by one" Exists="[elementExists]" sap2010:WorkflowViewState.IdRef="UiElementExists_1">
-                    <ui:UiElementExists.Target>
-                      <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" InformativeScreenshot="1335a1ee1f3714663341c78caa2491f0" Selector="[dynamicSelector]" TimeoutMS="3000" WaitForReady="INTERACTIVE" />
-                    </ui:UiElementExists.Target>
-                  </ui:UiElementExists>
-                  <If Condition="[elementExists]" sap2010:WorkflowViewState.IdRef="If_3">
-                    <If.Then>
-                      <Sequence DisplayName="Get the Item value and check in allowed item list from config file" sap2010:WorkflowViewState.IdRef="Sequence_12">
-                        <ui:GetAttribute ContinueOnError="{x:Null}" Attribute="selectedItem" DisplayName="Get Test Component" sap2010:WorkflowViewState.IdRef="GetAttribute_6">
-                          <ui:GetAttribute.Result>
-                            <OutArgument x:TypeArguments="ui:GenericValue">[testComp_Row]</OutArgument>
-                          </ui:GetAttribute.Result>
-                          <ui:GetAttribute.Target>
-                            <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="[&quot;&lt;webctrl id='&quot;+&quot;STDNT_TEST_COMP_TEST_COMPONENT$&quot;+in_ScoreIndex.ToString+&quot;' tag='SELECT' /&gt;&quot;]" WaitForReady="INTERACTIVE" />
-                          </ui:GetAttribute.Target>
-                        </ui:GetAttribute>
-                        <ui:GetValue ContinueOnError="{x:Null}" DisplayName="Get Score Value " sap2010:WorkflowViewState.IdRef="GetValue_1">
-                          <ui:GetValue.Target>
-                            <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="[&quot;&lt;webctrl id='&quot;+&quot;STDNT_TEST_COMP_SCORE$&quot;+in_ScoreIndex.ToString+&quot;' tag='INPUT' /&gt;&quot;]" WaitForReady="COMPLETE" />
-                          </ui:GetValue.Target>
-                          <ui:GetValue.Value>
-                            <OutArgument x:TypeArguments="x:String">[extractedValue]</OutArgument>
-                          </ui:GetValue.Value>
-                        </ui:GetValue>
-                        <ui:Check ContinueOnError="{x:Null}" DelayAfter="{x:Null}" DelayBefore="{x:Null}" Action="Uncheck" DisplayName="Uncheck - Verified field " sap2010:WorkflowViewState.IdRef="Check_1">
-                          <ui:Check.Target>
-                            <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="[&quot;&lt;webctrl id='&quot;+&quot;STDNT_TEST_COMP_TEST_ADMIN$&quot;+in_ScoreIndex.ToString+&quot;' tag='INPUT' /&gt;&quot;]" WaitForReady="INTERACTIVE" />
-                          </ui:Check.Target>
-                        </ui:Check>
-                        <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_6" Level="Info" Message="[testComp_Row.Trim+&quot;---------&quot;+extractedValue.Trim]" />
-                        <maes:AddToDictionary x:TypeArguments="x:String, x:String" Dictionary="[sinet_IELTSDetails]" DisplayName="Add to dictionary" sap2010:WorkflowViewState.IdRef="AddToDictionary`2_4" Key="[testComp_Row.Trim]" Value="[extractedValue.Trim]" />
-                      </Sequence>
-                    </If.Then>
-                  </If>
-                  <Assign DisplayName="Assign - increment index" sap2010:WorkflowViewState.IdRef="Assign_9">
-                    <Assign.To>
-                      <OutArgument x:TypeArguments="x:Int32">[rowIndex]</OutArgument>
-                    </Assign.To>
-                    <Assign.Value>
-                      <InArgument x:TypeArguments="x:Int32">[rowIndex+1]</InArgument>
-                    </Assign.Value>
-                  </Assign>
-                  <Assign sap2010:WorkflowViewState.IdRef="Assign_11">
-                    <Assign.To>
-                      <OutArgument x:TypeArguments="x:Int32">[in_ScoreIndex]</OutArgument>
-                    </Assign.To>
-                    <Assign.Value>
-                      <InArgument x:TypeArguments="x:Int32">[in_ScoreIndex+1]</InArgument>
-                    </Assign.Value>
-                  </Assign>
+            <Assign sap2010:WorkflowViewState.IdRef="Assign_15">
+              <Assign.To>
+                <OutArgument x:TypeArguments="x:String">[dynamicSelector]</OutArgument>
+              </Assign.To>
+              <Assign.Value>
+                <InArgument x:TypeArguments="x:String">["&lt;webctrl id='UQAD3590_WRK_UQ_TRF_NO$*' tag='INPUT' value='"+in_TRFNumber+"'/&gt;"]</InArgument>
+              </Assign.Value>
+            </Assign>
+            <ui:WaitUiElementAppear ContinueOnError="True" DisplayName="Find Element TRF Number" FoundElement="[trfNumber]" sap2010:WorkflowViewState.IdRef="WaitUiElementAppear_2" WaitActive="False" WaitVisible="False">
+              <ui:WaitUiElementAppear.Target>
+                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="12d6b01395d6bd7ddeab1bf08488cd53" Selector="[dynamicSelector]" WaitForReady="INTERACTIVE" />
+              </ui:WaitUiElementAppear.Target>
+            </ui:WaitUiElementAppear>
+            <If Condition="[trfNumber isNot Nothing]" DisplayName="Check if TRF number is available " sap2010:WorkflowViewState.IdRef="If_4">
+              <If.Then>
+                <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_10" Level="Trace" Message="[&quot;TRF Number found &quot;]" />
+              </If.Then>
+              <If.Else>
+                <Throw DisplayName="Throw BRE" Exception="[new BusinessRuleException(&quot;Unable to find TRF Number '&quot;+in_TRFNumber+&quot;' on UQ Qualification&quot;)]" sap2010:WorkflowViewState.IdRef="Throw_1" />
+              </If.Else>
+            </If>
+            <ui:GetAttribute ContinueOnError="{x:Null}" Attribute="name" DisplayName="Get Attribute - TRF Number" sap2010:WorkflowViewState.IdRef="GetAttribute_8">
+              <ui:GetAttribute.Result>
+                <OutArgument x:TypeArguments="ui:GenericValue">[TrfAttributeName]</OutArgument>
+              </ui:GetAttribute.Result>
+              <ui:GetAttribute.Target>
+                <ui:Target ClippingRegion="{x:Null}" Selector="{x:Null}" TimeoutMS="{x:Null}" Element="[trfNumber]" WaitForReady="INTERACTIVE" />
+              </ui:GetAttribute.Target>
+            </ui:GetAttribute>
+            <Assign sap2010:WorkflowViewState.IdRef="Assign_16">
+              <Assign.To>
+                <OutArgument x:TypeArguments="x:String">[testScoreIndex]</OutArgument>
+              </Assign.To>
+              <Assign.Value>
+                <InArgument x:TypeArguments="x:String">[System.Text.RegularExpressions.Regex.Split(TrfAttributeName,".*\$").Last]</InArgument>
+              </Assign.Value>
+            </Assign>
+            <ui:CommentOut DisplayName="Comment Out" sap2010:WorkflowViewState.IdRef="CommentOut_3">
+              <ui:CommentOut.Body>
+                <Sequence DisplayName="Ignored Activities" sap2010:WorkflowViewState.IdRef="Sequence_20">
+                  <ui:WaitUiElementAppear DisplayName="Find Element TRF Number " FoundElement="[isTRFavailable]" sap2010:WorkflowViewState.IdRef="WaitUiElementAppear_3" WaitActive="False" WaitVisible="False">
+                    <ui:WaitUiElementAppear.Target>
+                      <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="681f490f9a78882656f5ca1c682e5891" Selector="&lt;webctrl id='ptifrmtgtframe' tag='IFRAME' /&gt;&lt;webctrl id='UQAD3590_WRK_UQ_TRF_NO$*' tag='INPUT' aaname='TRF Number:' value='15CN004978ZHEF002B' /&gt;" WaitForReady="INTERACTIVE" />
+                    </ui:WaitUiElementAppear.Target>
+                  </ui:WaitUiElementAppear>
+                  <ui:GetAttribute ContinueOnError="{x:Null}" Attribute="name" DisplayName="If available, get the attribute name" sap2010:WorkflowViewState.IdRef="GetAttribute_9">
+                    <ui:GetAttribute.Result>
+                      <OutArgument x:TypeArguments="ui:GenericValue">[TrfAttributeName]</OutArgument>
+                    </ui:GetAttribute.Result>
+                    <ui:GetAttribute.Target>
+                      <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="681f490f9a78882656f5ca1c682e5891" Selector="&lt;webctrl id='ptifrmtgtframe' tag='IFRAME' /&gt;&lt;webctrl id='UQAD3590_WRK_UQ_TRF_NO$*' tag='INPUT' aaname='TRF Number:' value='15CN004978ZHEF002B' /&gt;" WaitForReady="INTERACTIVE" />
+                    </ui:GetAttribute.Target>
+                  </ui:GetAttribute>
+                  <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_7" Level="Warn" Message="[&quot;--&gt;&quot;+TrfAttributeName]" />
                 </Sequence>
-              </DoWhile>
-            </Sequence>
+              </ui:CommentOut.Body>
+            </ui:CommentOut>
+            <Assign DisplayName="Dynamic selector - Score Status" sap2010:WorkflowViewState.IdRef="Assign_17">
+              <Assign.To>
+                <OutArgument x:TypeArguments="x:String">[dynamicSelector]</OutArgument>
+              </Assign.To>
+              <Assign.Value>
+                <InArgument x:TypeArguments="x:String">["&lt;webctrl id='UQAD3590_WRK_UQ_SCORE_STATUS$"+testScoreIndex+"' tag='SELECT'/&gt;"]</InArgument>
+              </Assign.Value>
+            </Assign>
+            <ui:GetAttribute ContinueOnError="{x:Null}" Attribute="selecteditem" DisplayName="Get Score Status value" sap2010:WorkflowViewState.IdRef="GetAttribute_11">
+              <ui:GetAttribute.Result>
+                <OutArgument x:TypeArguments="ui:GenericValue">[scoreStatus]</OutArgument>
+              </ui:GetAttribute.Result>
+              <ui:GetAttribute.Target>
+                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="[dynamicSelector]" WaitForReady="INTERACTIVE" />
+              </ui:GetAttribute.Target>
+            </ui:GetAttribute>
+            <Assign DisplayName="Dynamic selector - Get Test ID" sap2010:WorkflowViewState.IdRef="Assign_18">
+              <Assign.To>
+                <OutArgument x:TypeArguments="x:String">[dynamicSelector]</OutArgument>
+              </Assign.To>
+              <Assign.Value>
+                <InArgument x:TypeArguments="x:String">["&lt;webctrl id='"+"*"+"_WRK_TEST_ID$"+testScoreIndex+"' tag='INPUT' /&gt;"]</InArgument>
+              </Assign.Value>
+            </Assign>
+            <ui:GetAttribute ContinueOnError="{x:Null}" Attribute="value" DisplayName="Get Test ID  value (e.g. IELTS or TOFEL)" sap2010:WorkflowViewState.IdRef="GetAttribute_12">
+              <ui:GetAttribute.Result>
+                <OutArgument x:TypeArguments="x:String">[testID]</OutArgument>
+              </ui:GetAttribute.Result>
+              <ui:GetAttribute.Target>
+                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="[dynamicSelector]" WaitForReady="INTERACTIVE" />
+              </ui:GetAttribute.Target>
+            </ui:GetAttribute>
+            <If Condition="[testID.Trim.Contains(&quot;IELTS&quot;) ANDAlso  (scoreStatus.trim =&quot;Not yet reviewed&quot; OR ScoreStatus.Length =1)]" DisplayName="Check if Test ID is 'IELTS' and Score Status is  'Not yet reviewed' or blank" sap2010:WorkflowViewState.IdRef="If_6">
+              <If.Else>
+                <Throw DisplayName="Throw BRE" Exception="[new BusinessRuleException(&quot;Unable to process as test score is not as expected. TRF  : '&quot;+in_TRFNumber+&quot;', Test score status  : '&quot;+scoreStatus+&quot;' and Test ID  : '&quot;+testID+&quot;'&quot; )]" sap2010:WorkflowViewState.IdRef="Throw_2" />
+              </If.Else>
+            </If>
+            <Assign DisplayName="Dynamic Selector for Test Date " sap2010:WorkflowViewState.IdRef="Assign_25">
+              <Assign.To>
+                <OutArgument x:TypeArguments="x:String">[dynamicSelector]</OutArgument>
+              </Assign.To>
+              <Assign.Value>
+                <InArgument x:TypeArguments="x:String">["&lt;webctrl id='*WRK_TEST_DT$"+testScoreIndex+"' tag='INPUT'/&gt;"]</InArgument>
+              </Assign.Value>
+            </Assign>
+            <ui:GetFullText DisplayName="Test Date " sap2010:WorkflowViewState.IdRef="GetFullText_4" IgnoreHidden="False">
+              <ui:GetFullText.Target>
+                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="b1b911c3b19ee77cdac12d4bf5f54946" Selector="[dynamicSelector]" WaitForReady="INTERACTIVE" />
+              </ui:GetFullText.Target>
+              <ui:GetFullText.Text>
+                <OutArgument x:TypeArguments="x:String">[extractedValue]</OutArgument>
+              </ui:GetFullText.Text>
+            </ui:GetFullText>
+            <maes:AddToDictionary x:TypeArguments="x:String, x:String" Dictionary="[out_sinet_IELTSDetails]" DisplayName="Add to dictionary _ Test Date" sap2010:WorkflowViewState.IdRef="AddToDictionary`2_6" Key="TestDate" Value="[extractedValue.Trim]" />
+            <Assign DisplayName="Dynamic Selector - Table Expand " sap2010:WorkflowViewState.IdRef="Assign_14">
+              <Assign.To>
+                <OutArgument x:TypeArguments="x:String">[dynamicSelector]</OutArgument>
+              </Assign.To>
+              <Assign.Value>
+                <InArgument x:TypeArguments="x:String">["&lt;webctrl id='*STDNT_TEST_COMP$expand$"+testScoreIndex+"' tag='A'/&gt;"]</InArgument>
+              </Assign.Value>
+            </Assign>
+            <ui:GetAttribute ContinueOnError="{x:Null}" Attribute="aria-expanded" DisplayName="Check If Test Component is collapsed" sap2010:WorkflowViewState.IdRef="GetAttribute_19">
+              <ui:GetAttribute.Result>
+                <OutArgument x:TypeArguments="x:Boolean">[attr_expand]</OutArgument>
+              </ui:GetAttribute.Result>
+              <ui:GetAttribute.Target>
+                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="b78a0c88ac5b5afe7e2ca3db1b1a7f1e" Selector="&lt;webctrl id='ptifrmtgtframe' tag='IFRAME' /&gt;&lt;webctrl id='STDNT_TEST_COMP$expand$0' tag='A' /&gt;" WaitForReady="INTERACTIVE" />
+              </ui:GetAttribute.Target>
+            </ui:GetAttribute>
+            <If Condition="[Not attr_expand]" DisplayName="If collapsed, click to expand" sap2010:WorkflowViewState.IdRef="If_5">
+              <If.Then>
+                <ui:Click DelayBefore="{x:Null}" DelayMS="{x:Null}" ClickType="CLICK_SINGLE" DisplayName="Click to expand Test Components" sap2010:WorkflowViewState.IdRef="Click_3" KeyModifiers="None" MouseButton="BTN_LEFT" SendWindowMessages="False" SimulateClick="True">
+                  <ui:Click.CursorPosition>
+                    <ui:CursorPosition Position="Center">
+                      <ui:CursorPosition.OffsetX>
+                        <InArgument x:TypeArguments="x:Int32" />
+                      </ui:CursorPosition.OffsetX>
+                      <ui:CursorPosition.OffsetY>
+                        <InArgument x:TypeArguments="x:Int32" />
+                      </ui:CursorPosition.OffsetY>
+                    </ui:CursorPosition>
+                  </ui:Click.CursorPosition>
+                  <ui:Click.Target>
+                    <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" Selector="[dynamicSelector]" WaitForReady="COMPLETE" />
+                  </ui:Click.Target>
+                </ui:Click>
+              </If.Then>
+            </If>
+            <ui:UiElementExists DisplayName="Element Exists" Exists="[isTestRowExists]" sap2010:WorkflowViewState.IdRef="UiElementExists_2">
+              <ui:UiElementExists.Target>
+                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Selector="[&quot;&lt;webctrl id='trSTDNT_TEST_COMP$&quot;+testScoreIndex+&quot;_row&quot;+rowNumber.ToString+&quot;' tag='TR' /&gt;&quot;]" TimeoutMS="3000" WaitForReady="INTERACTIVE" />
+              </ui:UiElementExists.Target>
+            </ui:UiElementExists>
+            <maes:AddToDictionary x:TypeArguments="x:String, x:String" Dictionary="[out_sinet_IELTSDetails]" DisplayName="Add to dictionary - First Name" sap2010:WorkflowViewState.IdRef="AddToDictionary`2_8" Key="FirstName" Value="[in_FirstName]" />
+            <maes:AddToDictionary x:TypeArguments="x:String, x:String" Dictionary="[out_sinet_IELTSDetails]" DisplayName="Add to dictionary - Last Name" sap2010:WorkflowViewState.IdRef="AddToDictionary`2_9" Key="LastName" Value="[in_LastName]" />
+            <While sap2010:WorkflowViewState.IdRef="While_1" Condition="[isTestRowExists]">
+              <Sequence sap2010:WorkflowViewState.IdRef="Sequence_28">
+                <Sequence.Variables>
+                  <Variable x:TypeArguments="ui:GenericValue" Name="testComponentName" />
+                </Sequence.Variables>
+                <Assign DisplayName="Test Component - dynamicSelector" sap2010:WorkflowViewState.IdRef="Assign_22">
+                  <Assign.To>
+                    <OutArgument x:TypeArguments="x:String">[dynamicSelector]</OutArgument>
+                  </Assign.To>
+                  <Assign.Value>
+                    <InArgument x:TypeArguments="x:String">["&lt;webctrl id='trSTDNT_TEST_COMP$"+testScoreIndex+"_row"+rowNumber.ToString+"' tag='TR' /&gt; &lt;webctrl id='STDNT_TEST_COMP_TEST_COMPONENT$*' tag='SELECT' /&gt;"]</InArgument>
+                  </Assign.Value>
+                </Assign>
+                <ui:GetAttribute ContinueOnError="{x:Null}" Attribute="selectedItem" DisplayName="Test Component" sap2010:WorkflowViewState.IdRef="GetAttribute_15">
+                  <ui:GetAttribute.Result>
+                    <OutArgument x:TypeArguments="ui:GenericValue">[testComponentName]</OutArgument>
+                  </ui:GetAttribute.Result>
+                  <ui:GetAttribute.Target>
+                    <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="2d1cfadcbca67eeed77b3865a835d9fb" Selector="[dynamicSelector]" WaitForReady="INTERACTIVE" />
+                  </ui:GetAttribute.Target>
+                </ui:GetAttribute>
+                <Assign DisplayName="Test Score - dynamicSelector" sap2010:WorkflowViewState.IdRef="Assign_23">
+                  <Assign.To>
+                    <OutArgument x:TypeArguments="x:String">[dynamicSelector]</OutArgument>
+                  </Assign.To>
+                  <Assign.Value>
+                    <InArgument x:TypeArguments="x:String">["&lt;webctrl id='trSTDNT_TEST_COMP$"+testScoreIndex+"_row"+rowNumber.ToString+"' tag='TR' /&gt; &lt;webctrl id='STDNT_TEST_COMP_SCORE$*' tag='INPUT' /&gt;"]</InArgument>
+                  </Assign.Value>
+                </Assign>
+                <ui:GetAttribute ContinueOnError="{x:Null}" Attribute="value" DisplayName="Test Score" sap2010:WorkflowViewState.IdRef="GetAttribute_18">
+                  <ui:GetAttribute.Result>
+                    <OutArgument x:TypeArguments="x:String">[extractedValue]</OutArgument>
+                  </ui:GetAttribute.Result>
+                  <ui:GetAttribute.Target>
+                    <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="2d1cfadcbca67eeed77b3865a835d9fb" Selector="[dynamicSelector]" WaitForReady="INTERACTIVE" />
+                  </ui:GetAttribute.Target>
+                </ui:GetAttribute>
+                <maes:AddToDictionary x:TypeArguments="x:String, x:String" Dictionary="[out_sinet_IELTSDetails]" DisplayName="Add to dictionary _ Test Date" sap2010:WorkflowViewState.IdRef="AddToDictionary`2_7" Key="[testComponentName.Trim]" Value="[extractedValue.Trim]" />
+                <Assign DisplayName="Verified - Uncheck " sap2010:WorkflowViewState.IdRef="Assign_24">
+                  <Assign.To>
+                    <OutArgument x:TypeArguments="x:String">[dynamicSelector]</OutArgument>
+                  </Assign.To>
+                  <Assign.Value>
+                    <InArgument x:TypeArguments="x:String">["&lt;webctrl id='ptifrmtgtframe' tag='IFRAME' /&gt; &lt;webctrl id='trSTDNT_TEST_COMP$"+testScoreIndex+"_row"+rowNumber.ToString+"' tag='TR' /&gt; &lt;webctrl tag='INPUT' class='PSCHECKBOX' colName='Verified' type='checkbox' /&gt;"]</InArgument>
+                  </Assign.Value>
+                </Assign>
+                <ui:Check ContinueOnError="{x:Null}" DelayAfter="{x:Null}" DelayBefore="{x:Null}" Action="Uncheck" DisplayName="Uncheck - Verified field " sap2010:WorkflowViewState.IdRef="Check_2">
+                  <ui:Check.Target>
+                    <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" TimeoutMS="{x:Null}" InformativeScreenshot="f8ee6bacd55bb1f1b3a4692272806876" Selector="[dynamicSelector]" WaitForReady="COMPLETE" />
+                  </ui:Check.Target>
+                </ui:Check>
+                <Assign sap2010:WorkflowViewState.IdRef="Assign_21">
+                  <Assign.To>
+                    <OutArgument x:TypeArguments="x:Int32">[rowNumber]</OutArgument>
+                  </Assign.To>
+                  <Assign.Value>
+                    <InArgument x:TypeArguments="x:Int32">[rowNumber+1]</InArgument>
+                  </Assign.Value>
+                </Assign>
+                <ui:UiElementExists DisplayName="Element Exists" Exists="[isTestRowExists]" sap2010:WorkflowViewState.IdRef="UiElementExists_3">
+                  <ui:UiElementExists.Target>
+                    <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Selector="[&quot;&lt;webctrl id='trSTDNT_TEST_COMP$&quot;+testScoreIndex+&quot;_row&quot;+rowNumber.ToString+&quot;' tag='TR' /&gt;&quot;]" TimeoutMS="3000" WaitForReady="INTERACTIVE" />
+                  </ui:UiElementExists.Target>
+                </ui:UiElementExists>
+              </Sequence>
+            </While>
+            <Assign sap2010:WorkflowViewState.IdRef="Assign_26">
+              <Assign.To>
+                <OutArgument x:TypeArguments="x:String">[out_testScoreIndex]</OutArgument>
+              </Assign.To>
+              <Assign.Value>
+                <InArgument x:TypeArguments="x:String">[testScoreIndex]</InArgument>
+              </Assign.Value>
+            </Assign>
+            <ui:ForEach x:TypeArguments="x:Object" CurrentIndex="{x:Null}" DisplayName="For Each" sap2010:WorkflowViewState.IdRef="ForEach`1_2" Values="[out_sinet_IELTSDetails]">
+              <ui:ForEach.Body>
+                <ActivityAction x:TypeArguments="x:Object">
+                  <ActivityAction.Argument>
+                    <DelegateInArgument x:TypeArguments="x:Object" Name="item" />
+                  </ActivityAction.Argument>
+                  <Sequence DisplayName="Body" sap2010:WorkflowViewState.IdRef="Sequence_31">
+                    <ui:LogMessage DisplayName="Log Message" sap2010:WorkflowViewState.IdRef="LogMessage_22" Level="Trace" Message="[item]" />
+                  </Sequence>
+                </ActivityAction>
+              </ui:ForEach.Body>
+            </ui:ForEach>
           </Sequence>
         </ActivityAction>
       </ui:BrowserScope.Body>
     </ui:BrowserScope>
-    <sads:DebugSymbol.Symbol>d2JDOlxVc2Vyc1x1cW1ndXB0MVxEb2N1bWVudHNcVWlQYXRoXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXElBQV9JRUxUU1xTSS1uZXRcTmF2VG9JRUxUU1Rlc3QueGFtbFEBiAEBigEBAwG/AQHBAQECUAOAAg4CAQFXBf4BFwIBAlelAlfkAgIBdl0L+wEWAgEDXg1lFgIBcmYN+gEYAgEEY1JjdQIBdWBTYGcCAXNoPWhAAgEFaw9yGAIBbXMPeiACAWh7D3v9AQIBYnwPgwEYAgFdhAEPiwEgAgFYjAEPjAH/AQIBUo0BD5QBGAIBTZUBD5wBIQIBR50BD68BFAIBQbABD/kBGQIBBnA6cIcBAgFwbTttTAIBbnWiAXW1AQIBa3g7eEsCAWl74wF7+gECAWZ7VXtrAgFke9IBe9wBAgFjgQE6gQGJAQIBYH47fkwCAV6GAaIBhgG1AQIBW4kBO4kBSwIBWYwB5QGMAfwBAgFWjAFVjAFrAgFUjAHTAYwB3gECAVOSATqSAY4BAgFQjwE7jwFMAgFOlQFFlQFUAgFKlwE8lwFJAgFImgFpmgF8AgFLnQEdnQEwAgFCnwETrQEeAgFEsAGCAbABkwECAT+xARH4ARwCAQerAW2rAYABAgFFtQETvAEcAgE5vQETvQGXAQIBNr4BE8UBJAIBMsYBE8oBKAIBLMsBE+cBGAIBEugBE+8BHAIBDfABE/cBHAIBCLoBProBqgECATy3AT+3AVACATq9AYEBvQGUAQIBN8ABpgHAAZ4CAgE1wwFGwwFUAgEzyAGRAcgBpAECATDIAa8ByAG1AQIBL8YBb8YBgAECAS3LASHLATICARPNARflASICARXtAT3tAUkCARDqAT7qAUgCAQ71AT31AU4CAQvyAT7yAU0CAQnOARnVASsCASbWARndAScCASHeARniASQCAR7jARnjAcgBAgEc5AEZ5AGGAgIBFs4BT84BXQIBKdABTNABWgIBJ9MBc9MB9wECASrbAUXbAVUCASLYAXPYAe0BAgEk4AFz4AHyAQIBH+MBhgHjAcUBAgEd5AHsAeQBgwICARrkAV/kAXUCARjkAdAB5AHlAQIBFw==</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d2tDOlxVc2Vyc1x1cW1ndXB0MVxEb2N1bWVudHNcVWlQYXRoXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXElBQV9JRUxUU1xTSS1uZXRcRXh0cmFjdFNJbmV0VGVzdERldGFpbHMueGFtbHpSA64EDgIBAVkFnwIVAwG2AaACBawEFwIBAqACpQKgAuQCAwG1AaYCC6kEFgIBA6gCO6gCPgIBBLICDbkCFgMBsQG6Ag3BAhYDAawBwgINxgImAwGmAccCDc4CEgMBoAHPAg3WAh8DAZoB1wIN3gIWAwGWAd8CDfICHQMBlQHzAg36AhYDAZAB+wINggMfAwGKAYMDDYoDFgMBhQGLAw2SAx8CAX+TAw2XAxICAXuYAw2fAxYCAXagAw2nAx4CAXGoAw2oA/8BAgFrqQMNsAMWAgFmsQMNuAMfAgFhuQMNywMSAgFbzAMN0AMiAgFU0QMN0QP6AQIBTtIDDdID9wECAUjTAw2UBBUCARGVBA2cBBYCAQydBA2oBBoCAQW3AlK3AnUDAbQBtAJTtAJrAwGyAb8COL8CjwEDAa8BvAI5vAJKAwGtAcICb8ICfAMBqgHEAqABxAKzAQMBqAHCAjXCAjsDAacBxwIbxwI2AwGhAckCEckCpAEDAaQBzAIRzALcAQMBogHPAkPPAkkDAZ0B0QJA0QJSAwGbAdQCZ9QCdAMBngHcAjjcAoIBAwGZAdkCOdkCSQMBlwH4Ajj4Ao4BAwGTAfUCOfUCSgMBkQH7AkP7AlEDAY0B/QJA/QJNAwGLAYADZ4ADegMBjgGIAziIA4UBAwGIAYUDOYUDSgMBhgGLA0OLA0oDAYIBjQM5jQNBAwGAAZADZ5ADegMBgwGTAxuTA5kBAgF8lQMRlQPCAgIBfZ0DOJ0DfQIBeZoDOZoDSgIBd6IDoAGiA7MBAgF0pQM5pQNJAgFyqAPlAagD/AECAW+oA1OoA20CAW2oA9QBqAPeAQIBbK4DOK4DhAECAWmrAzmrA0oCAWexA0OxA1ICAWSzAzqzA0cCAWK2A6ABtgOLAgIBZbkDG7kDLgIBXLsDEckDHAIBXs4DUs4D1AECAVjOA98BzgPlAQIBV8wDRcwDWAIBVdED5wHRA/cBAgFS0QNT0QNtAgFQ0QPVAdED4AECAU/SA+UB0gP0AQIBTNIDU9IDbQIBStID1AHSA94BAgFJ1AMPkwQaAgEU0wNI0wNbAgESmgQ4mgRIAgEPlwQ5lwRNAgENnQSYAZ0EsgECAQqjBBOlBB4CAQbJAoAByQKhAQMBpQHMAjrMAq8BAwGjAZUDOpUDlQICAX7HA2vHA34CAV/YAxHfAxoCAULgAxHnAyMCATzoAxHvAxoCATbwAxH3AyMCATD4AxH4A5MCAgEq+QMRgAQaAgEkgQQRhQQcAgEhhgQRjQQaAgEcjgQRkgQmAgEVpAQVpASPAQIBB90DPN0D4wECAUXaAz3aA04CAUPgA0fgA1UCAT/iA0TiA1cCAT3lA6QB5QO3AQIBQO0DPO0D2QECATnqAz3qA04CATfwA0fwA04CATPyAz3yA00CATH1A6QB9QO3AQIBNPgD+QH4A5ACAgEu+ANX+ANxAgEs+APYAfgD8gECASv+Azz+A6UCAgEn+wM9+wNOAgElgwSkAYMEtwECASKLBDuLBEgCAR+IBDyIBEcCAR2QBFaQBNgBAgEZkATjAZAE6QECARiOBEmOBFwCARakBIQBpASMAQIBCA==</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -260,6 +562,45 @@
       <sap2010:ViewStateData Id="Assign_5" sap:VirtualizedContainerService.HintSize="573,60" />
       <sap2010:ViewStateData Id="GetFullText_2" sap:VirtualizedContainerService.HintSize="573,106" />
       <sap2010:ViewStateData Id="AddToDictionary`2_2" sap:VirtualizedContainerService.HintSize="573,69">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="WaitUiElementAppear_1" sap:VirtualizedContainerService.HintSize="314,51">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="GetAttribute_7" sap:VirtualizedContainerService.HintSize="314,51">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="LogMessage_6" sap:VirtualizedContainerService.HintSize="314,51">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Sequence_18" sap:VirtualizedContainerService.HintSize="336,357">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="CommentOut_1" sap:VirtualizedContainerService.HintSize="573,51">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">False</x:Boolean>
@@ -280,22 +621,20 @@
       <sap2010:ViewStateData Id="Assign_7" sap:VirtualizedContainerService.HintSize="573,60" />
       <sap2010:ViewStateData Id="GetAttribute_5" sap:VirtualizedContainerService.HintSize="573,96" />
       <sap2010:ViewStateData Id="Click_2" sap:VirtualizedContainerService.HintSize="314,68" />
-      <sap2010:ViewStateData Id="If_2" sap:VirtualizedContainerService.HintSize="573,215">
+      <sap2010:ViewStateData Id="If_2" sap:VirtualizedContainerService.HintSize="573,51">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="Assign_8" sap:VirtualizedContainerService.HintSize="525,60" />
       <sap2010:ViewStateData Id="LogMessage_4" sap:VirtualizedContainerService.HintSize="525,91" />
-      <sap2010:ViewStateData Id="GetFullText_4" sap:VirtualizedContainerService.HintSize="525,106" />
       <sap2010:ViewStateData Id="UiElementExists_1" sap:VirtualizedContainerService.HintSize="525,106" />
       <sap2010:ViewStateData Id="GetAttribute_6" sap:VirtualizedContainerService.HintSize="378,96" />
       <sap2010:ViewStateData Id="GetValue_1" sap:VirtualizedContainerService.HintSize="378,68" />
       <sap2010:ViewStateData Id="Check_1" sap:VirtualizedContainerService.HintSize="378,68" />
-      <sap2010:ViewStateData Id="LogMessage_6" sap:VirtualizedContainerService.HintSize="378,91" />
       <sap2010:ViewStateData Id="AddToDictionary`2_4" sap:VirtualizedContainerService.HintSize="378,135">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
@@ -304,32 +643,24 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_12" sap:VirtualizedContainerService.HintSize="400,742">
+      <sap2010:ViewStateData Id="Sequence_12" sap:VirtualizedContainerService.HintSize="400,611">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_3" sap:VirtualizedContainerService.HintSize="525,889" />
+      <sap2010:ViewStateData Id="If_3" sap:VirtualizedContainerService.HintSize="525,758" />
       <sap2010:ViewStateData Id="Assign_9" sap:VirtualizedContainerService.HintSize="525,60" />
       <sap2010:ViewStateData Id="Assign_11" sap:VirtualizedContainerService.HintSize="525,60" />
-      <sap2010:ViewStateData Id="Sequence_13" sap:VirtualizedContainerService.HintSize="547,1736">
+      <sap2010:ViewStateData Id="Sequence_13" sap:VirtualizedContainerService.HintSize="547,1459">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="DoWhile_1" sap:VirtualizedContainerService.HintSize="573,1897">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-            <x:Boolean x:Key="IsPinned">False</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_16" sap:VirtualizedContainerService.HintSize="595,3222">
+      <sap2010:ViewStateData Id="DoWhile_1" sap:VirtualizedContainerService.HintSize="573,1620">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -337,14 +668,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_10" sap:VirtualizedContainerService.HintSize="617,3446">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="BrowserScope_4" sap:VirtualizedContainerService.HintSize="631,3592">
+      <sap2010:ViewStateData Id="Sequence_16" sap:VirtualizedContainerService.HintSize="595,2872">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -352,14 +676,244 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_11" sap:VirtualizedContainerService.HintSize="653,3716">
+      <sap2010:ViewStateData Id="LogMessage_5" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="Sequence_17" sap:VirtualizedContainerService.HintSize="336,215">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="NavToChecklistManagementPerson_1" sap:VirtualizedContainerService.HintSize="693,3796">
+      <sap2010:ViewStateData Id="ForEach`1_1" sap:VirtualizedContainerService.HintSize="595,348" />
+      <sap2010:ViewStateData Id="Sequence_10" sap:VirtualizedContainerService.HintSize="617,3484">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="BrowserScope_4" sap:VirtualizedContainerService.HintSize="631,3630">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Sequence_19" sap:VirtualizedContainerService.HintSize="653,3753">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="CommentOut_2" sap:VirtualizedContainerService.HintSize="500,52">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Assign_12" sap:VirtualizedContainerService.HintSize="464,60" />
+      <sap2010:ViewStateData Id="Assign_15" sap:VirtualizedContainerService.HintSize="464,60" />
+      <sap2010:ViewStateData Id="WaitUiElementAppear_2" sap:VirtualizedContainerService.HintSize="464,106" />
+      <sap2010:ViewStateData Id="LogMessage_10" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="Throw_1" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="If_4" sap:VirtualizedContainerService.HintSize="464,51">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="GetAttribute_8" sap:VirtualizedContainerService.HintSize="464,96" />
+      <sap2010:ViewStateData Id="Assign_16" sap:VirtualizedContainerService.HintSize="464,60" />
+      <sap2010:ViewStateData Id="WaitUiElementAppear_3" sap:VirtualizedContainerService.HintSize="314,51">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="GetAttribute_9" sap:VirtualizedContainerService.HintSize="314,51">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="LogMessage_7" sap:VirtualizedContainerService.HintSize="314,51">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Sequence_20" sap:VirtualizedContainerService.HintSize="336,357">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="CommentOut_3" sap:VirtualizedContainerService.HintSize="464,51">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Assign_17" sap:VirtualizedContainerService.HintSize="464,60" />
+      <sap2010:ViewStateData Id="GetAttribute_11" sap:VirtualizedContainerService.HintSize="464,96">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Assign_18" sap:VirtualizedContainerService.HintSize="464,60" />
+      <sap2010:ViewStateData Id="GetAttribute_12" sap:VirtualizedContainerService.HintSize="464,96">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Throw_2" sap:VirtualizedContainerService.HintSize="200,22" />
+      <sap2010:ViewStateData Id="If_6" sap:VirtualizedContainerService.HintSize="464,207" />
+      <sap2010:ViewStateData Id="Assign_25" sap:VirtualizedContainerService.HintSize="464,60" />
+      <sap2010:ViewStateData Id="GetFullText_4" sap:VirtualizedContainerService.HintSize="464,106" />
+      <sap2010:ViewStateData Id="AddToDictionary`2_6" sap:VirtualizedContainerService.HintSize="464,69">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Assign_14" sap:VirtualizedContainerService.HintSize="464,60" />
+      <sap2010:ViewStateData Id="GetAttribute_19" sap:VirtualizedContainerService.HintSize="464,134" />
+      <sap2010:ViewStateData Id="Click_3" sap:VirtualizedContainerService.HintSize="314,68" />
+      <sap2010:ViewStateData Id="If_5" sap:VirtualizedContainerService.HintSize="464,215">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="UiElementExists_2" sap:VirtualizedContainerService.HintSize="464,68" />
+      <sap2010:ViewStateData Id="AddToDictionary`2_8" sap:VirtualizedContainerService.HintSize="464,69">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="AddToDictionary`2_9" sap:VirtualizedContainerService.HintSize="464,69">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Assign_22" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="GetAttribute_15" sap:VirtualizedContainerService.HintSize="314,134">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Assign_23" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="GetAttribute_18" sap:VirtualizedContainerService.HintSize="314,134">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="AddToDictionary`2_7" sap:VirtualizedContainerService.HintSize="314,69">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Assign_24" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="Check_2" sap:VirtualizedContainerService.HintSize="314,106" />
+      <sap2010:ViewStateData Id="Assign_21" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="UiElementExists_3" sap:VirtualizedContainerService.HintSize="314,68" />
+      <sap2010:ViewStateData Id="Sequence_28" sap:VirtualizedContainerService.HintSize="336,1195">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="While_1" sap:VirtualizedContainerService.HintSize="464,51">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Assign_26" sap:VirtualizedContainerService.HintSize="464,60" />
+      <sap2010:ViewStateData Id="LogMessage_22" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="Sequence_31" sap:VirtualizedContainerService.HintSize="336,215">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="ForEach`1_2" sap:VirtualizedContainerService.HintSize="464,348">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Sequence_29" sap:VirtualizedContainerService.HintSize="486,3356">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="BrowserScope_5" sap:VirtualizedContainerService.HintSize="500,3502">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Sequence_11" sap:VirtualizedContainerService.HintSize="522,4065">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+            <x:Boolean x:Key="IsAnnotationDocked">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="NavToChecklistManagementPerson_1" sap:VirtualizedContainerService.HintSize="562,4145">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="ShouldExpandAll">True</x:Boolean>
