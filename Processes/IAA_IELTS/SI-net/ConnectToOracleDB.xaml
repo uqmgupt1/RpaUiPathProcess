@@ -123,14 +123,24 @@
           </Assign>
           <If Condition="[in_OperatingEnvironment &lt;&gt; &quot;DEV&quot;]" DisplayName="Assign Cloud hostname for all environment except DEV " sap2010:WorkflowViewState.IdRef="If_1">
             <If.Then>
-              <Assign DisplayName="Private: Assign - Robot" sap2010:WorkflowViewState.IdRef="Assign_1">
-                <Assign.To>
-                  <OutArgument x:TypeArguments="x:String">[ConnectionString]</OutArgument>
-                </Assign.To>
-                <Assign.Value>
-                  <InArgument x:TypeArguments="x:String">[String.Format("Data Source=(DESCRIPTION=(ADDRESS_LIST=(ADDRESS=(PROTOCOL=TCP)(HOST="+in_CloudHostname+")(PORT="+in_dbPortNumber+")))(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME="+in_dbServiceName+")));User Id={0};Password={1};",out_Username,out_Plaintext)]</InArgument>
-                </Assign.Value>
-              </Assign>
+              <Sequence DisplayName="For TEST, STAGING and PROD environment" sap2010:WorkflowViewState.IdRef="Sequence_10">
+                <Assign DisplayName="Assign hostname" sap2010:WorkflowViewState.IdRef="Assign_12">
+                  <Assign.To>
+                    <OutArgument x:TypeArguments="x:String">[hostname]</OutArgument>
+                  </Assign.To>
+                  <Assign.Value>
+                    <InArgument x:TypeArguments="x:String">[in_CloudHostname]</InArgument>
+                  </Assign.Value>
+                </Assign>
+                <Assign DisplayName="Private: Assign - Robot" sap2010:WorkflowViewState.IdRef="Assign_1">
+                  <Assign.To>
+                    <OutArgument x:TypeArguments="x:String">[ConnectionString]</OutArgument>
+                  </Assign.To>
+                  <Assign.Value>
+                    <InArgument x:TypeArguments="x:String">[String.Format("Data Source=(DESCRIPTION=(ADDRESS_LIST=(ADDRESS=(PROTOCOL=TCP)(HOST="+in_CloudHostname+")(PORT="+in_dbPortNumber+")))(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME="+in_dbServiceName+")));User Id={0};Password={1};",out_Username,out_Plaintext)]</InArgument>
+                  </Assign.Value>
+                </Assign>
+              </Sequence>
             </If.Then>
             <If.Else>
               <Sequence DisplayName="Check if Dev Orchestrator or local user" sap2010:WorkflowViewState.IdRef="Sequence_8">
@@ -145,6 +155,7 @@
                     <InArgument x:TypeArguments="x:String">[System.Security.Principal.WindowsIdentity.GetCurrent().Name.Replace(System.Environment.UserDomainName+"\","")]</InArgument>
                   </Assign.Value>
                 </Assign>
+                <ui:LogMessage DisplayName="Log Message" Level="Info" Message="[&quot;Robot user is : &quot;+robotUsername]" sap2010:WorkflowViewState.IdRef="LogMessage_18" />
                 <Assign sap2010:Annotation.AnnotationText="For DEV environment, check if process running from dev ocrchestrator or local user by identifying username. &#xA;&#xA;&#xA;If username contains 'RobotUser' than process running on orchestrator robot else local machine " DisplayName="Assign - Hostname " sap2010:WorkflowViewState.IdRef="Assign_9">
                   <Assign.To>
                     <OutArgument x:TypeArguments="x:String">[hostname]</OutArgument>
@@ -279,32 +290,41 @@
         </Catch>
       </TryCatch.Catches>
     </TryCatch>
-    <sads:DebugSymbol.Symbol>d2VDOlxVc2Vyc1x1cW1ndXB0MVxEb2N1bWVudHNcVWlQYXRoXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXElBQV9JRUxUU1xTSS1uZXRcQ29ubmVjdFRvT3JhY2xlREIueGFtbFhYA5sCDgIBAV0FmQIQAgECXwn4ARQCAQ+AAg2DAhgCAQiSAg2VAhgCAQNqC2qmAQMBhQFrC2vhAQIBf2wLcxQCAXl0C3sUAgF1fAumARACAVSnAQunAb0BAgFRqAELqAHMAQIBSqkBC7ABFAIBRrEBC7EBsQECAUSyAQu5ARQCAUC6AQvZARYCAS3aAQveAR0CASbfAQvfAdgBAgEk4AEL4AGQAQIBIeEBC/cBGwIBEIECD4ECnQECAQyCAg+CAqEBAgEJkwIPkwKeAQIBBpQCD5QCogECAQRqeWqjAQMBhgFrQWtWAwGEAWvOAWveAQMBggFrtAFrxAEDAYABcTZxfQIBfG43bkYCAXp5NnlOAgF4djd2RQIBdnwZfE0CAVV+D4UBGAIBbIgBD6QBGgIBV6cBeKcBugECAVKoAZMBqAGjAQIBT6gBtQGoAckBAgFNqAEyqAE6AgFLrgE2rgE/AgFJqwE3qwFGAgFHsQF4sQGuAQIBRbQBN7QBQAIBQbwBD8oBGgIBNNcBD9cBrwECATHSARPSAc8BAgEu2gGoAdoBsAECASvaAWnaAXYCASnaAeYB2gHxAQIBJ98BeN8B1QECASXgATXgAT0CASLhATzhAUkCAR/nARH0ARwCARGBAnyBApoBAgENggJ9ggKeAQIBCpMCfZMCmwECAQeUAn6UAp8BAgEFgwE6gwG8AgIBb4ABO4ABTQIBbYwBEZMBGgIBaJQBEZsBGgIBYZwBEaMBGgIBWL0BEcEBJAIBO8IBEckBGgIBNdcBftcBrAECATLSAYEB0gHMAQIBL+gBE+gBwgECAR3pARPzASUCARKRATyRAasBAgFrjgE9jgFMAgFpmQE8mQGJAQIBZJYBPZYBRwIBYqEBPKEBtgICAVueAT2eAU8CAVm/ATy/AUQCAT69AUK9AV4CATzHATzHAYIBAgE4xAE9xAFGAgE26AGAAegBvwECAR7pAdwB6QHvAQIBHO8BT+8BYAIBG+sBVesBZgIBGukBwQHpAdEBAgEY8QFR8QFiAgEX7AFQ7AFhAgEW7QFQ7QFhAgEV7gFQ7gFhAgEU8AFQ8AFhAgET</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>d2VDOlxVc2Vyc1x1cW1ndXB0MVxEb2N1bWVudHNcVWlQYXRoXFJwYVVpUGF0aFByb2Nlc3NcUHJvY2Vzc2VzXElBQV9JRUxUU1xTSS1uZXRcQ29ubmVjdFRvT3JhY2xlREIueGFtbF5YA6YCDgIBAV0FpAIQAgECXwmDAhQCAQ+LAg2OAhgCAQidAg2gAhgCAQNqC2qmAQMBjgFrC2vhAQMBiAFsC3MUAwGCAXQLexQCAX58C7EBEAIBVLIBC7IBvQECAVGzAQuzAcwBAgFKtAELuwEUAgFGvAELvAGxAQIBRL0BC8QBFAIBQMUBC+QBFgIBLeUBC+kBHQIBJuoBC+oB2AECASTrAQvrAZABAgEh7AELggIbAgEQjAIPjAKdAQIBDI0CD40CoQECAQmeAg+eAp4BAgEGnwIPnwKiAQIBBGp5aqMBAwGPAWtBa1YDAY0Ba84Ba94BAwGLAWu0AWvEAQMBiQFxNnF9AwGFAW43bkYDAYMBeTZ5TgMBgQF2N3ZFAgF/fBl8TQIBVX4PjwEaAgFvkgEPrwEaAgFXsgF4sgG6AQIBUrMBkwGzAaMBAgFPswG1AbMByQECAU2zATKzAToCAUu5ATa5AT8CAUm2ATe2AUYCAUe8AXi8Aa4BAgFFvwE3vwFAAgFBxwEP1QEaAgE04gEP4gGvAQIBMd0BE90BzwECAS7lAagB5QGwAQIBK+UBaeUBdgIBKeUB5gHlAfEBAgEn6gF46gHVAQIBJesBNesBPQIBIuwBPOwBSQIBH/IBEf8BHAIBEYwCfIwCmgECAQ2NAn2NAp4BAgEKngJ9ngKbAQIBB58Cfp8CnwECAQV/EYYBGgIBeYcBEY4BGgIBcJYBEZ0BGgIBa54BEZ4BsAECAWifARGmARoCAWGnARGuARoCAVjIARHMASQCATvNARHUARoCATXiAX7iAawBAgEy3QGBAd0BzAECAS/zARPzAcIBAgEd9AET/gElAgEShAE8hAFOAgF8gQE9gQFHAgF6jAE8jAG+AgIBc4kBPYkBTwIBcZsBPJsBqwECAW6YAT2YAUwCAWyeAU+eAX0CAWmkATykAYkBAgFkoQE9oQFHAgFirAE8rAG2AgIBW6kBPakBTwIBWcoBPMoBRAIBPsgBQsgBXgIBPNIBPNIBggECATjPAT3PAUYCATbzAYAB8wG/AQIBHvQB3AH0Ae8BAgEc+gFP+gFgAgEb9gFV9gFmAgEa9AHBAfQB0QECARj8AVH8AWICARf3AVD3AWECARb4AVD4AWECARX5AVD5AWECART7AVD7AWECARM=</sads:DebugSymbol.Symbol>
   </Sequence>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
-      <sap2010:ViewStateData Id="LogMessage_2" sap:VirtualizedContainerService.HintSize="531,91" />
-      <sap2010:ViewStateData Id="GetRobotCredential_1" sap:VirtualizedContainerService.HintSize="531,22" />
-      <sap2010:ViewStateData Id="Assign_3" sap:VirtualizedContainerService.HintSize="531,60" />
-      <sap2010:ViewStateData Id="Assign_2" sap:VirtualizedContainerService.HintSize="531,60" />
+      <sap2010:ViewStateData Id="LogMessage_2" sap:VirtualizedContainerService.HintSize="625,91" />
+      <sap2010:ViewStateData Id="GetRobotCredential_1" sap:VirtualizedContainerService.HintSize="625,22" />
+      <sap2010:ViewStateData Id="Assign_3" sap:VirtualizedContainerService.HintSize="625,60" />
+      <sap2010:ViewStateData Id="Assign_2" sap:VirtualizedContainerService.HintSize="625,60" />
+      <sap2010:ViewStateData Id="Assign_12" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="Assign_1" sap:VirtualizedContainerService.HintSize="242,60" />
-      <sap2010:ViewStateData Id="Assign_8" sap:VirtualizedContainerService.HintSize="242,60" />
-      <sap2010:ViewStateData Id="Assign_9" sap:VirtualizedContainerService.HintSize="242,207">
-        <sap:WorkflowViewStateService.ViewState>
-          <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <x:Boolean x:Key="IsAnnotationDocked">True</x:Boolean>
-          </scg:Dictionary>
-        </sap:WorkflowViewStateService.ViewState>
-      </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Assign_7" sap:VirtualizedContainerService.HintSize="242,60" />
-      <sap2010:ViewStateData Id="Sequence_8" sap:VirtualizedContainerService.HintSize="264,531">
+      <sap2010:ViewStateData Id="Sequence_10" sap:VirtualizedContainerService.HintSize="264,284">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="531,679">
+      <sap2010:ViewStateData Id="Assign_8" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="LogMessage_18" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="Assign_9" sap:VirtualizedContainerService.HintSize="314,207">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsAnnotationDocked">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Assign_7" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="Sequence_8" sap:VirtualizedContainerService.HintSize="336,662">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="If_1" sap:VirtualizedContainerService.HintSize="625,810">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -312,11 +332,11 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="LogMessage_3" sap:VirtualizedContainerService.HintSize="531,91" />
-      <sap2010:ViewStateData Id="DatabaseConnect_1" sap:VirtualizedContainerService.HintSize="531,59" />
-      <sap2010:ViewStateData Id="Assign_4" sap:VirtualizedContainerService.HintSize="531,60" />
-      <sap2010:ViewStateData Id="LogMessage_4" sap:VirtualizedContainerService.HintSize="531,91" />
-      <sap2010:ViewStateData Id="Assign_10" sap:VirtualizedContainerService.HintSize="531,60" />
+      <sap2010:ViewStateData Id="LogMessage_3" sap:VirtualizedContainerService.HintSize="625,91" />
+      <sap2010:ViewStateData Id="DatabaseConnect_1" sap:VirtualizedContainerService.HintSize="625,59" />
+      <sap2010:ViewStateData Id="Assign_4" sap:VirtualizedContainerService.HintSize="625,60" />
+      <sap2010:ViewStateData Id="LogMessage_4" sap:VirtualizedContainerService.HintSize="625,91" />
+      <sap2010:ViewStateData Id="Assign_10" sap:VirtualizedContainerService.HintSize="625,60" />
       <sap2010:ViewStateData Id="GetRobotAsset_1" sap:VirtualizedContainerService.HintSize="242,22" />
       <sap2010:ViewStateData Id="Assign_11" sap:VirtualizedContainerService.HintSize="242,60" />
       <sap2010:ViewStateData Id="Sequence_9" sap:VirtualizedContainerService.HintSize="264,246">
@@ -336,7 +356,7 @@
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="LogMessage_17" sap:VirtualizedContainerService.HintSize="314,91" />
-      <sap2010:ViewStateData Id="TryCatch_2" sap:VirtualizedContainerService.HintSize="531,473" />
+      <sap2010:ViewStateData Id="TryCatch_2" sap:VirtualizedContainerService.HintSize="625,473" />
       <sap2010:ViewStateData Id="ExecuteQuery_2" sap:VirtualizedContainerService.HintSize="531,88" />
       <sap2010:ViewStateData Id="LogMessage_1" sap:VirtualizedContainerService.HintSize="531,91" />
       <sap2010:ViewStateData Id="DatabaseDisconnect_3" sap:VirtualizedContainerService.HintSize="531,22" />
@@ -350,7 +370,7 @@
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="ForEachRow_1" sap:VirtualizedContainerService.HintSize="531,425" />
-      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="553,3056">
+      <sap2010:ViewStateData Id="Sequence_1" sap:VirtualizedContainerService.HintSize="647,3187">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -400,7 +420,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="571,3327">
+      <sap2010:ViewStateData Id="TryCatch_1" sap:VirtualizedContainerService.HintSize="665,3458">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -408,14 +428,14 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="593,3451">
+      <sap2010:ViewStateData Id="Sequence_2" sap:VirtualizedContainerService.HintSize="687,3582">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="ConnectToOracleDB_1" sap:VirtualizedContainerService.HintSize="633,3531" />
+      <sap2010:ViewStateData Id="ConnectToOracleDB_1" sap:VirtualizedContainerService.HintSize="727,3662" />
     </sap2010:ViewStateManager>
   </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
